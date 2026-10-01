@@ -1304,5 +1304,5 @@
   "bbs.config.ai.supports_json_mode-comment": "模型支持 JSON response_format 时开启",
   "bbs.config.ai.image_size-comment": "图像后端输出分辨率，例如 1024x1024",
   "bbs.ui.ai.panel.provider_label": "供应商",
-  "bbs.ui.ai.panel.output": "bbs.ui.ai.panel.output"
+  "bbs.ui.ai.panel.output": "输出"
 }

@@ -2502,5 +2502,5 @@
   "bbs.config.ai.supports_json_mode-comment": "Enable when the model supports JSON response format",
   "bbs.config.ai.image_size-comment": "Output resolution for the image backend, e.g. 1024x1024",
   "bbs.ui.ai.panel.provider_label": "Provider",
-  "bbs.ui.ai.panel.output": "bbs.ui.ai.panel.output"
+  "bbs.ui.ai.panel.output": "Output"
 }

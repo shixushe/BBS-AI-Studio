@@ -510,6 +510,7 @@ public class BBSModClient implements ClientModInitializer
 
         /* AI copilot surface: dashboard panel + ghost frame layer (mchorse.bbs_mod.ai) */
         mchorse.bbs_mod.ai.AiClientInstall.install();
+        mchorse.bbs_mod.ai.AiDebugCommand.install();
 
         AssetProvider provider = BBSMod.getProvider();
 

@@ -29,7 +29,9 @@ import java.util.function.Consumer;
  */
 public class UIAiAskOverlayPanel extends UIOverlayPanel
 {
-    private final Map<String, UITextbox> fields = new LinkedHashMap<>();
+    public static final String SKIP = "(跳过 / skip)";
+
+    private final Map<String, mchorse.bbs_mod.ui.framework.elements.buttons.UIChoiceButton<String>> fields = new LinkedHashMap<>();
     private final List<String> inventory;
     private final Consumer<BoneNameResolver.Result> onConfirmed;
 
@@ -46,16 +48,26 @@ public class UIAiAskOverlayPanel extends UIOverlayPanel
 
         UIElement rows = UI.column(UIConstants.MARGIN);
 
+        List<String> options = new ArrayList<>();
+
+        options.add(SKIP);
+        options.addAll(inventory);
+
         for (String generic : unresolved)
         {
             UILabel label = UI.label(L10n.lang("bbs.ui.ai.ask.bone").format(generic), UIConstants.CONTROL_HEIGHT);
-            UITextbox field = new UITextbox(64, (t) -> {});
 
-            field.placeholder(L10n.lang("bbs.ui.ai.ask.placeholder").format(generic));
-            field.h(UIConstants.CONTROL_HEIGHT);
-            this.fields.put(generic, field);
+            mchorse.bbs_mod.ui.framework.elements.buttons.UIChoiceButton<String> pick =
+                new mchorse.bbs_mod.ui.framework.elements.buttons.UIChoiceButton<>(
+                    options,
+                    (choice) -> mchorse.bbs_mod.ui.utils.icons.Icons.POSE,
+                    (choice) -> mchorse.bbs_mod.l10n.keys.IKey.constant(choice));
+
+            pick.setValue(SKIP);
+            pick.h(UIConstants.CONTROL_HEIGHT);
+            this.fields.put(generic, pick);
             rows.add(label);
-            rows.add(field);
+            rows.add(pick);
         }
 
         UIButton confirm = new UIButton(L10n.lang("bbs.ui.ai.ask.confirm"), (b) -> this.confirm(context));
@@ -75,14 +87,18 @@ public class UIAiAskOverlayPanel extends UIOverlayPanel
     {
         Map<String, BoneNameResolver.Resolution> confirmed = new LinkedHashMap<>();
 
-        for (Map.Entry<String, UITextbox> entry : this.fields.entrySet())
+        for (Map.Entry<String, mchorse.bbs_mod.ui.framework.elements.buttons.UIChoiceButton<String>> entry : this.fields.entrySet())
         {
-            String actual = entry.getValue().getText().trim();
+            String actual = entry.getValue().getValue();
+
+            if (SKIP.equals(actual))
+            {
+                /* 留空=跳过:该骨骼不参与本次生成 */
+                continue;
+            }
 
             if (!this.inventory.contains(actual))
             {
-                this.fields.get(entry.getKey()).setColor(Colors.RED, true);
-
                 return;
             }
 

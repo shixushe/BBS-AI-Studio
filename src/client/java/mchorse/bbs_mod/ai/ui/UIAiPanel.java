@@ -108,8 +108,31 @@ public class UIAiPanel extends UIDashboardPanel
         this.output = new UILabel(L10n.lang("bbs.ui.ai.panel.output_empty"));
         this.output.color(Colors.LIGHTER_GRAY, false).background(BBSSettings.deepSurface());
 
+        // 供应商下拉框:11 家预设,选完自动填接口地址(用户要求用下拉框)
+        mchorse.bbs_mod.ui.framework.elements.buttons.UIChoiceButton<String> providerPick =
+            new mchorse.bbs_mod.ui.framework.elements.buttons.UIChoiceButton<>(
+                AiSettings.PRESETS.keySet(),
+                (key) -> mchorse.bbs_mod.ui.utils.icons.Icons.SERVER,
+                (key) -> mchorse.bbs_mod.l10n.keys.IKey.constant(key));
+
+        providerPick.callback((key) ->
+        {
+            AiSettings.provider.set(key);
+            AiSettings.applyPreset(key);
+        });
+
+        String currentProvider = AiSettings.provider.get();
+
+        if (currentProvider != null && !currentProvider.isEmpty())
+        {
+            providerPick.setValue(currentProvider);
+        }
+
+        providerPick.h(UIConstants.CONTROL_HEIGHT);
+
         UIElement params = UI.column(UIConstants.MARGIN,
-            UI.label(L10n.lang("bbs.ui.ai.panel.duration"), UIConstants.CONTROL_HEIGHT),
+            UI.label(L10n.lang("bbs.ui.ai.panel.provider_label"), UIConstants.CONTROL_HEIGHT),
+            providerPick,
             this.duration.element().h(UIConstants.CONTROL_HEIGHT),
             UI.label(L10n.lang("bbs.ui.ai.panel.fps"), UIConstants.CONTROL_HEIGHT),
             this.fps.element().h(UIConstants.CONTROL_HEIGHT),

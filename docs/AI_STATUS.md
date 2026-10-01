@@ -73,7 +73,13 @@ E:\BBS FS AI\mc-mcp\mc_mcp_server.py        ← MCP 调试服务(config 指向 t
 | R8 | **视频采集:Windows 资源管理器选文件 + 加强**(自动走带/缩略图) | ⬜ 本轮 |
 | R9 | **按钮状态感知**(特定情节才可用,需 tooltip 说明)+ **向用户提问的对话框**(骨骼候选确认等) | ⬜ 本轮 |
 | R10 | 媲美 harness 的 AI 助手(总纲:R5-R9 都服务于此) | 迭代中 |
-| R11 | §5.7 皮肤编辑器:UV 叠层/对称笔刷/3D 皮肤映射 | ⬜ 未做 |
+| R11 | §5.7 皮肤编辑器:UV 叠层/对称笔刷/3D 皮肤映射 | ⬜ 未做（AI 图层 `[AI]` 前缀标识已做） |
+| R15 | 原生合并 BBS-Cubed(gbeic 475 文件)+posecurve(bbsplus 33 文件)进本体,入口直调,AI 自动覆盖 | ✅ 217061475 |
+| R16 | 游戏内 HTTP 调试服务 AiDebugServer(127.0.0.1:17878,/ping /log /screenshot /command /openui)——MCP 无感通道,不抢焦点 | ✅ 7954a2990 |
+| R17 | QuickPlay 调试启动器(启动 AI调试.bat,--quickPlaySingleplayer 自动进世界) | ✅ |
+| R18 | 设置 AI 标签独立+全部行中文名(修键值显示) | ✅ 1ed3f483e/994e4b4b8 |
+| R19 | 状态感知按钮 tooltips + 向用户提问对话框(骨骼候选确认 UIAiAskOverlayPanel) | ✅ 9c4457bc0 |
+| R20 | 采集强化:资源管理器选文件 + 自动走带采集(实测自动采 12 帧并持久化) | ✅ bd8121a81 |
 | R12 | §10.7 inpainting 局部重绘 | ⬜ 未做(后端已留 reference 参数) |
 | R13 | §12.5 三个回归样例完整跑通(需游戏内多步 UI 驱动) | 部分(启动/面板已验) |
 | R14 | 实例 mods 里 `_disabled_backup/` 有被禁用的旧 jar(bbs-2.7、bbsfsai-2.6、zh_CN) | 用户可随时恢复 |
@@ -93,3 +99,20 @@ E:\BBS FS AI\mc-mcp\mc_mcp_server.py        ← MCP 调试服务(config 指向 t
 1. 贝塞尔手柄=tick 单位(非 [0,1]);2. elastic/overshoot 用注册表 easing;3. 骨骼通道=POSE
 非数值;4. 此树无 ContentType(AiTargetRouter 自带路由表);5. KeyframeFactories 类初始化
 拖 MC 依赖,数值判断用本地镜像(同步注释);6. L1 畸形 JSON 重试一次再报错(AiPlans)。
+
+
+## 六、当前状态快照（截断恢复点）
+
+- 最新推送：994e4b4b8（l10n 补齐）。合并版 jar 已部署实例 mods。
+- 游戏内已验证：模组列表 BBS AI Studio ✓、BBS++/posecurve 原生加载 ✓、§5.2 AI 面板渲染（①②③通栏标题/生成 blocking/状态灯）✓、
+  采集面板自动走带 12 帧并持久化 ✓、QuickPlay 启动器直进世界 ✓。
+- **待验证/待修（下一轮入口）**：
+  1. §5.2 左栏 script textarea 在游戏内渲染不可见（疑似 h(1F,-52) 塌陷或缺底色）——UI 照 mockup 像素级打磨的入口；
+  2. §5.1 对话条已移至属性面板下半截（editArea y(0.5F)），未目视验证；
+  3. 设置 AI 标签行名已补齐但未目视复验（bbs.config.ai.* 全量补齐后需重启游戏）；
+  4. §5.9 跟随机制已实现未目视验证；
+  5. §5.4 幽灵帧：时间轴标记+预览区边框已做，3D 剪影待 renderer 级；
+  6. §12.5 三个回归样例：打磨闭环（离线）代码就绪但未在游戏内完整驱动；
+  7. 实例 mods `_disabled_backup/` 内有 bbs-2.7/bbsfsai-2.6/Cubed/posecurve 四个被禁 jar（合并后不再需要，用户可随时恢复）。
+- 游戏窗口焦点问题：QQ/其它窗口会盖住游戏导致截图黑屏——HTTP /screenshot 是游戏自己渲染，
+  窗口最小化时会拍黑；走查前需还原窗口（mc_ping 的 focus 路径会自动 restore）。

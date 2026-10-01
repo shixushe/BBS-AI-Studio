@@ -1,6 +1,7 @@
 package mchorse.bbs_mod.ui.forms.editors;
 
 import mchorse.bbs_mod.api.client.events.FilmEditEvents;
+import mchorse.bbs_mod.ai.commit.ChannelStateUndo;
 import mchorse.bbs_mod.data.types.BaseType;
 import mchorse.bbs_mod.data.types.MapType;
 import mchorse.bbs_mod.settings.values.IValueListener;
@@ -138,6 +139,12 @@ public class UIFormUndoHandler
         else if (undo instanceof ValueChangeUndo change && change.getAppliedValue() != null)
         {
             values.add(change.getAppliedValue());
+        }
+        else if (undo instanceof ChannelStateUndo state && state.getChannel() != null)
+        {
+            /* AI commits restore whole channels; the channel itself is what
+             * listeners care about */
+            values.add(state.getChannel());
         }
     }
 

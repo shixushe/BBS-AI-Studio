@@ -5,6 +5,10 @@ import mchorse.bbs_mod.ai.AiFilmBridge;
 import mchorse.bbs_mod.ai.commit.EditPatch;
 import mchorse.bbs_mod.ai.commit.EditPatchBuilder;
 import mchorse.bbs_mod.ai.commit.FrameCommitter;
+import mchorse.bbs_mod.ai.AiChatRequest;
+import mchorse.bbs_mod.ai.AiClient;
+import mchorse.bbs_mod.ai.AiException;
+import mchorse.bbs_mod.ai.AiSettings;
 import mchorse.bbs_mod.ai.commit.FrameDiff;
 import mchorse.bbs_mod.ai.curve.PolishCommandParser;
 import mchorse.bbs_mod.ai.curve.PolishOp;
@@ -55,6 +59,8 @@ public class UIAiChatBar extends UIElement
 
     /** Whether the polish mode is active (generate is the other face). */
     private boolean polishMode = false;
+
+    private boolean busy;
 
     public UIAiChatBar(UIFilmPanel panel)
     {
@@ -114,11 +120,107 @@ public class UIAiChatBar extends UIElement
         }
         else
         {
-            /* 生成 needs the M5 pose solver; until it lands say so instead of
-             * pretending - a silent no-op would look like a broken button */
-            this.status.label = L10n.lang("bbs.ui.ai.bar.generate_unavailable").format("M5");
-            this.previewRow.setVisible(true);
+            this.executeGenerate();
         }
+    }
+
+
+    /**
+     * 生成: script -> (backend) AnimationPlan -> PoseSolver on the open
+     * replay's model bones -> the same preview/commit pipeline polish uses.
+     * The end-to-end loop of the copilot spec's delivery goal.
+     */
+    private void executeGenerate()
+    {
+        if (!AiSettings.isConfigured())
+        {
+            this.status.label = L10n.lang("bbs.ui.ai.panel.lamp.unconfigured");
+            this.previewRow.setVisible(true);
+
+            return;
+        }
+
+        Replay replay = this.panel.replayEditor.getReplay();
+
+        if (replay == null)
+        {
+            this.status.label = L10n.lang("bbs.ui.ai.bar.no_replay");
+            this.previewRow.setVisible(true);
+
+            return;
+        }
+
+        if (!(replay.form.get() instanceof mchorse.bbs_mod.forms.forms.ModelForm modelForm))
+        {
+            this.status.label = L10n.lang("bbs.ui.ai.creative.not_model");
+            this.previewRow.setVisible(true);
+
+            return;
+        }
+
+        String script = this.input.getText().trim();
+
+        if (script.isEmpty())
+        {
+            this.status.label = L10n.lang("bbs.ui.ai.panel.empty_script");
+            this.previewRow.setVisible(true);
+
+            return;
+        }
+
+        this.busy = true;
+        this.status.label = L10n.lang("bbs.ui.ai.panel.generating");
+        this.previewRow.setVisible(true);
+
+        String system = L10n.lang("bbs.ui.ai.panel.prompt").get();
+        AiChatRequest request = new AiChatRequest(system, script);
+
+        request.temperature(AiSettings.temperature.get());
+        request.json(AiSettings.jsonMode.get() && AiSettings.supportsJsonMode.get());
+
+        AiClient.get().chat(request, (response) ->
+        {
+            this.busy = false;
+
+            try
+            {
+                mchorse.bbs_mod.ai.plan.AnimationPlan generated = mchorse.bbs_mod.ai.plan.AnimationPlan.parse(response.content);
+                java.util.List<String> inventory = new ArrayList<>();
+
+                for (mchorse.bbs_mod.settings.values.base.BaseValue child : modelForm.bones.getAll())
+                {
+                    inventory.add(child.getId());
+                }
+
+                mchorse.bbs_mod.ai.pose.BoneNameResolver.Result bones = mchorse.bbs_mod.ai.pose.BoneNameResolver.resolve(inventory);
+
+                if (!bones.isComplete())
+                {
+                    this.status.label = L10n.lang("bbs.ui.ai.creative.bones_unconfirmed").format(bones.unresolved.toString());
+                    this.previewRow.setVisible(true);
+
+                    return;
+                }
+
+                List<mchorse.bbs_mod.ai.pose.PoseSolver.KeyPose> poses = mchorse.bbs_mod.ai.pose.PoseSolver.solve(generated, bones);
+                List<FrameCommitter.ChannelWrite> generated_writes = mchorse.bbs_mod.ai.pose.PoseSolver.toChannelWrites(poses, replay.properties);
+                FrameDiff generated_diff = this.buildPreviewDiff(generated_writes);
+
+                AiPreviewState.get().begin(replay, generated_writes, generated_diff);
+                this.status.label = L10n.lang("bbs.ui.ai.bar.preview").format(AiPreviewState.get().getChangeCount());
+                this.previewRow.setVisible(true);
+            }
+            catch (AiException e)
+            {
+                this.status.label = L10n.lang("bbs.ui.ai.panel.failed").format(e.type.name());
+                this.previewRow.setVisible(true);
+            }
+        }, (error) ->
+        {
+            this.busy = false;
+            this.status.label = L10n.lang("bbs.ui.ai.panel.failed").format(error.type.name());
+            this.previewRow.setVisible(true);
+        });
     }
 
     /** Polish: local intent parsing -> L3 on every numeric channel of the open replay -> preview. */

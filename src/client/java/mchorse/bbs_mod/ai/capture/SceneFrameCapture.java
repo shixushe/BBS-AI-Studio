@@ -41,6 +41,12 @@ public class SceneFrameCapture
         this.nextTick = this.from;
     }
 
+    /** The tick the capture is waiting for next (auto-walk drives the cursor here). */
+    public int getNextTick()
+    {
+        return this.nextTick;
+    }
+
     public boolean isActive()
     {
         return this.nextTick <= this.to;

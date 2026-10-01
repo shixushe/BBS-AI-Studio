@@ -179,6 +179,15 @@ public class UICapturePanel extends UIDashboardPanel
 
         int cursor = source.panel.getCursor();
 
+        /* Auto-walk: the capture drives the play head itself, so the whole
+         * window is captured with one click (user keeps their hands free) */
+        if (cursor < this.session.getNextTick())
+        {
+            source.panel.setCursor(this.session.getNextTick());
+
+            return;
+        }
+
         net.minecraft.client.util.Window window = net.minecraft.client.MinecraftClient.getInstance().getWindow();
 
         if (this.session.update(cursor, window.getWidth(), window.getHeight()))

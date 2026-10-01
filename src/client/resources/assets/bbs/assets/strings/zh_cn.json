@@ -1283,5 +1283,7 @@
   "bbs.ui.ai.ask.confirm": "确认",
   "bbs.ui.ai.ask.cancel": "取消",
   "bbs.ui.ai.ask.open": "等待你的确认……",
-  "bbs.ui.ai.capture.browse": "浏览……"
+  "bbs.ui.ai.capture.browse": "浏览……",
+  "bbs.ui.ai.capture.external": "外部视频（资源管理器选择）",
+  "bbs.ui.ai.capture.video_filter": "视频文件"
 }

@@ -2,6 +2,7 @@ package mchorse.bbs_mod.ai;
 
 import mchorse.bbs_mod.BBSMod;
 import mchorse.bbs_mod.api.Subscribe;
+import mchorse.bbs_mod.ai.AiDebugServer;
 import mchorse.bbs_mod.ai.preview.GhostFrameLayer;
 import mchorse.bbs_mod.ai.ui.UIAiPanel;
 import mchorse.bbs_mod.ui.utils.icons.Icons;
@@ -27,6 +28,7 @@ public class AiClientInstall
         installed = true;
 
         GhostFrameLayer.install();
+        AiDebugServer.install();
         BBSMod.events.register(new AiClientInstall());
     }
 

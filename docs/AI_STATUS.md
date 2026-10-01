@@ -1,0 +1,95 @@
+# BBS AI Studio —— 总账(防截断主文档)
+
+> 本文件是 AI 副驾分支的**唯一权威状态账**。对话可能被截断,一切以本文件 + git log 为准。
+> 每完成一批工作必须更新本文件并提交推送。
+> 仓库:`https://github.com/shixushe/BBS-AI-Studio`(分支 `ai-copilot`)。
+> 本地:`E:\BBS FS AI\bbs-fs`。构建:`JAVA_HOME=/c/Program Files/Zulu/zulu-21` → `./gradlew build`。
+> 部署:`cp build/libs/BBS-AI-Studio-2.8-1.20.1.jar "/f/mc/.minecraft/versions/BBS FS/mods/"`。
+> 启动:`cmd //c "E:\BBS FS AI\启动 BBS FS.bat"`(后台)。日志:`F:\...\BBS FS\logs\latest.log`。
+> MCP 调试:`E:\BBS FS AI\mc-mcp\mc_mcp_server.py`(工具:mc_ping/log_tail/screenshot/command/chat/ui;
+> 命令语法 `/xxx`=聊天指令,`key:0`=按键,`click:x,y`=窗口相对点击;会话内 ZCode 会按调用自动重启服务)。
+> 客户端调试命令:`/aiui dashboard|film|ai|capture|creative` 免点击打开各面板。
+
+## 一、已完成(全部已推送)
+
+| 提交 | 内容 |
+| --- | --- |
+| 5015dd62 | M0 网络层 + M2 曲线打磨(意图→数学表,确定性) |
+| 1506e855 | M3 FrameCommitter + 原生 undo 事务 + FrameDiff(一次操作=恰一条目) |
+| b157c2f0 | M1 §5.2 面板 + M4 §5.1 对话条 + 幽灵帧时间轴标记 |
+| 4 commits | M5 PoseSolver(12 动作库)+ BoneNameResolver + FrameSequence 双链路 + §5.6 采集面板 |
+| 388909c3 | M6 能力桥:Scanner/ToolSchema(两级剪枝)/ActionDispatcher + AiSkill API(VERSION 3) |
+| 185241c7 | M7 图像后端+像素管线+SkinWriter(分层 Document) + M8 创意模式(候选/限额/草稿持久化) |
+| 31140943 | §5.3 语义调整区(挂 UIFormPanel 基类,状态外置) |
+| 5eb22885 | §5.9 AiTargetRouter 界面跟随(一次操作只跳一次) |
+| cef4211cb | 模组更名 **BBS AI Studio** + 引导 Tour + L1 解析重试 + 预览区幽灵边框 |
+| f94bc2110 | Anthropic/Gemini 适配器 + 11 家供应商预设 + §5.2/§5.1 按 mockup 一比一复刻 |
+| f626f129 | 对话条"生成"端到端(剧本→AnimationPlan→PoseSolver→预览→入框) |
+
+测试:四套自写测试全绿(PixelPipeline 1095 / PoseSolver 35 / FrameCommit 29 / AiCopilot 92)。
+`gradlew build` 含 apiCheck 全绿。AI 层零异常(游戏内已验证启动)。
+
+## 二、架构(文件地图)
+
+```
+src/main/java/mchorse/bbs_mod/ai/           ← 纯逻辑(可无 MC 测试)
+  AiClient/AiSettings/AiException/AiChatRequest/AiChatResponse
+  AiTextBackend/OpenAiCompatibleBackend/AnthropicBackend/GeminiBackend/AiImageBackend
+  plan/AnimationPlan                        ← L1 严格契约
+  pose/PoseSolver|PoseLibrary|BoneNameResolver ← L2(骨骼名只认 ModelForm.bones 枚举)
+  curve/CurvePolisher|SmoothingKernel|CurveSnapshots|PolishKind|PolishOp|PolishCommandParser ← L3
+  commit/FrameCommitter|EditPatch|EditPatchBuilder|FrameDiff|ChannelStateUndo ← L4(唯一写通道)
+  cap/AiCapabilityScanner|CapabilityManifest|AiToolSchemaBuilder|AiActionDispatcher|AiSkills
+  capture/FrameSequence|CapturedFrame|FrameThinner
+  skin/PixelPipeline                        ← M7 像素管线(纯)
+src/client/java/mchorse/bbs_mod/ai/
+  AiClientInstall(面板注册+幽灵层)/AiDebugCommand(/aiui)
+  AiFilmBridge(commit+广播+跟随)/AiPlans(解析重试一次)
+  preview/AiPreviewState|GhostFrameLayer|AiGhostBorder
+  ui/UIAiPanel|UICapturePanel|UICreativeModePanel|UIAiChatBar|UIAiSemanticSection|AiPolishFlow
+  skin/SkinWriter(TextureFiles 三件套)
+  route/AiTargetRouter(§5.9)
+api/AiSkill + api/events/RegisterAiSkillsEvent   ← VERSION=3,改 api 必跑 gradlew apiDump
+docs/AI_ADAPTATION.md                       ← §12.3 实例适配清单(11 addon + Star 模型 41 骨骼)
+E:\BBS FS AI\mc-mcp\mc_mcp_server.py        ← MCP 调试服务(config 指向 tools/pyenv 的 python)
+```
+
+关键机制:骨骼通道=POSE 类型(非数值,打磨拒绝);数值通道才可打磨;
+写通道=FormProperties.getOrCreate(TrackId.parse("pose.bones.<bone>"));撤销=通道序列化快照
+(ChannelStateUndo,CompoundUndo.noMerging);l10n 在 `src/client/resources/assets/bbs/assets/strings/{en_us,zh_cn}.json`;
+键位:数字 0=BBS dashboard;/aiui=调试导航。
+
+## 三、需求台账(用户追加,按优先级)
+
+| # | 需求 | 状态 |
+| --- | --- | --- |
+| R1 | UI 按 mockup 一比一(01/02 已重刻;04 幽灵 3D 剪影待 renderer 级) | §5.2/§5.1 ✅ 已提交 |
+| R2 | 支持更多 AI 供应商 | ✅ Anthropic/Gemini/11 预设 |
+| R3 | 模组名 BBS AI Studio | ✅ 2.8-1.20.1 |
+| R4 | **设置界面:AI 设置独立标签,且修"显示键值而非名称"** | ⬜ 本轮(补 `bbs.settings.ai.*` l10n) |
+| R5 | **MCP 无感调试不流畅** | ⬜ 本轮(命令序列批处理+动作后恢复原前台+少截图扰动) |
+| R6 | **AI 对话框移到属性面板下半截**(影片界面) | ⬜ 本轮(editArea 下半) |
+| R7 | **AI 建筑单独界面** | ⬜ 本轮(.nbt 结构理解:列表/读取/校验/描述) |
+| R8 | **视频采集:Windows 资源管理器选文件 + 加强**(自动走带/缩略图) | ⬜ 本轮 |
+| R9 | **按钮状态感知**(特定情节才可用,需 tooltip 说明)+ **向用户提问的对话框**(骨骼候选确认等) | ⬜ 本轮 |
+| R10 | 媲美 harness 的 AI 助手(总纲:R5-R9 都服务于此) | 迭代中 |
+| R11 | §5.7 皮肤编辑器:UV 叠层/对称笔刷/3D 皮肤映射 | ⬜ 未做 |
+| R12 | §10.7 inpainting 局部重绘 | ⬜ 未做(后端已留 reference 参数) |
+| R13 | §12.5 三个回归样例完整跑通(需游戏内多步 UI 驱动) | 部分(启动/面板已验) |
+| R14 | 实例 mods 里 `_disabled_backup/` 有被禁用的旧 jar(bbs-2.7、bbsfsai-2.6、zh_CN) | 用户可随时恢复 |
+
+## 四、续作指南(截断后从这里继续)
+
+1. 读本文件 + `git log --oneline -12` 对账。
+2. 每完成 R4-R9 一项:build → 四套测试 → commit+push → 更新本表状态。
+3. 游戏 UI 验证流程:部署 jar → 重启游戏(bat,~30s)→ `mc_ping` → 进世界(若在标题:
+   click:958,246 单人游戏 → click 世界 → play)→ `/aiui <面板>` → `mc_screenshot` 对照。
+4. 注意:用户可能同时开着 ZCode/其它窗口挡住游戏;截图前务必走 server 的 focus_game
+   (已内置 AttachThreadInput 抢前台);点击坐标以**截图像素**为准(1936×1056 或窗口实际尺寸)。
+5. 实例 mods:`_disabled_backup/` 内是备份;当前生效 jar 必须只有一个 id=bbs 的(即我们的)。
+
+## 五、已知偏离企划书之处(均"以仓库实际为准")
+
+1. 贝塞尔手柄=tick 单位(非 [0,1]);2. elastic/overshoot 用注册表 easing;3. 骨骼通道=POSE
+非数值;4. 此树无 ContentType(AiTargetRouter 自带路由表);5. KeyframeFactories 类初始化
+拖 MC 依赖,数值判断用本地镜像(同步注释);6. L1 畸形 JSON 重试一次再报错(AiPlans)。

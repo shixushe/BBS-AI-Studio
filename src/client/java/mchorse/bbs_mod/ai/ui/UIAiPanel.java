@@ -132,6 +132,7 @@ public class UIAiPanel extends UIDashboardPanel
         UIButton generate = new UIButton(L10n.lang("bbs.ui.ai.panel.generate"), (b) -> this.generate());
 
         generate.color(BBSSettings.primaryColor.get() | Colors.A100);
+        generate.tooltip(L10n.lang("bbs.ui.ai.panel.generate_tooltip"));
 
         this.status = new UILabel(L10n.lang("bbs.ui.ai.panel.lamp.unconfigured"));
         this.status.color(Colors.LIGHTER_GRAY, false);

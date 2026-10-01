@@ -82,6 +82,10 @@ public class UIAiChatBar extends UIElement
 
         UIButton execute = new UIButton(L10n.lang("bbs.ui.ai.bar.execute"), (b) -> this.execute());
 
+        execute.tooltip(L10n.lang("bbs.ui.ai.bar.execute_tooltip"));
+        this.generate.tooltip(L10n.lang("bbs.ui.ai.bar.generate_tooltip"));
+        this.polish.tooltip(L10n.lang("bbs.ui.ai.bar.polish_tooltip"));
+
         this.chip = new UILabel(L10n.lang("bbs.ui.ai.bar.chip"));
         this.chip.color(Colors.WHITE, false).background(Colors.opaque(BBSSettings.primaryColor.get())).labelAnchor(0.5F, 0.5F).h(UIConstants.CONTROL_HEIGHT + 4);
 
@@ -96,6 +100,8 @@ public class UIAiChatBar extends UIElement
         UIButton discard = new UIButton(discardLabel, (b) -> this.discard());
 
         commit.color(BBSSettings.primaryColor.get() | Colors.A100);
+        commit.tooltip(L10n.lang("bbs.ui.ai.bar.commit_tooltip"));
+        discard.tooltip(L10n.lang("bbs.ui.ai.bar.discard_tooltip"));
 
         this.previewRow = UI.row(UIConstants.MARGIN, this.status, commit, discard);
 

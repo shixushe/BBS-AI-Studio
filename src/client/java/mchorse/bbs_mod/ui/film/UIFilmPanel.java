@@ -184,7 +184,7 @@ public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSu
 
         /* Editors */
         this.cameraEditor = new UIClipsPanel(this, BBSMod.getFactoryCameraClips()).target(this.editArea);
-        this.cameraEditor.full(this.main).h(1F, -mchorse.bbs_mod.ai.ui.UIAiChatBar.BAR_HEIGHT);
+        this.cameraEditor.full(this.main);
 
         this.cameraEditor.clips.context((menu) ->
         {
@@ -192,7 +192,7 @@ public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSu
         });
 
         this.replayEditor = new UIReplaysEditor(this);
-        this.replayEditor.full(this.main).h(1F, -mchorse.bbs_mod.ai.ui.UIAiChatBar.BAR_HEIGHT).setVisible(false);
+        this.replayEditor.full(this.main).setVisible(false);
         this.actionEditor = new UIClipsPanel(this, BBSMod.getFactoryActionClips()).target(this.editArea);
         this.actionEditor.setVisible(false);
         this.replayEditor.attachActionTimeline(this.actionEditor);
@@ -235,7 +235,7 @@ public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSu
         /* Setup elements */
 
         this.aiChatBar = new mchorse.bbs_mod.ai.ui.UIAiChatBar(this);
-        this.aiChatBar.relative(this.main).y(1F, -mchorse.bbs_mod.ai.ui.UIAiChatBar.BAR_HEIGHT).w(1F).h(mchorse.bbs_mod.ai.ui.UIAiChatBar.BAR_HEIGHT);
+        this.aiChatBar.relative(this.editArea).y(0.5F).w(1F).h(0.5F);
         this.main.add(this.cameraEditor, this.replayEditor, this.aiChatBar);
         this.add(new mchorse.bbs_mod.ai.preview.AiGhostBorder(this));
         this.add(this.controller);

@@ -100,6 +100,8 @@ public class UICapturePanel extends UIDashboardPanel
         this.recapture = new UIButton(L10n.lang("bbs.ui.ai.capture.recapture"), (b) -> this.startCapture());
         this.send = new UIButton(L10n.lang("bbs.ui.ai.capture.send"), (b) -> this.sendForUnderstanding());
         this.send.color(BBSSettings.primaryColor.get() | Colors.A100);
+        this.send.tooltip(L10n.lang("bbs.ui.ai.capture.send_tooltip"));
+        this.recapture.tooltip(L10n.lang("bbs.ui.ai.capture.recapture_tooltip"));
 
         UIElement bottom = UI.row(UIConstants.MARGIN, this.recapture, this.send);
 

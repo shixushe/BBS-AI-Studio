@@ -2490,5 +2490,15 @@
   "bbs.ui.ai.structure.pick": "Pick a structure - size, volume and block entity stats will be described here (generation stays manual, spec section 9)",
   "bbs.ui.ai.structure.row": "%s",
   "bbs.ui.ai.structure.none": "No structures registered",
-  "bbs.ui.ai.structure.count": "%s structure(s) registered"
+  "bbs.ui.ai.structure.count": "%s structure(s) registered",
+  "bbs.config.ai.debug_server": "Debug server",
+  "bbs.config.ai.debug_server-comment": "Localhost HTTP debug port for the MCP assistant (127.0.0.1 only)",
+  "bbs.config.ai.max_retries-comment": "Retry count for transient failures; auth/timeout errors fail immediately",
+  "bbs.config.ai.timeout_ms-comment": "Per-request timeout for chat calls",
+  "bbs.config.ai.temperature-comment": "Higher = more random, lower = more deterministic",
+  "bbs.config.ai.stream-comment": "Stream long replies token by token",
+  "bbs.config.ai.supports_vision-comment": "Enable when the model accepts images (capture / skin features)",
+  "bbs.config.ai.supports_tools-comment": "Enable when the model supports tool calling",
+  "bbs.config.ai.supports_json_mode-comment": "Enable when the model supports JSON response format",
+  "bbs.config.ai.image_size-comment": "Output resolution for the image backend, e.g. 1024x1024"
 }

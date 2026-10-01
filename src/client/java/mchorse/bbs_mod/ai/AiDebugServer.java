@@ -3,6 +3,11 @@ package mchorse.bbs_mod.ai;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import net.minecraft.client.MinecraftClient;
+import mchorse.bbs_mod.ui.film.UIFilmPanel;
+import mchorse.bbs_mod.ai.ui.UIAiPanel;
+import mchorse.bbs_mod.ai.ui.UICapturePanel;
+import mchorse.bbs_mod.ai.ui.UICreativeModePanel;
+import mchorse.bbs_mod.ai.ui.UIStructureAiPanel;
 import net.minecraft.client.util.Window;
 
 import java.io.File;
@@ -33,6 +38,8 @@ public class AiDebugServer
 
     private static HttpServer server;
     private static boolean capturing;
+    private static Class<? extends mchorse.bbs_mod.ui.dashboard.panels.UIDashboardPanel> pendingPanel;
+    private static int pendingAttempts;
 
     public static void install()
     {
@@ -90,6 +97,32 @@ public class AiDebugServer
 
             respond(exchange, jsonMap("path", result));
         });
+        server.createContext("/openui", (exchange) ->
+        {
+            String panel = query(exchange, "panel", "dashboard");
+            String result = onClient(() ->
+            {
+                var dash = mchorse.bbs_mod.BBSModClient.getDashboard();
+
+                mchorse.bbs_mod.ui.framework.UIScreen.open(dash);
+
+                pendingPanel = switch (panel)
+                {
+                    case "film" -> UIFilmPanel.class;
+                    case "ai" -> UIAiPanel.class;
+                    case "capture" -> UICapturePanel.class;
+                    case "creative" -> UICreativeModePanel.class;
+                    case "structure" -> UIStructureAiPanel.class;
+                    default -> null;
+                };
+                pendingAttempts = 0;
+
+                return "opened dashboard, switching to " + panel;
+            });
+
+            respond(exchange, jsonMap("result", result));
+        });
+
         server.createContext("/command", (exchange) ->
         {
             String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
@@ -120,6 +153,29 @@ public class AiDebugServer
         });
 
         server.start();
+
+        /* The dashboard builds its panels a few frames at a time after the
+         * screen opens; retry the switch each tick until the panel exists */
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(client ->
+        {
+            if (pendingPanel == null || !(client.currentScreen instanceof mchorse.bbs_mod.ui.framework.UIScreen))
+            {
+                return;
+            }
+
+            var dashboard = mchorse.bbs_mod.BBSModClient.getDashboard();
+            var panel = dashboard.getPanel(pendingPanel);
+
+            if (panel != null)
+            {
+                dashboard.setPanel(panel);
+                pendingPanel = null;
+            }
+            else if (++pendingAttempts > 600)
+            {
+                pendingPanel = null;
+            }
+        });
     }
 
     private static void respond(HttpExchange exchange, String body)

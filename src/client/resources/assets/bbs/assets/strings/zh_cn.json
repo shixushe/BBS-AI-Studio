@@ -1292,5 +1292,15 @@
   "bbs.ui.ai.structure.pick": "选择结构 —— 此处给出尺寸/体积/方块实体统计（按企划书 §9，AI 直接盖房不在本轮范围）",
   "bbs.ui.ai.structure.row": "%s",
   "bbs.ui.ai.structure.none": "没有已注册的结构",
-  "bbs.ui.ai.structure.count": "已注册 %s 个结构"
+  "bbs.ui.ai.structure.count": "已注册 %s 个结构",
+  "bbs.config.ai.debug_server": "调试服务",
+  "bbs.config.ai.debug_server-comment": "本地 HTTP 调试端口，供 MCP 助手无感调试（仅 127.0.0.1）",
+  "bbs.config.ai.max_retries-comment": "瞬时失败（限流/超时/网络）的重试次数；鉴权类错误不重试",
+  "bbs.config.ai.timeout_ms-comment": "单次对话请求的超时时间",
+  "bbs.config.ai.temperature-comment": "越高越随机，越低越确定",
+  "bbs.config.ai.stream-comment": "长回复逐段显示",
+  "bbs.config.ai.supports_vision-comment": "模型可读图时开启（采集/皮肤功能）",
+  "bbs.config.ai.supports_tools-comment": "模型支持 tool calling 时开启",
+  "bbs.config.ai.supports_json_mode-comment": "模型支持 JSON response_format 时开启",
+  "bbs.config.ai.image_size-comment": "图像后端输出分辨率，例如 1024x1024"
 }

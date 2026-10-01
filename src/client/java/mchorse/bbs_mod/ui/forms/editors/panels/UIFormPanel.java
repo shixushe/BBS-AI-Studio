@@ -55,6 +55,10 @@ public abstract class UIFormPanel <T extends Form> extends UIElement
         this.draggable.relative(this.options).x(0F).y(0.5F).w(6).h(40).anchor(0.5F, 0.5F);
 
         this.add(this.options, this.draggable);
+
+        /* AI copilot semantic adjustments (copilot spec section 5.3) - mounted on the
+         * BASE panel so every form editor gets it, with its own section id */
+        mchorse.bbs_mod.ai.ui.UIAiSemanticSection.attach(this);
     }
 
     /**
@@ -72,7 +76,7 @@ public abstract class UIFormPanel <T extends Form> extends UIElement
      * as the user last left it ({@code defaultExpanded} only on first sight),
      * keyed by {@code id} across the session.
      */
-    protected UISection section(IKey title, String id, boolean defaultExpanded)
+    public UISection section(IKey title, String id, boolean defaultExpanded)
     {
         return new UISection(title).remember(sectionFolds, id, defaultExpanded);
     }

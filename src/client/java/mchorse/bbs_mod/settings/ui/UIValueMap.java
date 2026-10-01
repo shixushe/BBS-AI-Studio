@@ -187,6 +187,31 @@ public class UIValueMap
                 return Arrays.asList(UIValueFactory.column(button, value));
             }
 
+            /* AI 供应商:原生下拉框(11 家预设,选完自动填接口地址)——用户要求 */
+            if (value == mchorse.bbs_mod.ai.AiSettings.provider)
+            {
+                mchorse.bbs_mod.ui.framework.elements.buttons.UIChoiceButton<String> pick =
+                    new mchorse.bbs_mod.ui.framework.elements.buttons.UIChoiceButton<>(
+                        mchorse.bbs_mod.ai.AiSettings.PRESETS.keySet(),
+                        (key) -> mchorse.bbs_mod.ui.utils.icons.Icons.SERVER,
+                        (key) -> mchorse.bbs_mod.l10n.keys.IKey.constant(key));
+
+                pick.callback((key) ->
+                {
+                    value.set(key);
+                    mchorse.bbs_mod.ai.AiSettings.applyPreset(key);
+                });
+
+                if (value.get() != null && !value.get().isEmpty())
+                {
+                    pick.setValue(value.get());
+                }
+
+                pick.w(90);
+
+                return Arrays.asList(UIValueFactory.column(pick, value));
+            }
+
             UITextbox textbox = UIValueFactory.stringUI(value, null);
 
             textbox.w(90);

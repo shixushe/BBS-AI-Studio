@@ -1,5 +1,8 @@
 package mchorse.bbs_mod.settings.ui;
 
+import mchorse.bbs_mod.ai.AiSettings;
+import mchorse.bbs_mod.ui.framework.elements.buttons.UIChoiceButton;
+import mchorse.bbs_mod.ui.utils.icons.Icons;
 import mchorse.bbs_mod.l10n.L10n;
 import mchorse.bbs_mod.settings.values.numeric.ValueBoolean;
 import mchorse.bbs_mod.settings.values.numeric.ValueDouble;

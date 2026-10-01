@@ -379,7 +379,7 @@ public class UIAiChatBar extends UIElement
     {
         /* Chrome surface: the bar is editor chrome, not workspace (spec 5.0.1 I) */
         this.area.render(context.batcher, BBSSettings.chromeSurface());
-        context.batcher.box(this.area.x, this.area.y, this.area.ex(), this.area.y + 1, BBSSettings.dividerColor());
+        context.batcher.box(this.area.x, this.area.y, this.area.ex(), this.area.y + 2, Colors.opaque(BBSSettings.primaryColor.get()));
 
         super.render(context);
     }

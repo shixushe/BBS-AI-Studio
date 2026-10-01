@@ -344,6 +344,11 @@ public class UIAiPanel extends UIDashboardPanel
     {
         this.area.render(context.batcher, BBSSettings.baseSurface());
 
+        /* 剧本框可见边框(mockup 02:深色输入区有清晰外框) */
+        var area = this.script.area;
+
+        context.batcher.box(area.x - 1, area.y - 1, area.ex() + 1, area.ey() + 1, BBSSettings.dividerColor());
+
         super.render(context);
     }
 

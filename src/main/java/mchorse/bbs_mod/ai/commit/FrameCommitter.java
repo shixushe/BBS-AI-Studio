@@ -118,9 +118,10 @@ public class FrameCommitter
 
             IKeyframeFactory factory = write.channel.getFactory();
 
-            if (!isNumericFactory(factory))
+            if (!isNumericFactory(factory) && !write.poseChannel)
             {
-                /* Numeric-only until M5 extends KeyWrite for pose channels */
+                /* Numeric channels and pose channels only; everything else
+                 * (strings, block states, links) gets no float writes */
                 diff.skippedTracks.add(write.trackId);
 
                 continue;
@@ -172,6 +173,9 @@ public class FrameCommitter
         /** Set by the FormProperties resolver: the channel did not exist before this commit. */
         public boolean newlyCreated;
 
+        /** POSE-typed channel (bone rotations) - keys carry {@link EditPatch.KeyWrite#poseValue}. */
+        public boolean poseChannel;
+
         public final List<EditPatch.KeyWrite> keys = new ArrayList<>();
 
         public ChannelWrite(String trackId, KeyframeChannel channel, float tickOffset)
@@ -192,19 +196,21 @@ public class FrameCommitter
             float tick = key.tick + write.tickOffset;
             Keyframe existing = findAt(channel, tick);
 
+            Object value = key.poseValue != null ? key.poseValue : toFactoryValue(factory, key.value);
+
             if (existing == null)
             {
-                int index = channel.insert(tick, toFactoryValue(factory, key.value));
+                int index = channel.insert(tick, value);
 
                 existing = channel.get(index);
-                diff.entries.add(new FrameDiff.Entry(write.trackId, tick, FrameDiff.Change.ADDED, Double.NaN, key.value));
+                diff.entries.add(new FrameDiff.Entry(write.trackId, tick, FrameDiff.Change.ADDED, Double.NaN, key.poseValue != null ? 0D : key.value));
             }
             else
             {
                 double old = existing.getY();
 
-                existing.setValue(toFactoryValue(factory, key.value));
-                diff.entries.add(new FrameDiff.Entry(write.trackId, tick, FrameDiff.Change.UPDATED, old, key.value));
+                existing.setValue(value);
+                diff.entries.add(new FrameDiff.Entry(write.trackId, tick, FrameDiff.Change.UPDATED, old, key.poseValue != null ? 0D : key.value));
             }
 
             if (key.interpolation != null)

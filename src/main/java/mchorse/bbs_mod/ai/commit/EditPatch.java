@@ -48,6 +48,13 @@ public class EditPatch
         public float duration;
         public float motionShift;
 
+        /**
+         * Direct value object for non-numeric channels (a {@code PoseTransform}
+         * for bone tracks, M5). When set, {@code value} is ignored and the
+         * object goes to the channel untouched.
+         */
+        public Object poseValue;
+
         public KeyWrite tick(float tick)
         {
             this.tick = tick;

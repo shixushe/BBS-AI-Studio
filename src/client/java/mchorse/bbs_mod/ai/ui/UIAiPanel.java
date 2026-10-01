@@ -8,6 +8,8 @@ import mchorse.bbs_mod.ai.AiSettings;
 import mchorse.bbs_mod.ai.plan.AnimationPlan;
 import mchorse.bbs_mod.ai.ui.components.AiDropZone;
 import mchorse.bbs_mod.ai.ui.components.AiSectionHeader;
+
+import static mchorse.bbs_mod.ai.ui.components.AiSectionHeader.HEADER_HEIGHT;
 import mchorse.bbs_mod.ai.ui.components.BeatTable;
 import mchorse.bbs_mod.ai.ui.components.BeatTable.Row;
 import mchorse.bbs_mod.ai.ui.components.IntentChip;
@@ -81,41 +83,48 @@ public class UIAiPanel extends UIDashboardPanel
 
     private void buildLeft()
     {
-        UIElement column = UI.column(UIConstants.MARGIN);
+        AiSectionHeader header = new AiSectionHeader(L10n.lang("bbs.ui.ai.panel.script").get());
 
-        column.relative(this).x(0F).y(0F).w(LEFT_W).h(1F, -BAR);
-
-        column.add(new AiSectionHeader(L10n.lang("bbs.ui.ai.panel.script").get()));
+        header.relative(this).x(0F).y(0F).w(LEFT_W).h(HEADER_HEIGHT);
 
         this.script = new UITextarea<>((t) -> {});
-        this.script.h(1F, -(AiSectionHeader.HEADER_HEIGHT + UIConstants.CONTROL_HEIGHT * 3 + 56));
-        column.add(this.script);
 
-        column.add(UI.label(L10n.lang("bbs.ui.ai.panel.draggable"), UIConstants.CONTROL_HEIGHT));
+        this.script.relative(this).x(0F).y(HEADER_HEIGHT).w(LEFT_W).h(1F, -(HEADER_HEIGHT + 120));
 
-        UIElement drops = UI.row(UIConstants.MARGIN,
-            new AiDropZone(L10n.lang("bbs.ui.ai.panel.drop_image")),
-            new AiDropZone(L10n.lang("bbs.ui.ai.panel.drop_video")));
+        UILabel draggable = UI.label(L10n.lang("bbs.ui.ai.panel.draggable"), UIConstants.CONTROL_HEIGHT);
 
-        drops.row(UIConstants.MARGIN).preferred(0).height(44);
-        column.add(drops);
+        draggable.relative(this).x(0F).y(1F, -(120 + 2 * UIConstants.MARGIN)).w(LEFT_W).h(UIConstants.CONTROL_HEIGHT);
 
-        column.add(UI.label(L10n.lang("bbs.ui.ai.panel.intents"), UIConstants.CONTROL_HEIGHT));
+        AiDropZone image = new AiDropZone(L10n.lang("bbs.ui.ai.panel.drop_image"));
+        AiDropZone video = new AiDropZone(L10n.lang("bbs.ui.ai.panel.drop_video"));
 
-        UIElement chipRow = UI.row(UIConstants.MARGIN);
+        image.relative(this).x(0F).y(1F, -(120 + 44 + 3 * UIConstants.MARGIN)).w((LEFT_W - UIConstants.MARGIN) / 2).h(44);
+        video.relative(this).x((LEFT_W - UIConstants.MARGIN) / 2 + UIConstants.MARGIN).y(1F, -(120 + 44 + 3 * UIConstants.MARGIN)).w((LEFT_W - UIConstants.MARGIN) / 2).h(44);
 
-        chipRow.row(UIConstants.MARGIN).height(UIConstants.CONTROL_HEIGHT);
+        UILabel intentsTitle = UI.label(L10n.lang("bbs.ui.ai.panel.intents"), UIConstants.CONTROL_HEIGHT);
 
-        for (String tag : new String[] {"起势 anticipation", "蓄力 compress", "腾空 rise", "落地 impact"})
+        intentsTitle.relative(this).x(0F).y(1F, -(120 + 88 + 4 * UIConstants.MARGIN)).w(LEFT_W).h(UIConstants.CONTROL_HEIGHT);
+
+        float chipW = (LEFT_W - UIConstants.MARGIN) / 2;
+        String[] tags = {"起势 anticipation", "蓄力 compress", "腾空 rise", "落地 impact"};
+
+        for (int i = 0; i < tags.length; i++)
         {
-            IntentChip chip = new IntentChip(tag);
+            IntentChip chip = new IntentChip(tags[i]);
 
-            this.chips.add(chip);
-            chipRow.add(chip);
+            int row = i / 2;
+            int col = i % 2;
+
+            chip.relative(this).x(col * (chipW + UIConstants.MARGIN)).y(1F, -(120 + 88 + 5 * UIConstants.MARGIN + row * (UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN))).w(chipW).h(UIConstants.CONTROL_HEIGHT);
+            this.add(chip);
         }
 
-        column.add(chipRow);
-        this.add(column);
+        this.add(header);
+        this.add(this.script);
+        this.add(draggable);
+        this.add(image);
+        this.add(video);
+        this.add(intentsTitle);
     }
 
     /* ② AnimationPlan 节拍表 */

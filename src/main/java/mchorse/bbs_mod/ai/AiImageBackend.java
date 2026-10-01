@@ -20,4 +20,14 @@ public interface AiImageBackend
      * job, deliberately kept local.
      */
     public Pixels generate(String prompt, Pixels reference, int width, int height) throws AiException;
+
+    /**
+     * Local repaint (inpainting): AI re-paints ONLY the selected region of
+     * the base image; pixels outside the mask are bitwise unchanged.
+     * Default throws - backends that support edits override this.
+     */
+    default Pixels edit(String prompt, Pixels base, int x, int y, int w, int h, String newPrompt) throws AiException
+    {
+        throw new AiException(AiException.Type.NOT_CONFIGURED, "This backend does not support inpainting");
+    }
 }

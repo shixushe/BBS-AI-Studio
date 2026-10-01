@@ -1,6 +1,7 @@
 package mchorse.bbs_mod.ai.skin;
 
 import mchorse.bbs_mod.ai.AiException;
+import mchorse.bbs_mod.ai.AiImageBackend;
 import mchorse.bbs_mod.utils.resources.Pixels;
 import mchorse.bbs_mod.utils.colors.Color;
 

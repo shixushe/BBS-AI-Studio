@@ -1,6 +1,7 @@
 package mchorse.bbs_mod.ui.dashboard.textures;
 
 import mchorse.bbs_mod.BBSMod;
+import mchorse.bbs_mod.utils.Direction;
 import mchorse.bbs_mod.BBSModClient;
 import mchorse.bbs_mod.BBSSettings;
 import mchorse.bbs_mod.graphics.texture.Texture;
@@ -136,6 +137,7 @@ public class UITexturePainter extends UIElement
     private UIIcon toolIconFill;
     private UIIcon toolIconPipette;
     private UIIcon toolIconSelection;
+    private UIIcon mirrorToggle;
     private UIIcon modelPreviewIcon;
 
     private UIElement modelPreviewHost;
@@ -300,6 +302,14 @@ public class UITexturePainter extends UIElement
 
         this.toolBar.add(this.toolIconBrush, this.toolIconEraser, this.toolIconMove,
             this.toolIconFill, this.toolIconPipette, this.toolIconSelection);
+
+        /* AI mirror brush toggle (spec §5.7 item 2) */
+        this.mirrorToggle = new UIIcon(mchorse.bbs_mod.ui.utils.icons.Icons.COPY, (b) ->
+        {
+            UIPixelsEditor.aiMirrorPaint = !UIPixelsEditor.aiMirrorPaint;
+        });
+        this.mirrorToggle.highlight(() -> UIPixelsEditor.aiMirrorPaint, mchorse.bbs_mod.utils.Direction.BOTTOM);
+        this.toolBar.add(this.mirrorToggle);
     }
 
     /** The bar button flips the preview: open it when closed, close it when open. */

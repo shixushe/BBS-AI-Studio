@@ -34,5 +34,6 @@ public class AiClientInstall
     public void onRegisterDashboardPanels(mchorse.bbs_mod.api.client.events.RegisterDashboardPanelsEvent event)
     {
         event.dashboard.getPanels().registerPanel(new UIAiPanel(event.dashboard), mchorse.bbs_mod.ui.UIKeys.AI_TITLE, Icons.GLOBE);
+        event.dashboard.getPanels().registerPanel(new mchorse.bbs_mod.ai.ui.UICapturePanel(event.dashboard), mchorse.bbs_mod.ui.UIKeys.AI_CAPTURE_TITLE, Icons.CAMERA);
     }
 }

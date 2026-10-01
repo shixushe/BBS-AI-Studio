@@ -20,6 +20,7 @@ import mchorse.bbs_mod.ui.utils.UIUtils;
 import mchorse.bbs_mod.ui.utils.icons.Icons;
 import mchorse.bbs_mod.utils.MathUtils;
 import mchorse.bbs_mod.utils.colors.Color;
+import mchorse.bbs_mod.BBSSettings;
 import mchorse.bbs_mod.utils.colors.Colors;
 import mchorse.bbs_mod.utils.interps.Lerps;
 import mchorse.bbs_mod.utils.interps.rasterizers.LineRasterizer;
@@ -1080,6 +1081,52 @@ public class UIPixelsEditor extends UICanvasEditor
         return MathUtils.clamp((current - edge) / (1D - edge), 0D, 1D);
     }
 
+    /**
+     * AI UV 分区叠加层：在画布上绘制皮肤 UV 矩形分区边界线。
+     * 纯渲染——不进入已保存数据。从画布坐标系的 scaleX/scaleY 变换到屏幕。
+     */
+    private void renderUVRegions(UIContext context)
+    {
+        if (this.pixels == null || this.pixels.height < 32)
+        {
+            return;
+        }
+
+        int accent = Colors.setA(Colors.opaque(BBSSettings.primaryColor.get()), 0.3F);
+        int fw = this.getFrameWidth();
+        int fh = this.getFrameHeight();
+        int fx = this.getFrameX();
+        int fy = this.getFrameY();
+
+        /* 64×64 皮肤标准 UV 分区边界（head/body/armR/armL/legR/legL） */
+        int[][] regions = {
+            {0, 0, 32, 16},    /* head */
+            {16, 16, 24, 12},  /* body */
+            {40, 16, 16, 12},  /* right arm */
+            {0, 32, 16, 12},   /* left arm */
+            {0, 48, 16, 12},   /* right leg */
+            {16, 48, 16, 12},  /* left leg */
+        };
+
+        for (int[] r : regions)
+        {
+            if (r[0] >= fw || r[1] >= fh) continue;
+
+            int sx = (int) this.scaleX.to(r[0]);
+            int sy = (int) this.scaleY.to(r[1]);
+            int sw = (int) (this.scaleX.to(r[0] + r[2]) - sx);
+            int sh = (int) (this.scaleY.to(r[1] + r[3]) - sy);
+
+            context.batcher.box(sx, sy, sx + sw, sy + 1, accent);
+            context.batcher.box(sx, sy + sh - 1, sx + sw, sy + sh, accent);
+            context.batcher.box(sx, sy, sx + 1, sy + sh, accent);
+            context.batcher.box(sx + sw - 1, sy, sx + sw, sy + sh, accent);
+        }
+    }
+
+    private int getFrameWidth() { return this.pixels == null ? 0 : this.pixels.width; }
+    private int getFrameHeight() { return this.pixels == null ? 0 : this.pixels.height; }
+
     private void renderStrokePreview(UIContext context, int pixelX, int pixelY)
     {
         int left = (this.brushSize - 1) / 2;
@@ -2090,6 +2137,12 @@ public class UIPixelsEditor extends UICanvasEditor
             int pixelX = (int) Math.floor(this.scaleX.from(context.mouseX));
             int pixelY = (int) Math.floor(this.scaleY.from(context.mouseY));
             this.renderStrokePreview(context, pixelX, pixelY);
+        }
+
+        /* AI UV 分区叠加层 (spec §5.7 item 1): 画布上标注皮肤 UV 矩形分区 */
+        if (mchorse.bbs_mod.ai.AiSettings.aiUVOverlay.get() && this.pixels != null)
+        {
+            this.renderUVRegions(context);
         }
 
         if (this.hasSelection || this.currentSelection != null)

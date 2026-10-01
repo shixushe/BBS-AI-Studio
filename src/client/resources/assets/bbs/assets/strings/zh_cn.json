@@ -1215,5 +1215,17 @@
   "bbs.ui.ai.creative.adopted": "已采纳 —— %s 个 blocking pose 已写入影片编辑器（一个撤销条目）",
   "bbs.ui.ai.creative.prompt": "你是 Minecraft 电影的创意导演。为用户主题给出 %s 个方向明显不同的方案。只输出严格 JSON：{\"variants\":[{\"notes\":\"一句话说明方向\",\"version\":1,\"fps\":20,\"total_ticks\":<整数>,\"beats\":[{\"index\":<整数>,\"tick\":<整数>,\"phase\":\"contact|down|passing|up|anticipation|hold|follow_through\",\"pose\":\"crouch|compress|rise|fall|punch|kick|idle|turn|walk_step|land|reach|point\",\"spacing\":<整数>,\"intents\":[\"linear|ease_in|ease_out|ease_in_out|hold|elastic|overshoot|snap|impact|smooth|arc\"]}]}]}。tick 严格递增；spacing 等于间隔；禁止浮点与贝塞尔手柄。止步于分镜 —— 不要建模、不要搭景。",
   "bbs.ui.ai.semantic.title": "AI 语义调整",
-  "bbs.ui.ai.semantic.hint": "对当前回放的曲线下打磨意图，例如：更柔和 / 6-22 缓入缓出"
+  "bbs.ui.ai.semantic.hint": "对当前回放的曲线下打磨意图，例如：更柔和 / 6-22 缓入缓出",
+  "bbs.ui.ai.tour.script.title": "① 剧本 / 提示",
+  "bbs.ui.ai.tour.script.text": "用大白话描述动作即可。这是长内容的入口。",
+  "bbs.ui.ai.tour.beats.title": "② AnimationPlan 节拍表",
+  "bbs.ui.ai.tour.beats.text": "解析出的计划：一拍一个极值 pose，意图只是标签 —— 永远不是裸曲线。",
+  "bbs.ui.ai.tour.params.title": "③ 生成参数",
+  "bbs.ui.ai.tour.params.text": "时长和 fps 决定计划形状；后端状态在底部。",
+  "bbs.ui.ai.tour.creative_theme.title": "主题",
+  "bbs.ui.ai.tour.creative_theme.text": "模糊主题即可 —— AI 会给出多个方向。",
+  "bbs.ui.ai.tour.creative_candidates.title": "候选",
+  "bbs.ui.ai.tour.creative_candidates.text": "批次会累积便于比较；采纳前不会碰影片。",
+  "bbs.ui.ai.tour.capture_frames.title": "采集帧",
+  "bbs.ui.ai.tour.capture_frames.text": "每帧带 tick 并持久化于此，直到送去理解或丢弃。"
 }

@@ -2413,5 +2413,17 @@
   "bbs.ui.ai.creative.adopted": "Adopted - %s blocking pose(s) queued for the film editor (one undo entry)",
   "bbs.ui.ai.creative.prompt": "You are a Minecraft machinima creative director. Produce %s DISTINCT directions for the user's theme. Output ONLY strict JSON: {\"variants\":[{\"notes\":\"one line on the direction\",\"version\":1,\"fps\":20,\"total_ticks\":<int>,\"beats\":[{\"index\":<int>,\"tick\":<int>,\"phase\":\"contact|down|passing|up|anticipation|hold|follow_through\",\"pose\":\"crouch|compress|rise|fall|punch|kick|idle|turn|walk_step|land|reach|point\",\"spacing\":<int>,\"intents\":[\"linear|ease_in|ease_out|ease_in_out|hold|elastic|overshoot|snap|impact|smooth|arc\"]}]}]}. Ticks strictly increase; spacing equals the gap; no floats, no bezier handles. Stop at the storyboard - no modeling, no scene building.",
   "bbs.ui.ai.semantic.title": "AI semantic adjustments",
-  "bbs.ui.ai.semantic.hint": "Polish intents for the open replay's curves, e.g. softer / 6-22 ease in out"
+  "bbs.ui.ai.semantic.hint": "Polish intents for the open replay's curves, e.g. softer / 6-22 ease in out",
+  "bbs.ui.ai.tour.script.title": "Script / prompt",
+  "bbs.ui.ai.tour.script.text": "Write the action in plain words - Chinese works. This is the long-form entry.",
+  "bbs.ui.ai.tour.beats.title": "Beat table",
+  "bbs.ui.ai.tour.beats.text": "The parsed plan: one extreme pose per beat, intents as labels - never raw curves.",
+  "bbs.ui.ai.tour.params.title": "Parameters",
+  "bbs.ui.ai.tour.params.text": "Duration and fps shape the plan; the backend status lives at the bottom.",
+  "bbs.ui.ai.tour.creative_theme.title": "Theme",
+  "bbs.ui.ai.tour.creative_theme.text": "A fuzzy theme is enough - the AI proposes multiple directions.",
+  "bbs.ui.ai.tour.creative_candidates.title": "Candidates",
+  "bbs.ui.ai.tour.creative_candidates.text": "Batches accumulate so you can compare; nothing touches the film until you adopt.",
+  "bbs.ui.ai.tour.capture_frames.title": "Captured frames",
+  "bbs.ui.ai.tour.capture_frames.text": "Frames carry their tick and persist here until sent or discarded."
 }

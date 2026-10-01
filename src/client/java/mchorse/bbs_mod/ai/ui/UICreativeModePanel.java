@@ -113,6 +113,9 @@ public class UICreativeModePanel extends UIDashboardPanel
 
         this.add(columns);
         this.add(bottom);
+
+        mchorse.bbs_mod.ui.onboarding.TourAnchors.register("creative.theme", () -> this.theme);
+        mchorse.bbs_mod.ui.onboarding.TourAnchors.register("creative.candidates", () -> this.candidates);
     }
 
     private UILabel header(IKey title)

@@ -12,6 +12,21 @@ import java.util.List;
 public class Tours
 {
     /** Two things can be touched while the landing screen is up: the bar and the landing itself. */
+    public static final TourChapter AI = new TourChapter("ai", 0, List.of(
+        new Step("ai.script", UIKeys.ONBOARDING_TOUR_AI_SCRIPT_TITLE, UIKeys.ONBOARDING_TOUR_AI_SCRIPT_TEXT),
+        new Step("ai.beats", UIKeys.ONBOARDING_TOUR_AI_BEATS_TITLE, UIKeys.ONBOARDING_TOUR_AI_BEATS_TEXT),
+        new Step("ai.params", UIKeys.ONBOARDING_TOUR_AI_PARAMS_TITLE, UIKeys.ONBOARDING_TOUR_AI_PARAMS_TEXT)
+    ));
+
+    public static final TourChapter CREATIVE = new TourChapter("creative", 0, List.of(
+        new Step("creative.theme", UIKeys.ONBOARDING_TOUR_CREATIVE_THEME_TITLE, UIKeys.ONBOARDING_TOUR_CREATIVE_THEME_TEXT),
+        new Step("creative.candidates", UIKeys.ONBOARDING_TOUR_CREATIVE_CANDIDATES_TITLE, UIKeys.ONBOARDING_TOUR_CREATIVE_CANDIDATES_TEXT)
+    ));
+
+    public static final TourChapter CAPTURE = new TourChapter("capture", 0, List.of(
+        new Step("capture.frames", UIKeys.ONBOARDING_TOUR_CAPTURE_FRAMES_TITLE, UIKeys.ONBOARDING_TOUR_CAPTURE_FRAMES_TEXT)
+    ));
+
     public static final TourChapter DASHBOARD = new TourChapter("dashboard", 1, List.of(
         new Step("dashboard.taskbar", UIKeys.ONBOARDING_TOUR_DASHBOARD_TASKBAR_TITLE, UIKeys.ONBOARDING_TOUR_DASHBOARD_TASKBAR_TEXT),
         new Step("dashboard.landing", UIKeys.ONBOARDING_TOUR_DASHBOARD_LANDING_TITLE, UIKeys.ONBOARDING_TOUR_DASHBOARD_LANDING_TEXT)

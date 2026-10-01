@@ -108,6 +108,8 @@ public class UICapturePanel extends UIDashboardPanel
 
         this.add(columns);
         this.add(bottom);
+
+        mchorse.bbs_mod.ui.onboarding.TourAnchors.register("capture.frames", () -> this.frames);
     }
 
     private UILabel header(IKey title)

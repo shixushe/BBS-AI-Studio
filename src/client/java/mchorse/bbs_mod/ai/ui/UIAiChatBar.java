@@ -178,14 +178,11 @@ public class UIAiChatBar extends UIElement
         request.temperature(AiSettings.temperature.get());
         request.json(AiSettings.jsonMode.get() && AiSettings.supportsJsonMode.get());
 
-        AiClient.get().chat(request, (response) ->
+        mchorse.bbs_mod.ai.AiPlans.generatePlan(request, (response) ->
         {
             this.busy = false;
 
-            try
-            {
-                mchorse.bbs_mod.ai.plan.AnimationPlan generated = mchorse.bbs_mod.ai.plan.AnimationPlan.parse(response.content);
-                java.util.List<String> inventory = new ArrayList<>();
+            java.util.List<String> inventory = new ArrayList<>();
 
                 for (mchorse.bbs_mod.settings.values.base.BaseValue child : modelForm.bones.getAll())
                 {
@@ -202,19 +199,13 @@ public class UIAiChatBar extends UIElement
                     return;
                 }
 
-                List<mchorse.bbs_mod.ai.pose.PoseSolver.KeyPose> poses = mchorse.bbs_mod.ai.pose.PoseSolver.solve(generated, bones);
+                List<mchorse.bbs_mod.ai.pose.PoseSolver.KeyPose> poses = mchorse.bbs_mod.ai.pose.PoseSolver.solve(response, bones);
                 List<FrameCommitter.ChannelWrite> generated_writes = mchorse.bbs_mod.ai.pose.PoseSolver.toChannelWrites(poses, replay.properties);
                 FrameDiff generated_diff = this.buildPreviewDiff(generated_writes);
 
                 AiPreviewState.get().begin(replay, generated_writes, generated_diff);
                 this.status.label = L10n.lang("bbs.ui.ai.bar.preview").format(AiPreviewState.get().getChangeCount());
                 this.previewRow.setVisible(true);
-            }
-            catch (AiException e)
-            {
-                this.status.label = L10n.lang("bbs.ui.ai.panel.failed").format(e.type.name());
-                this.previewRow.setVisible(true);
-            }
         }, (error) ->
         {
             this.busy = false;

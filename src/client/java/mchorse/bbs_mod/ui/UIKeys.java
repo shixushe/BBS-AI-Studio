@@ -472,6 +472,18 @@ public class UIKeys
 
     /* AI copilot */
     public static final IKey AI_TITLE = L10n.lang("bbs.ui.ai.title");
+    public static final IKey ONBOARDING_TOUR_AI_SCRIPT_TITLE = L10n.lang("bbs.ui.ai.tour.script.title");
+    public static final IKey ONBOARDING_TOUR_AI_SCRIPT_TEXT = L10n.lang("bbs.ui.ai.tour.script.text");
+    public static final IKey ONBOARDING_TOUR_AI_BEATS_TITLE = L10n.lang("bbs.ui.ai.tour.beats.title");
+    public static final IKey ONBOARDING_TOUR_AI_BEATS_TEXT = L10n.lang("bbs.ui.ai.tour.beats.text");
+    public static final IKey ONBOARDING_TOUR_AI_PARAMS_TITLE = L10n.lang("bbs.ui.ai.tour.params.title");
+    public static final IKey ONBOARDING_TOUR_AI_PARAMS_TEXT = L10n.lang("bbs.ui.ai.tour.params.text");
+    public static final IKey ONBOARDING_TOUR_CREATIVE_THEME_TITLE = L10n.lang("bbs.ui.ai.tour.creative_theme.title");
+    public static final IKey ONBOARDING_TOUR_CREATIVE_THEME_TEXT = L10n.lang("bbs.ui.ai.tour.creative_theme.text");
+    public static final IKey ONBOARDING_TOUR_CREATIVE_CANDIDATES_TITLE = L10n.lang("bbs.ui.ai.tour.creative_candidates.title");
+    public static final IKey ONBOARDING_TOUR_CREATIVE_CANDIDATES_TEXT = L10n.lang("bbs.ui.ai.tour.creative_candidates.text");
+    public static final IKey ONBOARDING_TOUR_CAPTURE_FRAMES_TITLE = L10n.lang("bbs.ui.ai.tour.capture_frames.title");
+    public static final IKey ONBOARDING_TOUR_CAPTURE_FRAMES_TEXT = L10n.lang("bbs.ui.ai.tour.capture_frames.text");
     public static final IKey AI_CAPTURE_TITLE = L10n.lang("bbs.ui.ai.capture.title");
     public static final IKey AI_CREATIVE_TITLE = L10n.lang("bbs.ui.ai.creative.title");
     public static final IKey FILM_VIDEO_RECORDING = L10n.lang("bbs.ui.film.video_recording");

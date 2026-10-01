@@ -2,8 +2,8 @@
     "schemaVersion": 1,
     "id": "bbs",
     "version": "${version}",
-    "name": "BBS FS mod",
-    "description": "A new generation of video production mod",
+    "name": "BBS AI Studio",
+    "description": "BBS AI Studio - a new generation of video production mod with an AI copilot",
     "authors": [
         "McHorse",
         "Wemppy"

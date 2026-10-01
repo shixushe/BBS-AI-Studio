@@ -117,6 +117,11 @@ public class UIAiPanel extends UIDashboardPanel
 
         this.add(columns);
         this.add(bottom);
+
+        /* What the AI tour points at (spec 5.5 guidance, same system as native panels) */
+        mchorse.bbs_mod.ui.onboarding.TourAnchors.register("ai.script", () -> this.script);
+        mchorse.bbs_mod.ui.onboarding.TourAnchors.register("ai.beats", () -> this.beats);
+        mchorse.bbs_mod.ui.onboarding.TourAnchors.register("ai.params", () -> this.duration.element());
     }
 
     private UILabel header(IKey title)
@@ -167,27 +172,17 @@ public class UIAiPanel extends UIDashboardPanel
         request.temperature(AiSettings.temperature.get());
         request.json(AiSettings.jsonMode.get() && AiSettings.supportsJsonMode.get());
 
-        AiClient.get().chat(request, this::onPlan, this::onError);
+        mchorse.bbs_mod.ai.AiPlans.generatePlan(request, this::onPlan, this::onError);
     }
 
-    private void onPlan(AiChatResponse response)
+    private void onPlan(AnimationPlan plan)
     {
         this.busy = false;
-
-        try
-        {
-            this.plan = AnimationPlan.parse(response.content);
-        }
-        catch (AiException e)
-        {
-            this.onError(e);
-
-            return;
-        }
+        this.plan = plan;
 
         this.fillBeats();
 
-        this.status.label = L10n.lang("bbs.ui.ai.panel.plan_ok").format(this.plan.beats.size(), response.promptTokens + response.completionTokens);
+        this.status.label = L10n.lang("bbs.ui.ai.panel.plan_ok").format(this.plan.beats.size());
         this.status.color(Colors.LIGHTEST_GRAY, false);
     }
 

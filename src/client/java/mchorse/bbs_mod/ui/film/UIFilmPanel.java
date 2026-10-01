@@ -237,6 +237,7 @@ public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSu
         this.aiChatBar = new mchorse.bbs_mod.ai.ui.UIAiChatBar(this);
         this.aiChatBar.relative(this.main).y(1F, -mchorse.bbs_mod.ai.ui.UIAiChatBar.BAR_HEIGHT).w(1F).h(mchorse.bbs_mod.ai.ui.UIAiChatBar.BAR_HEIGHT);
         this.main.add(this.cameraEditor, this.replayEditor, this.aiChatBar);
+        this.add(new mchorse.bbs_mod.ai.preview.AiGhostBorder(this));
         this.add(this.controller);
         this.overlay.namesList.setFileIcon(Icons.FILM);
 

@@ -850,6 +850,20 @@ public class UIPixelsEditor extends UICanvasEditor
         }
     }
 
+    /** AI 镜像笔刷开关 (spec §5.7 item 2)。由 AI 对话条/面板切换。 */
+    public static boolean aiMirrorPaint = false;
+
+    /** AI 镜像笔刷：在 lx 的中心线对侧也画一像素。 */
+    private void paintMirrorPixel(int lx, int ly, Color color)
+    {
+        int mirrored = this.pixels.width - 1 - lx;
+
+        if (mirrored >= 0 && mirrored < this.pixels.width && mirrored != lx)
+        {
+            this.pixelsUndo.setColor(this.pixels, mirrored, ly, color);
+        }
+    }
+
     private void paintPixel(int x, int y, float strength)
     {
         if (strength <= 0F)
@@ -970,6 +984,12 @@ public class UIPixelsEditor extends UICanvasEditor
         }
 
         this.pixelsUndo.setColor(this.pixels, lx, ly, color);
+
+        /* AI 镜像笔刷：同步到中心线对侧 (spec §5.7 item 2) */
+        if (aiMirrorPaint)
+        {
+            this.paintMirrorPixel(lx, ly, color);
+        }
     }
 
     private Color getWeightedStrokeColor(Color source, float strength)

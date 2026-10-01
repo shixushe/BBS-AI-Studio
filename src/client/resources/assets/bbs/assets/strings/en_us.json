@@ -2519,5 +2519,6 @@
   "bbspp.config.bbs_enhancements.pivot_transform": "Pivot Transform",
   "bbspp.config.bbs_enhancements.snow_actions": "Snow Actions",
   "bbspp.config.bbs_enhancements.locked_layout_prevents_rotation": "Locked Layout Prevents Rotation",
-  "bbspp.config.bbs_enhancements.item_spray": "Item Spray"
+  "bbspp.config.bbs_enhancements.item_spray": "Item Spray",
+  "bbs.ui.ai.panel.vision_toggle": "Vision understanding"
 }

@@ -57,6 +57,7 @@ public class UIAiPanel extends UIDashboardPanel
 
     private UITextarea<?> script;
     private UITextbox character;
+    private mchorse.bbs_mod.ui.framework.elements.buttons.UIToggle visionToggle;
     private BeatTable beats;
     private StatusLamp lamp;
     private UILabel status;
@@ -153,6 +154,10 @@ public class UIAiPanel extends UIDashboardPanel
         this.character = new UITextbox(64, (t) -> {});
 
         this.character.placeholder(L10n.lang("bbs.ui.ai.panel.character_hint"));
+        this.visionToggle = new mchorse.bbs_mod.ui.framework.elements.buttons.UIToggle(
+            L10n.lang("bbs.ui.ai.panel.vision_toggle"),
+            AiSettings.supportsVision.get(),
+            (t) -> AiSettings.supportsVision.set(t.getValue()));
 
         this.lamp = new StatusLamp();
 
@@ -169,8 +174,7 @@ public class UIAiPanel extends UIDashboardPanel
             this.fps.element().h(UIConstants.CONTROL_HEIGHT),
             UI.label(L10n.lang("bbs.ui.ai.panel.character"), UIConstants.CONTROL_HEIGHT),
             this.character.h(UIConstants.CONTROL_HEIGHT),
-            UI.label(L10n.lang("bbs.ui.ai.panel.vision"), UIConstants.CONTROL_HEIGHT),
-            UI.label(L10n.lang("bbs.ui.ai.panel.vision_state"), UIConstants.CONTROL_HEIGHT),
+            this.visionToggle.h(UIConstants.CONTROL_HEIGHT),
             UI.label(L10n.lang("bbs.ui.ai.panel.output"), UIConstants.CONTROL_HEIGHT),
             this.output.h(UIConstants.CONTROL_HEIGHT * 3)
         );

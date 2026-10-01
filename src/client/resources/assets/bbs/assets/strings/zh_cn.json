@@ -1321,5 +1321,6 @@
   "bbspp.config.bbs_enhancements.pivot_transform": "轴心变换",
   "bbspp.config.bbs_enhancements.snow_actions": "雪花动作",
   "bbspp.config.bbs_enhancements.locked_layout_prevents_rotation": "锁定布局阻止旋转",
-  "bbspp.config.bbs_enhancements.item_spray": "物品喷洒"
+  "bbspp.config.bbs_enhancements.item_spray": "物品喷洒",
+  "bbs.ui.ai.panel.vision_toggle": "视觉理解"
 }

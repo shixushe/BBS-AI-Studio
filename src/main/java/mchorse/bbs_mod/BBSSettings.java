@@ -3,6 +3,7 @@ package mchorse.bbs_mod;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import mchorse.bbs_mod.ai.AiSettings;
 import mchorse.bbs_mod.data.types.MapType;
 import mchorse.bbs_mod.film.replays.ReplayKeyframes;
 import mchorse.bbs_mod.resources.Link;
@@ -903,5 +904,8 @@ public class BBSSettings {
 		damageControl = builder.getBoolean("damage_control", true);
 		shaderCurvesEnabled = builder.getBoolean("shader_curves", true);
 		entitySelectorsPropertyWhitelist = builder.getString("entity_selectors_whitelist", "CustomName,Name");
+
+		/* AI copilot (mchorse.bbs_mod.ai): BYOK gateway settings, owned by AiSettings */
+		AiSettings.register(builder);
 	}
 }

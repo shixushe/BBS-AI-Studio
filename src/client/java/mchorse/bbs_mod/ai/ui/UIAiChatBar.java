@@ -54,6 +54,9 @@ public class UIAiChatBar extends UIElement
     private final UIElement previewRow;
     private final UILabel status;
 
+    /** The mockup's numbered chip - shows pending change count while previewing. */
+    private final UILabel chip;
+
     /** Total bar height: two rows of controls plus the gaps between them. */
     public static final int BAR_HEIGHT = 2 * (UIConstants.CONTROL_HEIGHT + 4) + UIConstants.MARGIN * 3;
 
@@ -79,9 +82,12 @@ public class UIAiChatBar extends UIElement
 
         UIButton execute = new UIButton(L10n.lang("bbs.ui.ai.bar.execute"), (b) -> this.execute());
 
-        UIElement row = UI.row(UIConstants.MARGIN, this.generate, this.polish, this.input, execute);
+        this.chip = new UILabel(L10n.lang("bbs.ui.ai.bar.chip"));
+        this.chip.color(Colors.WHITE, false).background(Colors.opaque(BBSSettings.primaryColor.get())).labelAnchor(0.5F, 0.5F).h(UIConstants.CONTROL_HEIGHT + 4);
 
-        row.row(UIConstants.MARGIN).preferred(2).height(UIConstants.CONTROL_HEIGHT + 4);
+        UIElement row = UI.row(1, this.chip, this.generate, this.polish, this.input, execute);
+
+        row.row(1).preferred(3).height(UIConstants.CONTROL_HEIGHT + 4);
 
         this.status = new UILabel(L10n.lang("bbs.ui.ai.bar.preview"));
         this.status.color(Colors.LIGHTER_GRAY, false);
@@ -338,6 +344,11 @@ public class UIAiChatBar extends UIElement
         if (state.isActive())
         {
             this.status.label = L10n.lang("bbs.ui.ai.bar.preview").format(state.getChangeCount());
+            this.chip.label = L10n.lang("bbs.ui.ai.bar.chip_count").format(state.getChangeCount());
+        }
+        else
+        {
+            this.chip.label = L10n.lang("bbs.ui.ai.bar.chip");
         }
 
         this.previewRow.setVisible(state.isActive());

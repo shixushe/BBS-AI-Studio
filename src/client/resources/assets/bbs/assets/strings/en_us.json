@@ -2425,5 +2425,22 @@
   "bbs.ui.ai.tour.creative_candidates.title": "Candidates",
   "bbs.ui.ai.tour.creative_candidates.text": "Batches accumulate so you can compare; nothing touches the film until you adopt.",
   "bbs.ui.ai.tour.capture_frames.title": "Captured frames",
-  "bbs.ui.ai.tour.capture_frames.text": "Frames carry their tick and persist here until sent or discarded."
+  "bbs.ui.ai.tour.capture_frames.text": "Frames carry their tick and persist here until sent or discarded.",
+  "bbs.ui.ai.table.phase": "phase",
+  "bbs.ui.ai.table.intent": "intents",
+  "bbs.ui.ai.panel.draggable": "Drop in: reference image / reference video",
+  "bbs.ui.ai.panel.intents": "Parsed intent tags:",
+  "bbs.ui.ai.panel.drop_image": "参考图",
+  "bbs.ui.ai.panel.drop_video": "参考视频",
+  "bbs.ui.ai.panel.chip": "%s",
+  "bbs.ui.ai.panel.character": "Character",
+  "bbs.ui.ai.panel.character_hint": "e.g. Star 3.6",
+  "bbs.ui.ai.panel.vision_on": "On",
+  "bbs.ui.ai.panel.vision_off": "Off until a vision model is configured",
+  "bbs.ui.ai.panel.output_empty": "Output will appear here",
+  "bbs.ui.ai.panel.output_summary": "%s key pose beat(s) across %s ticks, landing on pose.bones.* tracks",
+  "bbs.ui.ai.panel.lamp.ready": "Backend: connected (plan parsed)",
+  "bbs.ui.ai.panel.lamp.timeout": "Backend: timeout",
+  "bbs.ui.ai.bar.chip": "AI",
+  "bbs.ui.ai.bar.chip_count": "%s"
 }

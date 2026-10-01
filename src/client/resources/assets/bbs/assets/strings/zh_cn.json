@@ -1227,5 +1227,22 @@
   "bbs.ui.ai.tour.creative_candidates.title": "候选",
   "bbs.ui.ai.tour.creative_candidates.text": "批次会累积便于比较；采纳前不会碰影片。",
   "bbs.ui.ai.tour.capture_frames.title": "采集帧",
-  "bbs.ui.ai.tour.capture_frames.text": "每帧带 tick 并持久化于此，直到送去理解或丢弃。"
+  "bbs.ui.ai.tour.capture_frames.text": "每帧带 tick 并持久化于此，直到送去理解或丢弃。",
+  "bbs.ui.ai.table.phase": "相位",
+  "bbs.ui.ai.table.intent": "意图",
+  "bbs.ui.ai.panel.draggable": "可拖入：参考图 / 参考视频",
+  "bbs.ui.ai.panel.intents": "解析出的意图标签：",
+  "bbs.ui.ai.panel.drop_image": "参考图",
+  "bbs.ui.ai.panel.drop_video": "参考视频",
+  "bbs.ui.ai.panel.chip": "%s",
+  "bbs.ui.ai.panel.character": "角色",
+  "bbs.ui.ai.panel.character_hint": "例如 Star 3.6 人物模型",
+  "bbs.ui.ai.panel.vision_on": "开",
+  "bbs.ui.ai.panel.vision_off": "未配置视觉模型时关闭",
+  "bbs.ui.ai.panel.output_empty": "输出将显示在这里",
+  "bbs.ui.ai.panel.output_summary": "%s 个关键 pose 拍，覆盖 %s tick，落在 pose.bones.* 轨道",
+  "bbs.ui.ai.panel.lamp.ready": "后端：已连接（计划已解析）",
+  "bbs.ui.ai.panel.lamp.timeout": "后端：超时",
+  "bbs.ui.ai.bar.chip": "AI",
+  "bbs.ui.ai.bar.chip_count": "%s"
 }

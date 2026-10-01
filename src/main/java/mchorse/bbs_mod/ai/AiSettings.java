@@ -63,12 +63,57 @@ public class AiSettings
     }
 
     /**
-     * Backend for the currently selected provider. Unknown provider strings
-     * fall back to the OpenAI compatible adapter - new vendors then work with
-     * zero code, which is the whole point of the default adapter.
+     * One-click base URLs per provider (spec 3 L1: OpenAI-compatible covers
+     * most vendors; Anthropic and Gemini speak their own protocols). The
+     * settings UI lists these; the user can always type a custom URL instead.
+     */
+    public static final java.util.Map<String, String> PRESETS = new java.util.LinkedHashMap<>();
+
+    static
+    {
+        PRESETS.put("openai_compatible", "https://api.openai.com/v1");
+        PRESETS.put("deepseek", "https://api.deepseek.com/v1");
+        PRESETS.put("qwen", "https://dashscope.aliyuncs.com/compatible-mode/v1");
+        PRESETS.put("kimi", "https://api.moonshot.cn/v1");
+        PRESETS.put("glm", "https://open.bigmodel.cn/api/paas/v4");
+        PRESETS.put("siliconflow", "https://api.siliconflow.cn/v1");
+        PRESETS.put("openrouter", "https://openrouter.ai/api/v1");
+        PRESETS.put("ollama", "http://localhost:11434/v1");
+        PRESETS.put("lmstudio", "http://localhost:1234/v1");
+        PRESETS.put("anthropic", "https://api.anthropic.com");
+        PRESETS.put("gemini", "https://generativelanguage.googleapis.com");
+    }
+
+    /** Fill baseUrl from a provider preset (leaves custom URLs alone). */
+    public static void applyPreset(String provider)
+    {
+        String url = PRESETS.get(provider);
+
+        if (url != null)
+        {
+            baseUrl.set(url);
+        }
+    }
+
+    /**
+     * Backend for the currently selected provider. OpenAI-compatible is the
+     * default adapter - unknown provider strings land there, so new vendors
+     * work with zero code. Anthropic and Gemini get dedicated adapters.
      */
     public static AiTextBackend createBackend()
     {
+        String selected = provider.get().trim().toLowerCase();
+
+        if (selected.equals("anthropic"))
+        {
+            return new AnthropicBackend();
+        }
+
+        if (selected.equals("gemini"))
+        {
+            return new GeminiBackend();
+        }
+
         return new OpenAiCompatibleBackend();
     }
 }

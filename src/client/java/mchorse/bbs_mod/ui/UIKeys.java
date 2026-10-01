@@ -473,6 +473,7 @@ public class UIKeys
     /* AI copilot */
     public static final IKey AI_TITLE = L10n.lang("bbs.ui.ai.title");
     public static final IKey AI_CAPTURE_TITLE = L10n.lang("bbs.ui.ai.capture.title");
+    public static final IKey AI_CREATIVE_TITLE = L10n.lang("bbs.ui.ai.creative.title");
     public static final IKey FILM_VIDEO_RECORDING = L10n.lang("bbs.ui.film.video_recording");
     public static final IKey FORMS_CATEGORIES_ADD_CATEGORY_DESCRIPTION = L10n.lang("bbs.ui.forms.categories.add_category-description");
     public static final IKey FORMS_CATEGORIES_ADD_CATEGORY_TITLE = L10n.lang("bbs.ui.forms.categories.add_category-title");

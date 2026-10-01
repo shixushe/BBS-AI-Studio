@@ -32,6 +32,8 @@ public class AiSettings
     public static ValueBoolean supportsVision;
     public static ValueBoolean supportsTools;
     public static ValueBoolean supportsJsonMode;
+    public static ValueString imageModel;
+    public static ValueString imageSize;
 
     public static void register(SettingsBuilder builder)
     {
@@ -49,6 +51,8 @@ public class AiSettings
         supportsVision = builder.getBoolean("supports_vision", false);
         supportsTools = builder.getBoolean("supports_tools", false);
         supportsJsonMode = builder.getBoolean("supports_json_mode", false);
+        imageModel = builder.getString("image_model", "");
+        imageSize = builder.getString("image_size", "1024x1024");
     }
 
     public static boolean isConfigured()

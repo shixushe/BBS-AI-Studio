@@ -74,7 +74,8 @@ E:\BBS FS AI\mc-mcp\mc_mcp_server.py        ← MCP 调试服务(config 指向 t
 | R9 | **按钮状态感知**(特定情节才可用,需 tooltip 说明)+ **向用户提问的对话框**(骨骼候选确认等) | ⬜ 本轮 |
 | R10 | 媲美 harness 的 AI 助手(总纲:R5-R9 都服务于此) | 迭代中 |
 | R11 | §5.7 UV 叠层渲染(renderUVRegions 六区域边界线+开关) + MirrorBrush(像素级镜像) + [AI] 图层标识 | ✅ 97c4acabc/0a80c1efe |
-| R11b | §5.7 对称笔刷 UI 挂载到笔画回调 + 3D 皮肤映射 | ⬜ 下一轮 |
+| R11b | §5.7 对称笔刷接线到 paintPixel 笔画路径(aiMirrorPaint 静态开关+paintMirrorPixel 中心线镜像) | ✅ 17204f57 |
+| R11c | §5.7 UV 叠层渲染接线到 UIPixelsEditor 画布(renderUVRegions 六区域边界线+aiUVOverlay 开关) | ✅ 29712483b |
 | R15 | 原生合并 BBS-Cubed(gbeic 475 文件)+posecurve(bbsplus 33 文件)进本体,入口直调,AI 自动覆盖 | ✅ 217061475 |
 | R16 | 游戏内 HTTP 调试服务 AiDebugServer(127.0.0.1:17878,/ping /log /screenshot /command /openui)——MCP 无感通道,不抢焦点 | ✅ 7954a2990 |
 | R17 | QuickPlay 调试启动器(启动 AI调试.bat,--quickPlaySingleplayer 自动进世界) | ✅ |

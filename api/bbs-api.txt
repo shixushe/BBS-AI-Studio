@@ -34,6 +34,16 @@ public abstract class mchorse.bbs_mod.api.events.BaseRegisterSettingsEvent {
     public void register(mchorse.bbs_mod.ui.utils.icons.Icon, java.lang.String, java.util.function.Consumer<mchorse.bbs_mod.settings.SettingsBuilder>);
 }
 
+public class mchorse.bbs_mod.api.AiSkill {
+    public boolean isNamespaced();
+    public final java.lang.String id;
+    public final java.lang.String paramsSchema;
+    public final mchorse.bbs_mod.api.AiSkill$Handler handler;
+    public final mchorse.bbs_mod.l10n.keys.IKey description;
+    public final mchorse.bbs_mod.l10n.keys.IKey label;
+    public mchorse.bbs_mod.api.AiSkill(java.lang.String, mchorse.bbs_mod.l10n.keys.IKey, mchorse.bbs_mod.l10n.keys.IKey, java.lang.String, mchorse.bbs_mod.api.AiSkill$Handler);
+}
+
 public class mchorse.bbs_mod.api.EventBus {
     public mchorse.bbs_mod.api.EventBus();
     public void post(java.lang.Object);
@@ -182,6 +192,11 @@ public class mchorse.bbs_mod.api.events.RegisterActionClipsEvent extends mchorse
     public mchorse.bbs_mod.api.events.RegisterActionClipsEvent(mchorse.bbs_mod.utils.factory.MapFactory<mchorse.bbs_mod.utils.clips.Clip, mchorse.bbs_mod.camera.clips.ClipFactoryData>);
 }
 
+public class mchorse.bbs_mod.api.events.RegisterAiSkillsEvent {
+    public mchorse.bbs_mod.api.events.RegisterAiSkillsEvent();
+    public void register(mchorse.bbs_mod.api.AiSkill);
+}
+
 public class mchorse.bbs_mod.api.events.RegisterCameraClipsEvent extends mchorse.bbs_mod.api.events.BaseRegisterClipsEvent {
     public mchorse.bbs_mod.api.events.RegisterCameraClipsEvent(mchorse.bbs_mod.utils.factory.MapFactory<mchorse.bbs_mod.utils.clips.Clip, mchorse.bbs_mod.camera.clips.ClipFactoryData>);
 }
@@ -317,6 +332,16 @@ public final class mchorse.bbs_mod.api.compat.VanillaAccess {
     public static void setItemUseTimeLeft(net.minecraft.entity.LivingEntity, int);
     public static void setLivingFlag(net.minecraft.entity.LivingEntity, int, boolean);
     public static void setRiptideTicks(net.minecraft.entity.LivingEntity, int);
+}
+
+public interface mchorse.bbs_mod.api.AiSkill$Context {
+    public abstract mchorse.bbs_mod.film.replays.FormProperties properties();
+    public abstract mchorse.bbs_mod.settings.values.core.ValueGroup film();
+    public abstract mchorse.bbs_mod.utils.undo.UndoManager<mchorse.bbs_mod.settings.values.core.ValueGroup> undoManager();
+}
+
+public interface mchorse.bbs_mod.api.AiSkill$Handler {
+    public abstract void execute(mchorse.bbs_mod.data.types.MapType, mchorse.bbs_mod.api.AiSkill$Context) throws java.lang.Exception;
 }
 
 public interface mchorse.bbs_mod.api.BBSAddonMod {

@@ -2502,5 +2502,22 @@
   "bbs.config.ai.supports_json_mode-comment": "Enable when the model supports JSON response format",
   "bbs.config.ai.image_size-comment": "Output resolution for the image backend, e.g. 1024x1024",
   "bbs.ui.ai.panel.provider_label": "Provider",
-  "bbs.ui.ai.panel.output": "Output"
+  "bbs.ui.ai.panel.output": "Output",
+  "bbspp.config.bbs_enhancements.title": "Title",
+  "bbspp.config.bbs_enhancements.chinese_keyframe_names": "Chinese Keyframe Names",
+  "bbspp.config.bbs_enhancements.film_auto_game_mode": "Film Auto Game Mode",
+  "bbspp.config.bbs_enhancements.prevent_negative_keyframe": "Prevent Negative Keyframe",
+  "bbspp.config.bbs_enhancements.reverse_timeline_scroll": "Reverse Timeline Scroll",
+  "bbspp.config.bbs_enhancements.direct_parent_picking": "Direct Parent Picking",
+  "bbspp.config.bbs_enhancements.enable_iris_button": "Enable Iris Button",
+  "bbspp.config.bbs_enhancements.enable_ui_keyframes_layer": "Enable Ui Keyframes Layer",
+  "bbspp.config.bbs_enhancements.world_film_shader_curves": "World Film Shader Curves",
+  "bbspp.config.bbs_enhancements.allow_clip_track_expansion": "Allow Clip Track Expansion",
+  "bbspp.config.bbs_enhancements.private_bbs_clipboard": "Private Bbs Clipboard",
+  "bbspp.config.bbs_enhancements.auto_disable_face_culling": "Auto Disable Face Culling",
+  "bbspp.config.bbs_enhancements.film_alt_wheel_timeline_mode": "Film Alt Wheel Timeline Mode",
+  "bbspp.config.bbs_enhancements.pivot_transform": "Pivot Transform",
+  "bbspp.config.bbs_enhancements.snow_actions": "Snow Actions",
+  "bbspp.config.bbs_enhancements.locked_layout_prevents_rotation": "Locked Layout Prevents Rotation",
+  "bbspp.config.bbs_enhancements.item_spray": "Item Spray"
 }

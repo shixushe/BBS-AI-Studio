@@ -1304,5 +1304,22 @@
   "bbs.config.ai.supports_json_mode-comment": "模型支持 JSON response_format 时开启",
   "bbs.config.ai.image_size-comment": "图像后端输出分辨率，例如 1024x1024",
   "bbs.ui.ai.panel.provider_label": "供应商",
-  "bbs.ui.ai.panel.output": "输出"
+  "bbs.ui.ai.panel.output": "输出",
+  "bbspp.config.bbs_enhancements.title": "BBS++ 增强设置",
+  "bbspp.config.bbs_enhancements.chinese_keyframe_names": "中文关键帧名称",
+  "bbspp.config.bbs_enhancements.film_auto_game_mode": "影片自动游戏模式",
+  "bbspp.config.bbs_enhancements.prevent_negative_keyframe": "阻止负数关键帧",
+  "bbspp.config.bbs_enhancements.reverse_timeline_scroll": "反转时间轴滚动",
+  "bbspp.config.bbs_enhancements.direct_parent_picking": "直接父级选择",
+  "bbspp.config.bbs_enhancements.enable_iris_button": "启用 Iris 按钮",
+  "bbspp.config.bbs_enhancements.enable_ui_keyframes_layer": "启用 UI 关键帧层",
+  "bbspp.config.bbs_enhancements.world_film_shader_curves": "世界影片着色器曲线",
+  "bbspp.config.bbs_enhancements.allow_clip_track_expansion": "允许片段轨道扩展",
+  "bbspp.config.bbs_enhancements.private_bbs_clipboard": "私有 BBS 剪贴板",
+  "bbspp.config.bbs_enhancements.auto_disable_face_culling": "自动禁用面剔除",
+  "bbspp.config.bbs_enhancements.film_alt_wheel_timeline_mode": "Alt+滚轮时间轴模式",
+  "bbspp.config.bbs_enhancements.pivot_transform": "轴心变换",
+  "bbspp.config.bbs_enhancements.snow_actions": "雪花动作",
+  "bbspp.config.bbs_enhancements.locked_layout_prevents_rotation": "锁定布局阻止旋转",
+  "bbspp.config.bbs_enhancements.item_spray": "物品喷洒"
 }

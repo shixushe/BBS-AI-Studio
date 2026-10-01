@@ -103,6 +103,12 @@ E:\BBS FS AI\mc-mcp\mc_mcp_server.py        ← MCP 调试服务(config 指向 t
 
 ## 六、当前状态快照（截断恢复点）
 
+- MCP 服务 v2.1.0 持久化于 `tools/mcp/mc_mcp_server.py`（HTTP 优先：/ping /log /screenshot /command /openui
+  走游戏内 127.0.0.1:17878，OS 注入仅兜底；`seq:` 批处理；改动 mc_mcp_server.py 后需 kill python 进程让 ZCode 重启它）。
+- **截图黑屏 = 游戏窗口被最小化**（MC 最小化时 swapchain 停止渲染）。走查前先还原窗口。
+- 游戏内实测：/openui?panel=ai 打开 dashboard 成功；采集面板 auto-walk 采满 12 帧并持久化成功；
+  QuickPlay 直进世界成功。面板切换已改为分帧重试（dashboard 懒构建，打开后数帧面板才注册）。
+
 - 最新推送：994e4b4b8（l10n 补齐）。合并版 jar 已部署实例 mods。
 - 游戏内已验证：模组列表 BBS AI Studio ✓、BBS++/posecurve 原生加载 ✓、§5.2 AI 面板渲染（①②③通栏标题/生成 blocking/状态灯）✓、
   采集面板自动走带 12 帧并持久化 ✓、QuickPlay 启动器直进世界 ✓。

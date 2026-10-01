@@ -1275,5 +1275,13 @@
   "bbs.ui.ai.bar.discard_tooltip": "丢弃预览中的改动 —— 通道保持原样",
   "bbs.ui.ai.panel.generate_tooltip": "需要：已配置后端 + 左侧填写剧本",
   "bbs.ui.ai.capture.send_tooltip": "将采集帧送视觉后端理解（需配置视觉）",
-  "bbs.ui.ai.capture.recapture_tooltip": "在采集窗口内录制影片编辑器播放"
+  "bbs.ui.ai.capture.recapture_tooltip": "在采集窗口内录制影片编辑器播放",
+  "bbs.ui.ai.ask.title": "AI 需要你的确认",
+  "bbs.ui.ai.ask.hint": "以下通用骨骼无法在该模型上自动匹配。请为每一项填写真实骨骼名（必须存在于模型中）。",
+  "bbs.ui.ai.ask.bone": "通用骨骼：%s",
+  "bbs.ui.ai.ask.placeholder": "例如 %s",
+  "bbs.ui.ai.ask.confirm": "确认",
+  "bbs.ui.ai.ask.cancel": "取消",
+  "bbs.ui.ai.ask.open": "等待你的确认……",
+  "bbs.ui.ai.capture.browse": "浏览……"
 }

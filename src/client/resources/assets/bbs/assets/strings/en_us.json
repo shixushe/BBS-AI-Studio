@@ -2473,5 +2473,13 @@
   "bbs.ui.ai.bar.discard_tooltip": "Drops the pending proposal - channels stay untouched",
   "bbs.ui.ai.panel.generate_tooltip": "Needs: backend configured + a script on the left",
   "bbs.ui.ai.capture.send_tooltip": "Sends captured frames to the vision backend (needs vision configured)",
-  "bbs.ui.ai.capture.recapture_tooltip": "Records the film editor's playback over the capture window"
+  "bbs.ui.ai.capture.recapture_tooltip": "Records the film editor's playback over the capture window",
+  "bbs.ui.ai.ask.title": "AI needs your confirmation",
+  "bbs.ui.ai.ask.hint": "These generic bones could not be matched on this model. Type the real bone name for each (must exist in the model).",
+  "bbs.ui.ai.ask.bone": "Generic bone: %s",
+  "bbs.ui.ai.ask.placeholder": "e.g. %s",
+  "bbs.ui.ai.ask.confirm": "Confirm",
+  "bbs.ui.ai.ask.cancel": "Cancel",
+  "bbs.ui.ai.ask.open": "Waiting for your confirmation...",
+  "bbs.ui.ai.capture.browse": "Browse..."
 }

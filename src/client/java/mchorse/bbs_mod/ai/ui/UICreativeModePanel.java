@@ -282,11 +282,24 @@ public class UICreativeModePanel extends UIDashboardPanel
 
         if (!bones.isComplete())
         {
-            this.status.label = L10n.lang("bbs.ui.ai.creative.bones_unconfirmed").format(bones.unresolved.toString());
+            /* Ask - never guess (spec 12.2) */
+            this.status.label = L10n.lang("bbs.ui.ai.ask.open");
+
+            UIAiAskOverlayPanel ask = new UIAiAskOverlayPanel(this.getContext(), bones.unresolved, inventory, (confirmed) ->
+            {
+                this.adoptContinue(latest, replay, panel, confirmed);
+            });
+
+            mchorse.bbs_mod.ui.framework.elements.overlay.UIOverlay.addOverlay(this.getContext(), ask, 280, 0.7F);
 
             return;
         }
 
+        this.adoptContinue(latest, replay, panel, bones);
+    }
+
+    private void adoptContinue(CreativeProposal.Variant latest, mchorse.bbs_mod.film.replays.Replay replay, UIFilmPanel panel, BoneNameResolver.Result bones)
+    {
         List<PoseSolver.KeyPose> poses = PoseSolver.solve(latest.plan, bones);
         List<FrameCommitter.ChannelWrite> writes = PoseSolver.toChannelWrites(poses, replay.properties);
         ValueGroup film = panel.getData();

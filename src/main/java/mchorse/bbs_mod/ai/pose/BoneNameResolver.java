@@ -36,7 +36,7 @@ public class BoneNameResolver
         public final double score;
         public final List<String> candidates;
 
-        Resolution(String generic, String actual, double score, List<String> candidates)
+        public Resolution(String generic, String actual, double score, List<String> candidates)
         {
             this.generic = generic;
             this.actual = actual;
@@ -121,6 +121,15 @@ public class BoneNameResolver
         }
 
         return candidates;
+    }
+
+    /**
+     * User-confirmed resolution: the dialog path constructs these directly
+     * for generics the resolver could not match on its own.
+     */
+    public static Resolution confirmed(String generic, String actual)
+    {
+        return new Resolution(generic, actual, 1D, new ArrayList<>(List.of(actual)));
     }
 
     /** 1 for an exact alias match, 0.75 for containment, 0 for nothing. */

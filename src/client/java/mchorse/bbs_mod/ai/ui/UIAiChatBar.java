@@ -190,40 +190,54 @@ public class UIAiChatBar extends UIElement
         request.temperature(AiSettings.temperature.get());
         request.json(AiSettings.jsonMode.get() && AiSettings.supportsJsonMode.get());
 
-        mchorse.bbs_mod.ai.AiPlans.generatePlan(request, (response) ->
+        mchorse.bbs_mod.ui.framework.UIContext context = this.getContext();
+
+        mchorse.bbs_mod.ai.AiPlans.generatePlan(request, (generated) ->
         {
             this.busy = false;
 
             java.util.List<String> inventory = new ArrayList<>();
 
-                for (mchorse.bbs_mod.settings.values.base.BaseValue child : modelForm.bones.getAll())
-                {
-                    inventory.add(child.getId());
-                }
+            for (mchorse.bbs_mod.settings.values.base.BaseValue child : modelForm.bones.getAll())
+            {
+                inventory.add(child.getId());
+            }
 
-                mchorse.bbs_mod.ai.pose.BoneNameResolver.Result bones = mchorse.bbs_mod.ai.pose.BoneNameResolver.resolve(inventory);
+            mchorse.bbs_mod.ai.pose.BoneNameResolver.Result bones = mchorse.bbs_mod.ai.pose.BoneNameResolver.resolve(inventory);
 
-                if (!bones.isComplete())
-                {
-                    this.status.label = L10n.lang("bbs.ui.ai.creative.bones_unconfirmed").format(bones.unresolved.toString());
-                    this.previewRow.setVisible(true);
-
-                    return;
-                }
-
-                List<mchorse.bbs_mod.ai.pose.PoseSolver.KeyPose> poses = mchorse.bbs_mod.ai.pose.PoseSolver.solve(response, bones);
-                List<FrameCommitter.ChannelWrite> generated_writes = mchorse.bbs_mod.ai.pose.PoseSolver.toChannelWrites(poses, replay.properties);
-                FrameDiff generated_diff = this.buildPreviewDiff(generated_writes);
-
-                AiPreviewState.get().begin(replay, generated_writes, generated_diff);
-                this.status.label = L10n.lang("bbs.ui.ai.bar.preview").format(AiPreviewState.get().getChangeCount());
+            if (!bones.isComplete())
+            {
+                /* The assistant never guesses bone names - it asks */
+                this.status.label = L10n.lang("bbs.ui.ai.ask.open");
                 this.previewRow.setVisible(true);
+
+                UIAiAskOverlayPanel ask = new UIAiAskOverlayPanel(context, bones.unresolved, inventory, (confirmed) ->
+                {
+                    this.previewGenerated(generated, confirmed, replay);
+                });
+
+                mchorse.bbs_mod.ui.framework.elements.overlay.UIOverlay.addOverlay(context, ask, 280, 0.7F);
+
+                return;
+            }
+
+            this.previewGenerated(generated, bones, replay);
         }, (error) ->
         {
             this.busy = false;
             this.status.label = L10n.lang("bbs.ui.ai.panel.failed").format(error.type.name());
             this.previewRow.setVisible(true);
         });
+    }
+
+    private void previewGenerated(mchorse.bbs_mod.ai.plan.AnimationPlan generated, mchorse.bbs_mod.ai.pose.BoneNameResolver.Result bones, Replay replay)
+    {
+        List<mchorse.bbs_mod.ai.pose.PoseSolver.KeyPose> poses = mchorse.bbs_mod.ai.pose.PoseSolver.solve(generated, bones);
+        List<FrameCommitter.ChannelWrite> writes = mchorse.bbs_mod.ai.pose.PoseSolver.toChannelWrites(poses, replay.properties);
+
+        AiPreviewState.get().begin(replay, writes, this.buildPreviewDiff(writes));
+        this.status.label = L10n.lang("bbs.ui.ai.bar.preview").format(AiPreviewState.get().getChangeCount());
+        this.previewRow.setVisible(true);
     }
 
     /** Polish: local intent parsing -> L3 on every numeric channel of the open replay -> preview. */

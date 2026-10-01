@@ -239,6 +239,9 @@ public class BBSSettings {
 	public static ValueString cdnUrl;
 	public static ValueString cdnToken;
 
+	/** Whether AI operations pull the interface to the affected panel (spec 5.9, on by default). */
+	public static ValueBoolean aiFollow;
+
 	private static final int DEFAULT_PRIMARY_COLOR = 0xff3242;
 	private static final float DEFAULT_OVERLAY_BACKGROUND_OPACITY = 0.5F;
 
@@ -907,5 +910,6 @@ public class BBSSettings {
 
 		/* AI copilot (mchorse.bbs_mod.ai): BYOK gateway settings, owned by AiSettings */
 		AiSettings.register(builder);
+		aiFollow = builder.getBoolean("ai_follow", true);
 	}
 }

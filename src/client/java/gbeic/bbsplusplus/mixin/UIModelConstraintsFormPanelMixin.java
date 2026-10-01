@@ -1,0 +1,50 @@
+package gbeic.bbsplusplus.mixin;
+
+import gbeic.bbsplusplus.client.ui.presets.AutoSavePresetState;
+import mchorse.bbs_mod.data.types.MapType;
+import mchorse.bbs_mod.ui.forms.editors.panels.UIModelConstraintsFormPanel;
+import mchorse.bbs_mod.utils.pose.ModelConstraintsManager;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+/**
+ * 骨骼限制面板自动保存注入。
+ * <p>
+ * 只注入 commitChanges()：trackpad 主回调 onFieldChanged() 内部即调用 commitChanges()，
+ * 注入两处会造成重复快照；updateFields 是"数据→控件"的刷新路径（syncingUI 复位在 TAIL 之前，
+ * 注入挡不住程序化赋值），移除后切换骨骼/加载预设不再触发多余调度。
+ * 数据快照通过 supplier 延迟到防抖触发后才构建，拖动期间不产生序列化开销。
+ * </p>
+ */
+@Mixin(value = UIModelConstraintsFormPanel.class, remap = true)
+public abstract class UIModelConstraintsFormPanelMixin
+{
+    @Shadow(remap = false)
+    public abstract MapType toPresetData();
+
+    @Inject(method = "updateFields", at = @At("TAIL"))
+    private void bbspp$autoSaveOnCommit(CallbackInfo ci)
+    {
+        bbspp$tryAutoSave();
+    }
+
+    private void bbspp$tryAutoSave()
+    {
+        if (!AutoSavePresetState.isEnabled("constraints"))
+        {
+            return;
+        }
+        String preset = AutoSavePresetState.getSelectedPreset("constraints");
+        String presetGroup = ((UIBoneListFormPanelAccessor) (Object) this).bbspp$getPresetGroup();
+        if (preset == null || preset.isEmpty() || presetGroup == null || presetGroup.isEmpty())
+        {
+            return;
+        }
+
+        AutoSavePresetState.scheduleSave("constraints", ModelConstraintsManager.INSTANCE,
+                presetGroup, preset, this::toPresetData);
+    }
+}

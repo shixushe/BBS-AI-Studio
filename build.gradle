@@ -74,6 +74,12 @@ dependencies {
 	// modImplementation "net.fabricmc.fabric-api:fabric-api-deprecated:${project.fabric_version}"
 	modImplementation "maven.modrinth:sodium:mc1.20.1-0.5.8"
 	modCompileOnly "maven.modrinth:iris:1.7.0+1.20.1"
+	// BBS-Cubed 的 AAA 粒子集成文件需要(运行时 aaa_particles 不在则功能自动禁用)
+	modCompileOnly "maven.modrinth:aaa-particles:fabric-1.20.1-2.2.3"
+	// BBS-Cubed 引用的 BBS-VFX / VFX-LIGHTS 类(运行时实例 mods 提供)
+	modCompileOnly files("F:/mc/.minecraft/versions/BBS FS/mods/BBS-VFX-build-1.3-1.20.1-fs2.6-2.7.jar")
+	modCompileOnly files("F:/mc/.minecraft/versions/BBS FS/mods/VFX-LIGHTS-0.1.0-1.20.1-bbsfs2.7.jar")
+
 
 	modImplementation "org.anarres:jcpp:1.4.14"
 	modImplementation "io.github.douira:glsl-transformer:2.0.0-pre13"

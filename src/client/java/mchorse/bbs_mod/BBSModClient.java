@@ -510,6 +510,37 @@ public class BBSModClient implements ClientModInitializer
 
         /* AI copilot surface: dashboard panel + ghost frame layer (mchorse.bbs_mod.ai) */
         mchorse.bbs_mod.ai.AiClientInstall.install();
+
+        /* Bundled addon client halves (BBS-Cubed + posecurve), same native treatment.
+         * BBSPlusPlusMod.onInitialize does the BBS-side registrations (blocks, keyframe
+         * track extensions, commands) that its Fabric entrypoint used to do. */
+        try
+        {
+            new gbeic.bbsplusplus.BBSPlusPlusMod().onInitialize();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+        try
+        {
+            new gbeic.bbsplusplus.client.BBSPlusPlusModClient().onInitializeClient();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+        try
+        {
+            new bbsplus.example.bbsplus.Bbsplus().onInitialize();
+            new bbsplus.example.bbsplus.client.BbsplusClient().onInitializeClient();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
         mchorse.bbs_mod.ai.AiDebugCommand.install();
 
         AssetProvider provider = BBSMod.getProvider();

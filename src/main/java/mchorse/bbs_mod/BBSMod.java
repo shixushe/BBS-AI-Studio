@@ -447,6 +447,7 @@ public class BBSMod implements ModInitializer
         /* AI copilot: let addons declare callable skills (copilot spec section 10.4) */
         events.post(new mchorse.bbs_mod.api.events.RegisterAiSkillsEvent());
 
+
         films = new FilmManager(() -> new File(worldFolder, "bbs/films"));
 
         /* Register camera clips */

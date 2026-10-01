@@ -486,6 +486,7 @@ public class UIKeys
     public static final IKey ONBOARDING_TOUR_CAPTURE_FRAMES_TEXT = L10n.lang("bbs.ui.ai.tour.capture_frames.text");
     public static final IKey AI_CAPTURE_TITLE = L10n.lang("bbs.ui.ai.capture.title");
     public static final IKey AI_CREATIVE_TITLE = L10n.lang("bbs.ui.ai.creative.title");
+    public static final IKey AI_STRUCTURE_TITLE = L10n.lang("bbs.ui.ai.structure.title");
     public static final IKey FILM_VIDEO_RECORDING = L10n.lang("bbs.ui.film.video_recording");
     public static final IKey FORMS_CATEGORIES_ADD_CATEGORY_DESCRIPTION = L10n.lang("bbs.ui.forms.categories.add_category-description");
     public static final IKey FORMS_CATEGORIES_ADD_CATEGORY_TITLE = L10n.lang("bbs.ui.forms.categories.add_category-title");

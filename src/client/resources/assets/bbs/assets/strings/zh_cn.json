@@ -1285,5 +1285,12 @@
   "bbs.ui.ai.ask.open": "等待你的确认……",
   "bbs.ui.ai.capture.browse": "浏览……",
   "bbs.ui.ai.capture.external": "外部视频（资源管理器选择）",
-  "bbs.ui.ai.capture.video_filter": "视频文件"
+  "bbs.ui.ai.capture.video_filter": "视频文件",
+  "bbs.ui.ai.structure.title": "AI 建筑（结构理解）",
+  "bbs.ui.ai.structure.list": "结构（.nbt）",
+  "bbs.ui.ai.structure.description": "语义描述",
+  "bbs.ui.ai.structure.pick": "选择结构 —— 此处给出尺寸/体积/方块实体统计（按企划书 §9，AI 直接盖房不在本轮范围）",
+  "bbs.ui.ai.structure.row": "%s",
+  "bbs.ui.ai.structure.none": "没有已注册的结构",
+  "bbs.ui.ai.structure.count": "已注册 %s 个结构"
 }

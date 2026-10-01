@@ -2483,5 +2483,12 @@
   "bbs.ui.ai.ask.open": "Waiting for your confirmation...",
   "bbs.ui.ai.capture.browse": "Browse...",
   "bbs.ui.ai.capture.external": "External video (explorer picker)",
-  "bbs.ui.ai.capture.video_filter": "Video files"
+  "bbs.ui.ai.capture.video_filter": "Video files",
+  "bbs.ui.ai.structure.title": "AI building (structure understanding)",
+  "bbs.ui.ai.structure.list": "Structures (.nbt)",
+  "bbs.ui.ai.structure.description": "Semantic description",
+  "bbs.ui.ai.structure.pick": "Pick a structure - size, volume and block entity stats will be described here (generation stays manual, spec section 9)",
+  "bbs.ui.ai.structure.row": "%s",
+  "bbs.ui.ai.structure.none": "No structures registered",
+  "bbs.ui.ai.structure.count": "%s structure(s) registered"
 }

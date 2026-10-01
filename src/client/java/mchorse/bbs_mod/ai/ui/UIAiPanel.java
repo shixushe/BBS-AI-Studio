@@ -339,12 +339,13 @@ public class UIAiPanel extends UIDashboardPanel
 
         if (scriptArea.w > 0 && scriptArea.h > 0)
         {
-            int border = BBSSettings.dividerColor();
+            int border = Colors.setA(Colors.opaque(BBSSettings.primaryColor.get()), 0.5F);
 
             context.batcher.box(scriptArea.x - 1, scriptArea.y - 1, scriptArea.ex() + 1, scriptArea.y, border);
             context.batcher.box(scriptArea.x - 1, scriptArea.ey(), scriptArea.ex() + 1, scriptArea.ey() + 1, border);
             context.batcher.box(scriptArea.x - 1, scriptArea.y - 1, scriptArea.x, scriptArea.ey() + 1, border);
             context.batcher.box(scriptArea.ex(), scriptArea.y - 1, scriptArea.ex() + 1, scriptArea.ey() + 1, border);
+            context.batcher.box(scriptArea.x, scriptArea.y, scriptArea.ex(), scriptArea.ey(), BBSSettings.inputSurface());
         }
     }
 

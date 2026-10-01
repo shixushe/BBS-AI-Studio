@@ -85,7 +85,7 @@ public class UIAiPanel extends UIDashboardPanel
 
         column.relative(this).x(0F).y(0F).w(LEFT_W).h(1F, -BAR);
 
-        column.add(new AiSectionHeader("① " + L10n.lang("bbs.ui.ai.panel.script").get()));
+        column.add(new AiSectionHeader(L10n.lang("bbs.ui.ai.panel.script").get()));
 
         this.script = new UITextarea<>((t) -> {});
         this.script.h(1F, -(AiSectionHeader.HEADER_HEIGHT + UIConstants.CONTROL_HEIGHT * 3 + 56));
@@ -126,7 +126,7 @@ public class UIAiPanel extends UIDashboardPanel
 
         column.relative(this).x(LEFT_W).y(0F).w(MID_W).h(1F, -BAR);
 
-        column.add(new AiSectionHeader("② " + L10n.lang("bbs.ui.ai.panel.beats").get()));
+        column.add(new AiSectionHeader(L10n.lang("bbs.ui.ai.panel.beats").get()));
 
         this.beats = new BeatTable();
         this.beats.h(1F, -AiSectionHeader.HEADER_HEIGHT);
@@ -151,6 +151,7 @@ public class UIAiPanel extends UIDashboardPanel
         this.output.color(Colors.LIGHTER_GRAY, false).background(BBSSettings.deepSurface());
 
         UIElement column = UI.column(UIConstants.MARGIN,
+            new AiSectionHeader(L10n.lang("bbs.ui.ai.panel.params").get()),
             UI.label(L10n.lang("bbs.ui.ai.panel.provider_label"), UIConstants.CONTROL_HEIGHT),
             this.providerPick().h(UIConstants.CONTROL_HEIGHT),
             UI.label(L10n.lang("bbs.ui.ai.panel.duration"), UIConstants.CONTROL_HEIGHT),
@@ -323,6 +324,19 @@ public class UIAiPanel extends UIDashboardPanel
         this.area.render(context.batcher, BBSSettings.baseSurface());
 
         super.render(context);
+
+        /* 剧本框可见外框(mockup 02:深色输入区有清晰边界) */
+        var scriptArea = this.script.area;
+
+        if (scriptArea.w > 0 && scriptArea.h > 0)
+        {
+            int border = BBSSettings.dividerColor();
+
+            context.batcher.box(scriptArea.x - 1, scriptArea.y - 1, scriptArea.ex() + 1, scriptArea.y, border);
+            context.batcher.box(scriptArea.x - 1, scriptArea.ey(), scriptArea.ex() + 1, scriptArea.ey() + 1, border);
+            context.batcher.box(scriptArea.x - 1, scriptArea.y - 1, scriptArea.x, scriptArea.ey() + 1, border);
+            context.batcher.box(scriptArea.ex(), scriptArea.y - 1, scriptArea.ex() + 1, scriptArea.ey() + 1, border);
+        }
     }
 
     /* 数值参数字段封装（trackpad，原生数值输入） */

@@ -60,7 +60,7 @@ public class FrameCommitter
             return diff;
         }
 
-        List<ChannelStateUndo> undos = new ArrayList<>();
+        List<ChannelWrite> writes = new ArrayList<>();
 
         for (EditPatch.TrackWrite track : patch.tracks)
         {
@@ -75,37 +75,77 @@ public class FrameCommitter
                 continue;
             }
 
-            IKeyframeFactory factory = channel.getFactory();
+            ChannelWrite write = new ChannelWrite(track.trackId, channel, tickOffset);
+
+            write.newlyCreated = !existed;
+            write.keys.addAll(track.keys);
+            writes.add(write);
+        }
+
+        return commit(undoContext, undoManager, writes, diff);
+    }
+
+    /**
+     * Commit pre-resolved channel writes - the form the polish pipeline uses,
+     * where the caller already holds the channels (replay-level entity
+     * channels like yaw/x live outside FormProperties and have no TrackId).
+     *
+     * @param writes      channel + keys to write; non-numeric channels are refused
+     * @param diff        collects what happened (usually a fresh instance)
+     */
+    public static FrameDiff commit(ValueGroup undoContext, UndoManager<ValueGroup> undoManager, List<ChannelWrite> writes)
+    {
+        return commit(undoContext, undoManager, writes, new FrameDiff());
+    }
+
+    private static FrameDiff commit(ValueGroup undoContext, UndoManager<ValueGroup> undoManager, List<ChannelWrite> writes, FrameDiff diff)
+    {
+        if (writes == null || writes.isEmpty())
+        {
+            return diff;
+        }
+
+        List<ChannelStateUndo> undos = new ArrayList<>();
+
+        for (ChannelWrite write : writes)
+        {
+            if (write.channel == null)
+            {
+                diff.skippedTracks.add(write.trackId);
+
+                continue;
+            }
+
+            IKeyframeFactory factory = write.channel.getFactory();
 
             if (!isNumericFactory(factory))
             {
                 /* Numeric-only until M5 extends KeyWrite for pose channels */
-                diff.skippedTracks.add(track.trackId);
+                diff.skippedTracks.add(write.trackId);
 
                 continue;
             }
 
-            if (!existed)
-            {
-                diff.createdTracks.add(track.trackId);
-            }
+            /* Old state is captured before any write so an undo restores the
+             * channel bitwise - including keys this commit did not touch. */
+            MapType oldState = mchorse.bbs_mod.ai.commit.ChannelStateUndo.capture(write.channel);
 
-            /* Old state is captured after getOrCreate so a fresh channel
-             * snapshots as empty rather than as "absent" - restore then
-             * re-creates the same empty channel state through fromData. */
-            MapType oldState = mchorse.bbs_mod.ai.commit.ChannelStateUndo.capture(channel);
+            int written = applyWrites(write.channel, factory, write, diff);
 
-            int before = applyWrites(channel, factory, track, tickOffset, diff);
-
-            if (before == 0)
+            if (written == 0)
             {
                 continue;
             }
 
-            MapType newState = mchorse.bbs_mod.ai.commit.ChannelStateUndo.capture(channel);
+            MapType newState = mchorse.bbs_mod.ai.commit.ChannelStateUndo.capture(write.channel);
 
-            undos.add(new ChannelStateUndo(channel.getPath(), oldState, newState));
-            diff.affectedChannels.add(channel);
+            if (write.newlyCreated)
+            {
+                diff.createdTracks.add(write.trackId);
+            }
+
+            undos.add(new ChannelStateUndo(write.channel.getPath(), oldState, newState));
+            diff.affectedChannels.add(write.channel);
         }
 
         /* One AI operation = exactly one undo entry. */
@@ -120,14 +160,36 @@ public class FrameCommitter
         return diff;
     }
 
-    /** Writes one track's keys; returns how many keys ended up written. */
-    private static int applyWrites(KeyframeChannel channel, IKeyframeFactory factory, EditPatch.TrackWrite track, float tickOffset, FrameDiff diff)
+    /** A pre-resolved channel plus the keys to write onto it. */
+    public static class ChannelWrite
+    {
+        public final String trackId;
+
+        public final KeyframeChannel channel;
+
+        public final float tickOffset;
+
+        /** Set by the FormProperties resolver: the channel did not exist before this commit. */
+        public boolean newlyCreated;
+
+        public final List<EditPatch.KeyWrite> keys = new ArrayList<>();
+
+        public ChannelWrite(String trackId, KeyframeChannel channel, float tickOffset)
+        {
+            this.trackId = trackId;
+            this.channel = channel;
+            this.tickOffset = tickOffset;
+        }
+    }
+
+    /** Writes one channel's keys; returns how many keys ended up written. */
+    private static int applyWrites(KeyframeChannel channel, IKeyframeFactory factory, ChannelWrite write, FrameDiff diff)
     {
         int written = 0;
 
-        for (EditPatch.KeyWrite key : track.keys)
+        for (EditPatch.KeyWrite key : write.keys)
         {
-            float tick = key.tick + tickOffset;
+            float tick = key.tick + write.tickOffset;
             Keyframe existing = findAt(channel, tick);
 
             if (existing == null)
@@ -135,14 +197,14 @@ public class FrameCommitter
                 int index = channel.insert(tick, toFactoryValue(factory, key.value));
 
                 existing = channel.get(index);
-                diff.entries.add(new FrameDiff.Entry(track.trackId, tick, FrameDiff.Change.ADDED, Double.NaN, key.value));
+                diff.entries.add(new FrameDiff.Entry(write.trackId, tick, FrameDiff.Change.ADDED, Double.NaN, key.value));
             }
             else
             {
                 double old = existing.getY();
 
                 existing.setValue(toFactoryValue(factory, key.value));
-                diff.entries.add(new FrameDiff.Entry(track.trackId, tick, FrameDiff.Change.UPDATED, old, key.value));
+                diff.entries.add(new FrameDiff.Entry(write.trackId, tick, FrameDiff.Change.UPDATED, old, key.value));
             }
 
             if (key.interpolation != null)
@@ -165,6 +227,38 @@ public class FrameCommitter
         }
 
         return written;
+    }
+
+    /** A keyframe at (or within epsilon of) the given tick, or null. Public read for preview diffs. */
+    public static Keyframe findKeyAt(KeyframeChannel channel, float tick)
+    {
+        return findAt(channel, tick);
+    }
+
+    /**
+     * Whether a keyframe already carries the exact state a write describes -
+     * used by preview diffs so a re-run of the same intent reports zero
+     * changes instead of a phantom rewrite.
+     */
+    public static boolean sameState(Keyframe key, EditPatch.KeyWrite write)
+    {
+        if (Math.abs(key.getY() - write.value) > 0.0001D)
+        {
+            return false;
+        }
+
+        IInterp current = key.getInterpolation().getInterp();
+        IInterp wanted = write.interpolation == null ? current : Interpolations.MAP.get(write.interpolation);
+
+        if (current != wanted)
+        {
+            return false;
+        }
+
+        return key.lx == write.lx && key.ly == write.ly
+            && key.rx == write.rx && key.ry == write.ry
+            && key.getDuration() == write.duration
+            && key.getMotionShift() == write.motionShift;
     }
 
     /** A keyframe at (or within epsilon of) the given tick, or null. */

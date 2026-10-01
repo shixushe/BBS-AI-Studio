@@ -1014,7 +1014,36 @@ public class UITexturePainter extends UIElement
         if (editor != null && editor.area.isInside(context) && editor.getPixels() != null)
         {
             this.renderHoverInfo(context, editor);
+            this.renderSkinUVOverlay(context, editor);
         }
+    }
+
+    /**
+     * AI 皮肤编辑器的 UV 分区信息叠加层 (spec §5.7 item 1)。
+     * 纯渲染——不进入已保存数据（spec §5.4 铁律）。
+     */
+    private void renderSkinUVOverlay(UIContext context, UITextureEditor editor)
+    {
+        if (!mchorse.bbs_mod.ai.AiSettings.aiUVOverlay.get())
+        {
+            return;
+        }
+
+        Pixels pixels = editor.getPixels();
+
+        if (pixels == null)
+        {
+            return;
+        }
+
+        int accent = mchorse.bbs_mod.utils.colors.Colors.opaque(BBSSettings.primaryColor.get());
+        int margin = 10;
+        int ty = this.canvasHost.area.y + margin + 16;
+
+        String uvInfo = "UV: " + pixels.width + "x" + pixels.height
+            + (mchorse.bbs_mod.ai.skin.SkinUVLayout.isLegacy(pixels.height) ? " (legacy)" : " (standard)");
+
+        context.batcher.textShadow(uvInfo, this.canvasHost.area.x + margin, ty, accent);
     }
 
     private void renderHoverInfo(UIContext context, UITextureEditor editor)

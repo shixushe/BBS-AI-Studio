@@ -33,6 +33,7 @@ public class AiSettings
     public static ValueBoolean supportsTools;
     public static ValueBoolean supportsJsonMode;
     public static ValueBoolean debugServer;
+    public static ValueBoolean aiUVOverlay;
     public static ValueString imageModel;
     public static ValueString imageSize;
 
@@ -53,6 +54,7 @@ public class AiSettings
         supportsTools = builder.getBoolean("supports_tools", false);
         supportsJsonMode = builder.getBoolean("supports_json_mode", false);
         debugServer = builder.getBoolean("debug_server", true);
+        aiUVOverlay = builder.getBoolean("ai_uv_overlay", true);
         imageModel = builder.getString("image_model", "");
         imageSize = builder.getString("image_size", "1024x1024");
     }

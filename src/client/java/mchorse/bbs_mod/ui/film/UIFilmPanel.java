@@ -156,6 +156,9 @@ public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSu
 
     private FilmQueueExporter queueExporter;
 
+    /** Frames left before the stale-width self-heal may fire again. */
+    private int resizeHealCooldown;
+
     /* Docking: panel ids arranged by the dock layout */
     private static final String PANEL_MAIN_ID = "main";
     private static final String PANEL_PREVIEW_ID = "preview";
@@ -1620,6 +1623,27 @@ public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSu
         if (this.getContext() != null && this.secretPlay.getParent() == null)
         {
             this.getContext().menu.getRoot().add(this.secretPlay);
+        }
+
+        /* Self-heal: restarting the game with a film still open can run the
+         * layout pass before the window had its final size, leaving the
+         * timelines at a fraction of the width. The moment the panel's width
+         * stops matching the dashboard's, one repair resize is fired. */
+        if (this.resizeHealCooldown > 0)
+        {
+            this.resizeHealCooldown--;
+        }
+        else if (this.isVisible() && this.data != null && !this.dock.isAnySplitterDragging()
+            && !this.recorder.isExporting() && this.dashboard.viewport.w > 0 && this.editor.area.w > 0)
+        {
+            boolean stale = Math.abs(this.editor.area.w - this.dashboard.viewport.w) > 2
+                || Math.abs(this.dock.area.w - this.editor.area.w) > 2;
+
+            if (stale)
+            {
+                this.resize();
+                this.resizeHealCooldown = 60;
+            }
         }
 
         this.playerToCamera = BBSSettings.editorPlayerFollowsCamera.get();

@@ -4,6 +4,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import net.minecraft.client.MinecraftClient;
 import mchorse.bbs_mod.ui.film.UIFilmPanel;
+import mchorse.bbs_mod.network.ServerNetwork;
 import mchorse.bbs_mod.ai.ui.UIAiPanel;
 import mchorse.bbs_mod.ai.ui.UICapturePanel;
 import mchorse.bbs_mod.ai.ui.UIStructureAiPanel;
@@ -195,6 +196,191 @@ public class AiDebugServer
             respond(exchange, jsonMap("result", result));
         });
 
+        server.createContext("/wheel", (exchange) ->
+        {
+            String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            mchorse.bbs_mod.data.types.MapType map = mchorse.bbs_mod.data.DataToString.mapFromString(body);
+            int x = map == null ? 0 : map.getInt("x");
+            int y = map == null ? 0 : map.getInt("y");
+            double amount = map == null ? 0D : map.getDouble("amount");
+
+            String result = onClient(() ->
+            {
+                MinecraftClient client = MinecraftClient.getInstance();
+
+                if (client.currentScreen == null)
+                {
+                    return "no screen open";
+                }
+
+                double scale = client.getWindow().getScaleFactor();
+                int gx = (int) Math.round(x / scale);
+                int gy = (int) Math.round(y / scale);
+
+                try
+                {
+                    boolean handled = client.currentScreen.mouseScrolled(gx, gy, amount);
+
+                    return "wheel " + gx + "," + gy + " amount=" + amount
+                        + " handled=" + handled
+                        + " screen=" + client.currentScreen.getClass().getSimpleName();
+                }
+                catch (Exception e)
+                {
+                    return "(wheel failed: " + e + ")";
+                }
+            });
+
+            respond(exchange, jsonMap("result", result));
+        });
+
+        server.createContext("/ai_build", (exchange) ->
+        {
+            String theme = query(exchange, "theme", "watchtower");
+            String xs = query(exchange, "x", "");
+            String ys = query(exchange, "y", "");
+            String zs = query(exchange, "z", "");
+            boolean place = query(exchange, "place", "true").equalsIgnoreCase("true");
+
+            String result = onClient(() ->
+            {
+                /* Deterministic demo build order - tests the whole pipeline
+                 * (parse -> expand -> blueprints -> placement) with no LLM */
+                String json = "{\"name\":\"debug_" + System.currentTimeMillis() % 100000L + "\",\"title\":\"Debug build: " + theme.replace("\"", "") + "\","
+                    + "\"size\":[7,9,7],"
+                    + "\"shell\":{\"from\":[0,0,0],\"to\":[6,8,6],\"wall\":\"minecraft:stone_bricks\",\"floor\":\"minecraft:stone\",\"roof\":\"minecraft:dark_oak_slab\",\"windows\":true,\"door\":\"south\"},"
+                    + "\"boxes\":[{\"from\":[2,0,2],\"to\":[4,0,4],\"block\":\"minecraft:polished_andesite\"}],"
+                    + "\"towers\":[{\"from\":[0,0,0],\"to\":[1,8,1],\"block\":\"minecraft:cobblestone\",\"roof\":true},{\"from\":[5,0,5],\"to\":[6,8,6],\"block\":\"minecraft:cobblestone\",\"roof\":true}]}";
+
+                try
+                {
+                    net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
+                    java.io.File generated = client.getServer() == null
+                        ? null
+                        : client.getServer().getSavePath(net.minecraft.util.WorldSavePath.GENERATED).resolve("bbs/structures").toFile();
+
+                    if (generated == null)
+                    {
+                        return "not in a world";
+                    }
+
+                    AiArchitecture.Result result1 = AiArchitecture.generate(json, generated,
+                        new java.io.File(client.runDirectory, "config/worldedit/schematics"));
+
+                    if (place)
+                    {
+                        net.minecraft.util.math.BlockPos pos;
+
+                        if (!xs.isEmpty() && !ys.isEmpty() && !zs.isEmpty())
+                        {
+                            pos = new net.minecraft.util.math.BlockPos(Integer.parseInt(xs), Integer.parseInt(ys), Integer.parseInt(zs));
+                        }
+                        else if (client.player != null)
+                        {
+                            pos = client.player.getBlockPos().offset(client.player.getHorizontalFacing(), 6);
+                        }
+                        else
+                        {
+                            return "generated " + result1.blocks + " blocks, but no player to place near";
+                        }
+
+                        AiArchitecture.onPlaced = (message) -> System.out.println("[AI build] " + message);
+
+                        net.minecraft.network.PacketByteBuf buf = net.fabricmc.fabric.api.networking.v1.PacketByteBufs.create();
+
+                        buf.writeString(result1.name);
+                        buf.writeBlockPos(pos);
+                        net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+                            ServerNetwork.SERVER_AI_PLACE_STRUCTURE, buf);
+
+                        return "generated " + result1.blocks + " blocks (" + result1.name + "), placement requested at "
+                            + pos.toShortString();
+                    }
+
+                    return "generated " + result1.blocks + " blocks (" + result1.name + ")";
+                }
+                catch (Exception e)
+                {
+                    return "failed: " + e.getMessage();
+                }
+            });
+
+            respond(exchange, jsonMap("result", result));
+        });
+
+        server.createContext("/debug", (exchange) ->
+        {
+            String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            mchorse.bbs_mod.data.types.MapType map = mchorse.bbs_mod.data.DataToString.mapFromString(body);
+            String op = map == null ? "" : map.getString("op");
+            String track = map == null ? "" : map.getString("track");
+
+            String result = onClient(() ->
+            {
+                try
+                {
+                    if (op.equals("editSheet") || op.equals("exitSheet"))
+                    {
+                        var dashboard = mchorse.bbs_mod.BBSModClient.getDashboard();
+                        var panel = dashboard.getPanels().panel;
+
+                        if (!(panel instanceof mchorse.bbs_mod.ui.film.UIFilmPanel filmPanel))
+                        {
+                            return "not the film panel";
+                        }
+
+                        var editor = filmPanel.replayEditor;
+
+                        if (editor == null || editor.keyframeEditor == null)
+                        {
+                            return "replay keyframe editor is not open";
+                        }
+
+                        var view = editor.keyframeEditor.view;
+
+                        if (op.equals("exitSheet"))
+                        {
+                            view.editSheet(null);
+
+                            return "exited";
+                        }
+
+                        var sheet = view.getDopeSheet().getSheet(track);
+
+                        if (sheet == null)
+                        {
+                            return "no track named " + track;
+                        }
+
+                        view.editSheet(sheet);
+
+                        String graphName = "dope sheet";
+
+                        try
+                        {
+                            java.lang.reflect.Field gField =
+                                mchorse.bbs_mod.ui.framework.elements.input.keyframes.UIKeyframes.class.getDeclaredField("currentGraph");
+
+                            gField.setAccessible(true);
+                            graphName = gField.get(view).getClass().getSimpleName();
+                        }
+                        catch (Exception ignored)
+                        {}
+
+                        return "editSheet(" + track + ") done, editing=" + view.isEditing() + ", graph=" + graphName;
+                    }
+
+                    return "unknown op " + op;
+                }
+                catch (Exception e)
+                {
+                    return "(failed: " + e.getClass().getSimpleName() + ": " + e.getMessage() + ")";
+                }
+            });
+
+            respond(exchange, jsonMap("result", result));
+        });
+
         server.createContext("/uistate", (exchange) ->
         {
             String result = onClient(() ->
@@ -301,6 +487,20 @@ public class AiDebugServer
                 dsField.setAccessible(true);
 
                 Object dopeSheetObj = dsField.get(keyframes);
+
+                sb.append("\n").append("  ".repeat(depth + 1));
+
+                try
+                {
+                    java.lang.reflect.Method yMethod = dopeSheetObj.getClass().getMethod("getDopeSheetY");
+
+                    sb.append("dopeSheetY=").append(yMethod.invoke(dopeSheetObj)).append(" ");
+                }
+                catch (Exception e)
+                {
+                    sb.append("(dopeSheetY unavailable) ");
+                }
+
                 java.lang.reflect.Field cacheField = dopeSheetObj.getClass().getDeclaredField("sheetYCache");
 
                 cacheField.setAccessible(true);

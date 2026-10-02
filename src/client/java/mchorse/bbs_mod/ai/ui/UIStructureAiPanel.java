@@ -57,7 +57,14 @@ public class UIStructureAiPanel extends UIDashboardPanel
     private final UITextbox buildTheme;
     private final UIButton generateBuild;
     private final UIButton placeBuild;
+    private final UIButton exportBuild;
+    private final UIButton modePlace;
+    private final UIButton modeBlueprint;
+    private final UITextbox[] coords = new UITextbox[3];
+    private final UIElement coordRow;
+    private final UILabel blueprintRow;
 
+    private boolean blueprintMode;
     private String selected;
     private boolean describing;
     private boolean building;
@@ -100,19 +107,50 @@ public class UIStructureAiPanel extends UIDashboardPanel
         this.generateBuild = new UIButton(L10n.lang("bbs.ui.ai.structure.build"), (b) -> this.generateBuilding());
         this.generateBuild.tooltip(L10n.lang("bbs.ui.ai.structure.build_tooltip"));
 
-        this.placeBuild = new UIButton(L10n.lang("bbs.ui.ai.structure.place"), (b) -> this.placeBuilding());
+        this.placeBuild = new UIButton(L10n.lang("bbs.ui.ai.structure.place"), (b) -> this.placeBuilding(this.requestedPos()));
         this.placeBuild.tooltip(L10n.lang("bbs.ui.ai.structure.place_tooltip"));
+
+        /* Two modes: place into the world at coordinates, or export the
+         * Axiom blueprint file (the .nbt/.schem are always written) */
+        this.modePlace = new UIButton(L10n.lang("bbs.ui.ai.structure.mode_place"), (b) -> this.setMode(false));
+        this.modeBlueprint = new UIButton(L10n.lang("bbs.ui.ai.structure.mode_blueprint"), (b) -> this.setMode(true));
+        this.exportBuild = new UIButton(L10n.lang("bbs.ui.ai.structure.export"), (b) -> this.exportBlueprint());
+
+        this.exportBuild.tooltip(L10n.lang("bbs.ui.ai.structure.export_tooltip"));
+        this.modePlace.tooltip(L10n.lang("bbs.ui.ai.structure.mode_place_tooltip"));
+        this.modeBlueprint.tooltip(L10n.lang("bbs.ui.ai.structure.mode_blueprint_tooltip"));
+
+        for (int i = 0; i < 3; i++)
+        {
+            this.coords[i] = new UITextbox(7, (t) -> {});
+        }
+
+        this.coordRow = UI.row(UIConstants.MARGIN,
+            UI.label(IKey.constant("X"), UIConstants.CONTROL_HEIGHT), this.coords[0].h(UIConstants.CONTROL_HEIGHT),
+            UI.label(IKey.constant("Y"), UIConstants.CONTROL_HEIGHT), this.coords[1].h(UIConstants.CONTROL_HEIGHT),
+            UI.label(IKey.constant("Z"), UIConstants.CONTROL_HEIGHT), this.coords[2].h(UIConstants.CONTROL_HEIGHT));
+        this.coordRow.row(UIConstants.MARGIN).preferred(0).height(UIConstants.CONTROL_HEIGHT);
+
+        this.blueprintRow = UI.label(L10n.lang("bbs.ui.ai.structure.export_where"), UIConstants.CONTROL_HEIGHT);
+        this.blueprintRow.color(Colors.LIGHTER_GRAY, false);
 
         UILabel buildHeader = AiUi.header(L10n.lang("bbs.ui.ai.structure.build_header"), L10n.lang("bbs.ui.ai.structure.build_header_hint").get());
 
-        int stack = UIConstants.CONTROL_HEIGHT * 2 + AiUi.HEADER + UIConstants.MARGIN * 3;
+        int stack = AiUi.HEADER + UIConstants.CONTROL_HEIGHT * 3 + UIConstants.MARGIN * 4;
 
         this.description.relative(this).x(rightX).y(HEADER).w(1F, -rightX).h(1F, -(HEADER + stack + UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN + AiUi.TASKBAR));
         this.describe.relative(this).x(rightX).y(1F, -(stack + UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN + AiUi.TASKBAR)).w(1F, -rightX).h(UIConstants.CONTROL_HEIGHT);
         buildHeader.relative(this).x(rightX).y(1F, -stack).w(1F, -rightX).h(AiUi.HEADER);
-        this.buildTheme.relative(this).x(rightX).y(1F, -(UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN + AiUi.TASKBAR)).w(1F, -rightX - 60 - UIConstants.MARGIN * 2).h(UIConstants.CONTROL_HEIGHT);
-        this.generateBuild.relative(this).x(1F, -(60 + UIConstants.MARGIN)).y(1F, -(UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN + AiUi.TASKBAR)).w(60).h(UIConstants.CONTROL_HEIGHT);
+        this.buildTheme.relative(this).x(rightX).y(1F, -(UIConstants.CONTROL_HEIGHT * 2 + UIConstants.MARGIN * 2 + AiUi.TASKBAR)).w(1F, -rightX - 60 - UIConstants.MARGIN * 2).h(UIConstants.CONTROL_HEIGHT);
+        this.generateBuild.relative(this).x(1F, -(60 + UIConstants.MARGIN)).y(1F, -(UIConstants.CONTROL_HEIGHT * 2 + UIConstants.MARGIN * 2 + AiUi.TASKBAR)).w(60).h(UIConstants.CONTROL_HEIGHT);
+        this.modePlace.relative(this).x(rightX).y(1F, -(UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN + AiUi.TASKBAR)).w(0.5F, -UIConstants.MARGIN).h(UIConstants.CONTROL_HEIGHT);
+        this.modeBlueprint.relative(this).x(0.5F, 0).y(1F, -(UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN + AiUi.TASKBAR)).w(0.5F, -UIConstants.MARGIN).h(UIConstants.CONTROL_HEIGHT);
+        this.coordRow.relative(this).x(rightX).y(1F, -(UIConstants.MARGIN + AiUi.TASKBAR)).w(1F, -rightX).h(UIConstants.CONTROL_HEIGHT);
+        this.blueprintRow.relative(this).x(rightX).y(1F, -(UIConstants.MARGIN + AiUi.TASKBAR)).w(1F, -rightX).h(UIConstants.CONTROL_HEIGHT);
         this.placeBuild.relative(this).x(rightX).y(1F, -(UIConstants.MARGIN + AiUi.TASKBAR)).w(1F, -rightX).h(UIConstants.CONTROL_HEIGHT);
+        this.exportBuild.relative(this).x(rightX).y(1F, -(UIConstants.MARGIN + AiUi.TASKBAR)).w(1F, -rightX).h(UIConstants.CONTROL_HEIGHT);
+
+        this.setMode(false);
 
         this.onAppear(this::fillList);
 
@@ -124,7 +162,81 @@ public class UIStructureAiPanel extends UIDashboardPanel
         this.add(buildHeader);
         this.add(this.buildTheme);
         this.add(this.generateBuild);
+        this.add(this.modePlace);
+        this.add(this.modeBlueprint);
+        this.add(this.coordRow);
+        this.add(this.blueprintRow);
         this.add(this.placeBuild);
+        this.add(this.exportBuild);
+    }
+
+    /** Mode toggle: accent the active one, swap the context row and action button. */
+    private void setMode(boolean blueprint)
+    {
+        this.blueprintMode = blueprint;
+
+        int accent = BBSSettings.primaryColor.get() | Colors.A100;
+
+        this.modePlace.color(blueprint ? -1 : accent);
+        this.modeBlueprint.color(blueprint ? accent : -1);
+
+        this.coordRow.setVisible(!blueprint);
+        this.blueprintRow.setVisible(blueprint);
+        this.placeBuild.setVisible(!blueprint);
+        this.exportBuild.setVisible(blueprint);
+
+        this.resize();
+    }
+
+    /** Parse the X/Y/Z inputs; unparsable/empty falls back to the player-relative spot. */
+    private net.minecraft.util.math.BlockPos requestedPos()
+    {
+        net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
+
+        try
+        {
+            int x = Integer.parseInt(this.coords[0].getText().trim());
+            int y = Integer.parseInt(this.coords[1].getText().trim());
+            int z = Integer.parseInt(this.coords[2].getText().trim());
+
+            return new net.minecraft.util.math.BlockPos(x, y, z);
+        }
+        catch (NumberFormatException e)
+        {
+            net.minecraft.client.network.ClientPlayerEntity player = client.player;
+
+            if (player == null)
+            {
+                return net.minecraft.util.math.BlockPos.ORIGIN;
+            }
+
+            net.minecraft.util.math.BlockPos base = player.getBlockPos().offset(player.getHorizontalFacing(), 6);
+
+            return new net.minecraft.util.math.BlockPos(base.getX(), player.getBlockPos().getY(), base.getZ());
+        }
+    }
+
+    /** Export the latest generation as Axiom/WorldEdit blueprints (no world write). */
+    private void exportBlueprint()
+    {
+        if (AiArchitecture.lastResult == null)
+        {
+            this.showLines(List.of(L10n.lang("bbs.ui.ai.structure.export_nothing").get()));
+
+            return;
+        }
+
+        List<String> lines = new ArrayList<>();
+        AiArchitecture.Result result = AiArchitecture.lastResult;
+
+        lines.add(L10n.lang("bbs.ui.ai.structure.export_done").format(result.name).get());
+
+        if (AiArchitecture.lastAxiom != null)
+        {
+            lines.add(L10n.lang("bbs.ui.ai.structure.export_axiom").format(AiArchitecture.lastAxiom.getAbsolutePath()).get());
+        }
+
+        this.showLines(lines);
     }
 
     /** 生成建筑: the theme becomes a strict build order, expanded into blueprints. */
@@ -165,13 +277,18 @@ public class UIStructureAiPanel extends UIDashboardPanel
 
         this.building = true;
         this.generateBuild.setEnabled(false);
-        this.showLines(List.of(L10n.lang("bbs.ui.ai.chat.thinking").get()));
+
+        /* Chain of thought: the description area narrates every stage */
+        this.showLines(List.of(
+            L10n.lang("bbs.ui.ai.structure.cot_analyze").format(theme).get(),
+            L10n.lang("bbs.ui.ai.structure.cot_draft").get()));
 
         AiChatRequest request = new AiChatRequest(
             L10n.lang("bbs.ui.ai.structure.build_system").get(),
             L10n.lang("bbs.ui.ai.structure.build_prompt").format(theme).get());
 
         request.temperature(0.6F);
+        request.maxTokens(1200);
 
         AiClient.get().chat(request, (response) ->
         {
@@ -181,15 +298,25 @@ public class UIStructureAiPanel extends UIDashboardPanel
             try
             {
                 java.io.File schematics = new java.io.File(client.runDirectory, "config/worldedit/schematics");
+                this.showLines(List.of(L10n.lang("bbs.ui.ai.structure.cot_expand").get()));
+
                 AiArchitecture.Result result = AiArchitecture.generate(response.content, generated, schematics);
 
                 AiArchitecture.lastGenerated = result.name;
+                AiArchitecture.lastResult = result;
                 this.fillList();
                 AiUi.headerText(this.descHeader, L10n.lang("bbs.ui.ai.structure.description"), result.name);
 
-                this.showLines(List.of(
+                List<String> done = new ArrayList<>(List.of(
                     L10n.lang("bbs.ui.ai.structure.build_done").format(result.title, result.blocks).get(),
                     L10n.lang("bbs.ui.ai.structure.build_where").get()));
+
+                if (AiArchitecture.lastAxiom != null)
+                {
+                    done.add(L10n.lang("bbs.ui.ai.structure.export_axiom").format(AiArchitecture.lastAxiom.getAbsolutePath()).get());
+                }
+
+                this.showLines(done);
             }
             catch (Exception e)
             {
@@ -205,7 +332,7 @@ public class UIStructureAiPanel extends UIDashboardPanel
     }
 
     /** 放置: the last generated structure, six blocks in front of the player. */
-    private void placeBuilding()
+    private void placeBuilding(net.minecraft.util.math.BlockPos pos)
     {
         if (AiArchitecture.lastGenerated == null)
         {
@@ -224,6 +351,7 @@ public class UIStructureAiPanel extends UIDashboardPanel
         net.minecraft.network.PacketByteBuf buf = PacketByteBufs.create();
 
         buf.writeString(AiArchitecture.lastGenerated);
+        buf.writeBlockPos(pos);
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(ServerNetwork.SERVER_AI_PLACE_STRUCTURE, buf);
     }
 

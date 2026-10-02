@@ -138,17 +138,26 @@ public class ScreenshotRecorder
         {
             try
             {
+                /* The default framebuffer carries alpha 0, which viewers render
+                 * as fully transparent (i.e. black) - force it opaque */
+                int[] opaque = new int[this.data.length];
+
+                for (int i = 0; i < opaque.length; i++)
+                {
+                    opaque[i] = this.data[i] | 0xFF000000;
+                }
+
                 if (this.destination == null)
                 {
                     /* Windows only */
                     BufferedImage image = new BufferedImage(this.width, this.height, BufferedImage.TYPE_INT_ARGB);
 
-                    image.setRGB(0, 0, this.width, this.height, this.data, 0, this.width);
+                    image.setRGB(0, 0, this.width, this.height, opaque, 0, this.width);
                     Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new TransferableImage(image), this);
                 }
                 else
                 {
-                    Pixels pixels = Pixels.fromIntArray(this.width, this.height, this.data);
+                    Pixels pixels = Pixels.fromIntArray(this.width, this.height, opaque);
 
                     PNGEncoder.writeToFile(pixels, this.destination);
 

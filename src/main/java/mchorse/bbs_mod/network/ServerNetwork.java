@@ -177,6 +177,7 @@ public class ServerNetwork
     private static void handleAIPlaceStructure(MinecraftServer server, ServerPlayerEntity player, PacketByteBuf buf)
     {
         String name = buf.readString();
+        BlockPos requested = buf.readBlockPos();
 
         if (!PermissionUtils.arePanelsAllowed(server, player))
         {
@@ -194,7 +195,13 @@ public class ServerNetwork
                 if (template.isPresent())
                 {
                     ServerWorld world = player.getServerWorld();
-                    BlockPos origin = player.getBlockPos().offset(player.getHorizontalFacing(), 6);
+
+                    /* Zero origin = the legacy player-relative spot; otherwise
+                     * the user's explicit coordinates are honored as-is */
+                    BlockPos origin = requested.equals(BlockPos.ORIGIN)
+                        ? player.getBlockPos().offset(player.getHorizontalFacing(), 6)
+                        : requested;
+
                     StructurePlacementData data = new StructurePlacementData().setIgnoreEntities(false);
 
                     placed = template.get().place(world, origin, origin, data, world.getRandom(), 0x12);

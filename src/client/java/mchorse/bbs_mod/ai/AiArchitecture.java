@@ -45,6 +45,12 @@ public class AiArchitecture
     /** The last generated structure's registry path (bbs namespace). */
     public static String lastGenerated;
 
+    /** The last generation's full result (cells + size) for re-export. */
+    public static Result lastResult;
+
+    /** The Axiom blueprint file written for the last generation, if Axiom is loaded. */
+    public static File lastAxiom;
+
     public static class Result
     {
         public final String name;
@@ -52,12 +58,16 @@ public class AiArchitecture
         public final int blocks;
         public final List<Integer> size;
 
-        public Result(String name, String title, int blocks, List<Integer> size)
+        /** Resolved block id per packed (x << 24 | z << 12 | y) cell. */
+        public final Map<Long, String> cells;
+
+        public Result(String name, String title, int blocks, List<Integer> size, Map<Long, String> cells)
         {
             this.name = name;
             this.title = title;
             this.blocks = blocks;
             this.size = size;
+            this.cells = cells;
         }
     }
 
@@ -132,7 +142,11 @@ public class AiArchitecture
             writeSchem(grid, new File(schematicsDir, name + ".schem"));
         }
 
-        return new Result(name, title, placed, size);
+        Result result = new Result(name, title, placed, size, new LinkedHashMap<>(grid.cells()));
+
+        this_or_static(result, generatedDir, schematicsDir);
+
+        return result;
     }
 
     /* ---- ops ---- */
@@ -419,6 +433,29 @@ public class AiArchitecture
 
         file.getParentFile().mkdirs();
         NbtIo.write(root, file);
+    }
+
+    /** Remember the result and, when Axiom is loaded, write its native blueprint. */
+    private static void this_or_static(Result result, File generatedDir, File schematicsDir)
+    {
+        lastResult = result;
+        lastAxiom = null;
+
+        try
+        {
+            if (AxiomBlueprintWriter.isAxiomLoaded())
+            {
+                lastAxiom = AxiomBlueprintWriter.export(AxiomBlueprintWriter.blueprintDir(),
+                    result.name, result.title, result.cells,
+                    new int[]{result.size.get(0), result.size.get(1), result.size.get(2)});
+            }
+        }
+        catch (Exception e)
+        {
+            /* The .schem/.nbt blueprints are already written; the Axiom-native
+             * one is a bonus - a failure here must not fail the generation */
+            e.printStackTrace();
+        }
     }
 
     /* ---- json helpers ---- */

@@ -385,3 +385,32 @@ hub 输入行+状态、采集的状态/输出栈）都落在被遮挡带内。�
 - 主要构成材料名改用注册表 id（去掉 Block{...} 包装：obsidian × 14 这样的干净清单）。
 - 构建+部署（先关后拷+md5 校验）+ 目视验证：标题条/描述/材料清单/生成建筑/放置全部
   正常渲染。
+
+## 二十二、第十六轮（2026-10-02，「编辑轨道」按钮排查 + MCP 无感调试成型）
+
+用户反馈缺少「编辑轨道 bodyYaw」按钮（截图来自 posecurve 2.8.6）。排查结论：**功能在构建里且工作正常**。
+
+- **四项静态核查全过**：基类右键菜单代码（UIKeyframes 141-158，上游原生）、
+  posecurve 注入（MixinUIKeyframes bbsplus$addTransformEditTrack → TRANSFORM/POSE_TRANSFORM）、
+  mixin 注册（bbs-posecurve-addon.client.mixins.json，required=true 未崩=已应用）、
+  zh_cn 翻译（「编辑轨道 %s」strings/zh_cn.json:705）、jar 内类齐全。
+- **实机复现成功**（新增 MCP 端点驱动 UI）：右键 bodyYaw/headYaw 行 → 菜单第一项
+  「✏️ 编辑轨道 xxx」→ 点击进入曲线编辑器（菜单高度 181→161 状态切换证实）。
+  截图两张为证（menu1/menu2_fix.png）。
+- **posecurve 核心验证**：/debug op=editSheet transform → `editing=true,
+  graph=UIPoseTransformKeyframeGraph`，截图证实渲染（眼睛/锁控制面板可见）。
+  即：transform/pose 轨道的 posecurve 版编辑轨道路径端到端可用。
+- **用户看不到该按钮的最可能原因**：①右键落在无行的空白区（hovered=null 整段
+  菜单消失）；②身处曲线编辑器内（此时菜单显示「退出轨道」而非「编辑轨道」）；
+  ③transform/pose 行通常在列表下方需要滚动或切 POSE 分类标签才可见。
+- **调试基础设施（AiDebugServer）**：新增 POST /mouse（窗口像素合成点击，自动除
+  GUI 缩放）、/wheel（滚轮）、/uistate（UI 树导出：类名+区域+文本+轨道行
+  relY/工厂+dopeSheetY 滚动偏移）、/debug（op=editSheet/exitSheet 直连轨道编辑器）；
+  ScreenshotRecorder 强制不透明 alpha（此前截图 RGB 正确但 A=0，看图工具显示全黑）。
+- **事故与恢复**：筛选面板「全部隐藏」误触把 132 个轨道键写进
+  BBSSettings.disabledSheets（含持久化文件）。依据误操作前的 /uistate 轨道清单
+  精确重建：剔除与 29 条可见轨道匹配的条目、保留 103 条用户原有条目，写回
+  bbs.json 后重启核验（29 条轨道原序全部回归）。
+- **环境元凶记录**：Axiom 模组 ImGui 字体断言失败（imstb_truetype.h:1590）会卡死
+  世界加载（class_433 循环）并数次中断实机验证——与我们代码无关；另将
+  pauseOnLostFocus 改为 false（options.txt）以便后台调试。

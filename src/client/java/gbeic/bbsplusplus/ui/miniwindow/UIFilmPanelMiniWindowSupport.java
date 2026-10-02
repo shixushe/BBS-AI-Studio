@@ -522,7 +522,14 @@ public class UIFilmPanelMiniWindowSupport implements MiniWindowDockHostSupport.D
 
     public UIElement editAreaPanel()
     {
-        /* editArea 本身始终是停靠树里的独立 panel,即使它所在的窗口正在浮动。 */
+        /* 检查器落到 editArea 的上半(propertiesHost):下半自 R6 起是 AI 对话栏,
+         * 满高嵌入会盖住对话流。editArea 本身始终是停靠树里的独立 panel,即使它
+         * 所在的窗口正在浮动。 */
+        if (this.panel.propertiesHost != null)
+        {
+            return this.panel.propertiesHost;
+        }
+
         if (this.panel.dock != null)
         {
             UIElement dockEdit = this.panel.dock.getPanel(PANEL_EDIT);

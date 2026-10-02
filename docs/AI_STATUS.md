@@ -116,7 +116,7 @@ E:\BBS FS AI\mc-mcp\mc_mcp_server.py        ← MCP 调试服务(config 指向 t
   采集面板自动走带 12 帧并持久化 ✓、QuickPlay 启动器直进世界 ✓。
 - **待验证/待修（下一轮入口）**：
   1. §5.2 左栏 script textarea 在游戏内渲染不可见（疑似 h(1F,-52) 塌陷或缺底色）——UI 照 mockup 像素级打磨的入口；
-  2. §5.1 对话条已升级为对话界面并落位 editArea 下半（见下"本轮改动"），目视验证因用户会议占用屏幕未完成；
+  2. §5.1 对话条已升级为对话界面并落位 editArea 下半（见"本轮改动"），游戏内目视已验证 ✓；
   3. 设置 AI 标签行名已补齐但未目视复验（bbs.config.ai.* 全量补齐后需重启游戏）；
   4. §5.9 跟随机制已实现未目视验证；
   5. §5.4 幽灵帧：时间轴标记+预览区边框已做，3D 剪影待 renderer 级；
@@ -141,7 +141,11 @@ E:\BBS FS AI\mc-mcp\mc_mcp_server.py        ← MCP 调试服务(config 指向 t
 - **上半属性滚动条**：UIClip/UIKeyframeFactory 本就内建 UIScrollView（UI.scrollView → column().scroll()），
   压到半高后内容溢出即出滚动条，无需改动。
 - 构建：compileClientJava + gradlew build（四套测试 + apiCheck）全绿；jar 已部署实例 mods。
-- 游戏内：/aiui film 打开影片面板成功、无任何 bbs_mod UI 异常（log 验证）。
-  **目视走查未完成**：走查时用户桌面被在线会议窗口占据，为不打扰已停止抢焦点截图；
-  下轮入口=会议结束后 mc_ping → `/aiui film` → OS 抓图核对分屏/滚动条/气泡观感。
+- **游戏内目视已验证（09:38 截图）**：/aiui film 后右栏 50/50 分屏正确——上半属性（空态提示/选中剪辑后的
+  位置+角度字段，带自身滚动条，不再溢出），中缝 accent 分界线，下半 AI 对话（欢迎语完整换行、
+  底部 [AI][生成][打磨][输入][执行] 行）。log 无任何 bbs_mod UI 异常。
+- **缝合点修复**：gbeic `UIFilmPanelMiniWindowSupport.editAreaPanel()` 原样返回整个 editArea，
+  其 reassert/embed 会把检查器满高拽回 editArea 盖住对话栏（首轮截图实测溢出）——已改为优先返回
+  `panel.propertiesHost`（上半），BBS++ 全部重挂路径（UIClipInspectorEmbedMixin 等）随之归位。
+- AnimationStateLayoutSupport 的 editArea 是 statesKeyframes 自己的元素（非影片面板的），无需改动。
 - 新 l10n（en+zh）：bbs.ui.ai.chat.you/assistant/welcome/unconfigured/thinking/generated。

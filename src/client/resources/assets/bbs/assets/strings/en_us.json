@@ -2466,7 +2466,7 @@
   "bbs.config.ai.image_size": "Image size",
   "bbs.config.ai.ai_follow": "Interface following",
   "bbs.config.ai.ai_follow-comment": "After an AI commit, jump to the panel that owns the change",
-  "bbs.ui.ai.bar.execute_tooltip": "Generate: needs a configured backend and a model form replay; Polish: works fully offline on the open replay's curves",
+  "bbs.ui.ai.bar.execute_tooltip": "Auto-routed: curve-shaping words (smooth/ease in out/arc... + strength/range) run offline polish; the rest is an action script (needs a backend)",
   "bbs.ui.ai.bar.generate_tooltip": "Script -> AnimationPlan -> blocking pose frames (needs a configured backend)",
   "bbs.ui.ai.bar.polish_tooltip": "Fully local curve polish - works without any backend",
   "bbs.ui.ai.bar.commit_tooltip": "Lands the pending proposal (one undo entry, Ctrl+Z reverts)",
@@ -2523,7 +2523,7 @@
   "bbs.ui.ai.panel.vision_toggle": "Vision understanding",
   "bbs.ui.ai.chat.you": "You",
   "bbs.ui.ai.chat.assistant": "AI",
-  "bbs.ui.ai.chat.welcome": "Talk to the copilot here: 生成 turns an action script into pose keyframes, 打磨 adjusts existing curves (like \"smoother\", \"ease in out 0.7\", \"6-22\") fully offline. Results arrive as ghost-frame previews first - commit with 入框, one undo entry, Ctrl+Z to take back.",
+  "bbs.ui.ai.chat.welcome": "Just type - no modes to pick: curve-shaping instructions (\"smoother\", \"ease in out 0.7\", \"6-22\") route to offline polish automatically; anything else is an action script for generation (needs a backend). Results arrive as ghost-frame previews first - commit with 入框, Ctrl+Z to take back.",
   "bbs.ui.ai.chat.unconfigured": "No AI backend configured - pick a provider and API key under Settings > AI copilot; 打磨 works without one.",
   "bbs.ui.ai.chat.thinking": "Generating...",
   "bbs.ui.ai.chat.generated": "Generated %s beats / %s ticks of pose frames - the ghost overlay is on the timeline. Commit once it looks right.",
@@ -2979,5 +2979,11 @@
   "bbs.ui.film.replays.category.physics-comment": "Bone physics tracks",
   "bbs.ui.camera.panels.curves.chroma_sky_color": "Chroma sky color",
   "bbs.ui.camera.panels.curves.sun_path_rotation": "Sun path rotation",
-  "bbs.ui.camera.panels.curves.center_depth": "Center depth"
+  "bbs.ui.camera.panels.curves.center_depth": "Center depth",
+  "bbs.ui.model_editor.ai_bindings": "AI bindings",
+  "bbs.ui.model_editor.ai_bindings_hint": "Declare which real bone plays each generic pose-library bone (head/body/limbs) for this model. Saved bindings keep the AI chat from asking again.",
+  "bbs.ui.model_editor.ai_bindings_unsaved": "Save/pick a model first, then set its AI bindings.",
+  "bbs.ui.model_editor.ai_bindings_none": "(unbound)",
+  "bbs.ui.ai.chat.bindings_missing": "Bones still unbound: %s - bind them in the model editor's AI bindings tab, or pick real bones for each entry in the confirmation dialog.",
+  "bbs.ui.ai.bar.solve_error": "Bone solve failed: %s"
 }

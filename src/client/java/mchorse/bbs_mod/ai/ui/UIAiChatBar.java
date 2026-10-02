@@ -6,7 +6,6 @@ import mchorse.bbs_mod.ai.commit.EditPatch;
 import mchorse.bbs_mod.ai.commit.EditPatchBuilder;
 import mchorse.bbs_mod.ai.commit.FrameCommitter;
 import mchorse.bbs_mod.ai.AiChatRequest;
-import mchorse.bbs_mod.ai.AiException;
 import mchorse.bbs_mod.ai.AiSettings;
 import mchorse.bbs_mod.ai.commit.FrameDiff;
 import mchorse.bbs_mod.ai.curve.PolishCommandParser;
@@ -37,15 +36,16 @@ import java.util.List;
 
 /**
  * The film editor's AI chat surface (copilot spec section 5.1) - the lower half
- * of the properties column. Two modes: 生成 (generate, M5) and 打磨 (polish,
- * fully local - iron rule 4 keeps it working with no backend configured).
+ * of the properties column. One input, no modes: the sentence itself decides
+ * what happens. Curve-shaping language (平滑/缓入缓出/6-22...) routes to the
+ * offline polish pipeline (iron rule 4 - no backend needed); anything else is
+ * a script for the action generation pipeline. Whatever the current scene
+ * cannot do, the transcript explains instead of silently failing.
  *
- * <p>Human-centered shape: a scrolling transcript of what was asked and what
- * came back (so a result is never overwritten by the next status line), an
- * input row that sends on Enter, and a preview row that only exists while
- * there is something to accept - 入框/丢弃. An accepted execution builds
- * channel writes and hands them to {@link AiPreviewState}, which the ghost
- * frame layer draws; one accepted operation = one undo entry.</p>
+ * <p>Results never land directly: an accepted execution builds channel writes
+ * and hands them to {@link AiPreviewState}, which the ghost frame layer draws
+ * and the preview row can 入框 (commit through the M3 undo transaction) or
+ * 丢弃 (discard). One accepted operation = one undo entry.</p>
  */
 public class UIAiChatBar extends UIElement
 {
@@ -57,17 +57,12 @@ public class UIAiChatBar extends UIElement
     /** The transcript: everything asked and answered, newest at the bottom. */
     private final AiChatHistory history;
 
-    private final UIButton generate;
-    private final UIButton polish;
     private final UITextbox input;
     private final UIButton execute;
 
     private final UIElement inputRow;
     private final UIElement previewRow;
     private final UILabel status;
-
-    /** Whether the polish mode is active (generate is the other face). */
-    private boolean polishMode = false;
 
     private boolean busy;
 
@@ -80,14 +75,6 @@ public class UIAiChatBar extends UIElement
 
         this.history = new AiChatHistory();
         this.add(this.history);
-
-        IKey generateLabel = L10n.lang("bbs.ui.ai.bar.generate");
-        IKey polishLabel = L10n.lang("bbs.ui.ai.bar.polish");
-        IKey commitLabel = L10n.lang("bbs.ui.ai.bar.commit");
-        IKey discardLabel = L10n.lang("bbs.ui.ai.bar.discard");
-
-        this.generate = new UIButton(generateLabel, (b) -> this.setPolishMode(false));
-        this.polish = new UIButton(polishLabel, (b) -> this.setPolishMode(true));
 
         /* Enter sends, like any chat box - execute() clears the line itself */
         this.input = new UITextbox(256, (t) -> {})
@@ -108,20 +95,18 @@ public class UIAiChatBar extends UIElement
         this.input.placeholder(L10n.lang("bbs.ui.ai.bar.placeholder"));
 
         this.execute = new UIButton(L10n.lang("bbs.ui.ai.bar.execute"), (b) -> this.execute());
-
+        this.execute.color(BBSSettings.primaryColor.get() | Colors.A100);
         this.execute.tooltip(L10n.lang("bbs.ui.ai.bar.execute_tooltip"));
-        this.generate.tooltip(L10n.lang("bbs.ui.ai.bar.generate_tooltip"));
-        this.polish.tooltip(L10n.lang("bbs.ui.ai.bar.polish_tooltip"));
 
-        this.inputRow = UI.row(1, this.generate, this.polish, this.input, this.execute);
-        this.inputRow.row(1).preferred(2).height(ROW);
+        this.inputRow = UI.row(1, this.input, this.execute);
+        this.inputRow.row(1).preferred(0).height(ROW);
         this.add(this.inputRow);
 
         this.status = new UILabel(L10n.lang("bbs.ui.ai.bar.preview"));
         this.status.color(Colors.LIGHTER_GRAY, false);
 
-        UIButton commit = new UIButton(commitLabel, (b) -> this.confirm());
-        UIButton discard = new UIButton(discardLabel, (b) -> this.discard());
+        UIButton commit = new UIButton(L10n.lang("bbs.ui.ai.bar.commit"), (b) -> this.confirm());
+        UIButton discard = new UIButton(L10n.lang("bbs.ui.ai.bar.discard"), (b) -> this.discard());
 
         commit.color(BBSSettings.primaryColor.get() | Colors.A100);
         commit.tooltip(L10n.lang("bbs.ui.ai.bar.commit_tooltip"));
@@ -132,7 +117,6 @@ public class UIAiChatBar extends UIElement
         this.previewRow.setVisible(false);
         this.add(this.previewRow);
 
-        this.setPolishMode(false);
         this.relayout();
         this.history.log(AiChatMessage.Role.SYSTEM, L10n.lang("bbs.ui.ai.chat.welcome").get());
     }
@@ -152,16 +136,6 @@ public class UIAiChatBar extends UIElement
         this.history.relative(this).x(GAP).y(GAP).w(1F, -GAP * 2).h(1F, -(GAP * (preview ? 3 : 2) + ROW * (preview ? 2 : 1)));
     }
 
-    private void setPolishMode(boolean polish)
-    {
-        this.polishMode = polish;
-
-        int accent = BBSSettings.primaryColor.get() | Colors.A100;
-
-        this.polish.color(polish ? accent : -1);
-        this.generate.color(polish ? -1 : accent);
-    }
-
     private void execute()
     {
         if (this.busy)
@@ -169,14 +143,68 @@ public class UIAiChatBar extends UIElement
             return;
         }
 
-        if (this.polishMode)
+        String text = this.input.getText().trim();
+
+        if (text.isEmpty())
         {
-            this.executePolish();
+            this.history.log(AiChatMessage.Role.SYSTEM, L10n.lang("bbs.ui.ai.panel.empty_script").get());
+
+            return;
+        }
+
+        /* Small talk (a bare 你好) gets a local conversational reply - never a
+         * generation call and never a backend request */
+        if (mchorse.bbs_mod.ai.AiSmallTalk.isSmallTalk(text))
+        {
+            this.history.log(AiChatMessage.Role.USER, text);
+            this.input.setText("");
+            this.history.log(AiChatMessage.Role.ASSISTANT, mchorse.bbs_mod.ai.AiSmallTalk.reply(text));
+
+            return;
+        }
+
+        /* Auto routing: curve-shaping language polishes the open replay's curves
+         * (offline); everything else is an action script for the generation
+         * pipeline. The scene checks inside each path explain what to change. */
+        List<PolishOp> ops = PolishCommandParser.parse(text);
+
+        if (!ops.isEmpty() && this.canPolishScene())
+        {
+            this.executePolish(text, ops);
         }
         else
         {
-            this.executeGenerate();
+            this.executeGenerate(text);
         }
+    }
+
+    /** Whether the open scene offers numeric curves the polisher could act on. */
+    private boolean canPolishScene()
+    {
+        Replay replay = this.panel.replayEditor.getReplay();
+
+        if (replay == null)
+        {
+            return false;
+        }
+
+        for (KeyframeChannel<?> channel : replay.properties.tracks.values())
+        {
+            if (CurveGuard.polishable(channel))
+            {
+                return true;
+            }
+        }
+
+        for (KeyframeChannel<?> channel : replay.keyframes.getChannels())
+        {
+            if (CurveGuard.polishable(channel))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -184,17 +212,8 @@ public class UIAiChatBar extends UIElement
      * replay's model bones -> the same preview/commit pipeline polish uses.
      * The end-to-end loop of the copilot spec's delivery goal.
      */
-    private void executeGenerate()
+    private void executeGenerate(String script)
     {
-        String script = this.input.getText().trim();
-
-        if (script.isEmpty())
-        {
-            this.history.log(AiChatMessage.Role.SYSTEM, L10n.lang("bbs.ui.ai.panel.empty_script").get());
-
-            return;
-        }
-
         this.history.log(AiChatMessage.Role.USER, script);
         this.input.setText("");
 
@@ -247,14 +266,28 @@ public class UIAiChatBar extends UIElement
 
             mchorse.bbs_mod.ai.pose.BoneNameResolver.Result bones = mchorse.bbs_mod.ai.pose.BoneNameResolver.resolve(inventory);
 
+            /* Saved model bindings (model editor's AI tab / past confirmations) answer first */
+            mchorse.bbs_mod.ai.pose.AiBoneBindings.apply(modelForm.model.get(), inventory, bones);
+
             if (!bones.isComplete())
             {
                 /* The assistant never guesses bone names - it asks */
                 thinking.setText(L10n.lang("bbs.ui.ai.ask.open").get());
                 this.history.refresh();
 
-                UIAiAskOverlayPanel ask = new UIAiAskOverlayPanel(context, bones.unresolved, inventory, (confirmed) ->
+                UIAiAskOverlayPanel ask = new UIAiAskOverlayPanel(context, bones.unresolved, inventory, modelForm.model.get(), (confirmed) ->
                 {
+                    /* The user may skip bones - then the map is still incomplete and
+                     * PoseSolver would throw. Explain instead of ever crashing. */
+                    if (!confirmed.isComplete())
+                    {
+                        thinking.setRole(AiChatMessage.Role.SYSTEM);
+                        thinking.setText(L10n.lang("bbs.ui.ai.chat.bindings_missing").format(String.join(", ", confirmed.unresolved)).get());
+                        this.history.refresh();
+
+                        return;
+                    }
+
                     this.previewGenerated(generated, confirmed, replay, thinking);
                 });
 
@@ -275,8 +308,23 @@ public class UIAiChatBar extends UIElement
 
     private void previewGenerated(AnimationPlan generated, mchorse.bbs_mod.ai.pose.BoneNameResolver.Result bones, Replay replay, AiChatMessage thinking)
     {
-        List<mchorse.bbs_mod.ai.pose.PoseSolver.KeyPose> poses = mchorse.bbs_mod.ai.pose.PoseSolver.solve(generated, bones);
-        List<FrameCommitter.ChannelWrite> writes = mchorse.bbs_mod.ai.pose.PoseSolver.toChannelWrites(poses, replay.properties);
+        List<mchorse.bbs_mod.ai.pose.PoseSolver.KeyPose> poses;
+        List<FrameCommitter.ChannelWrite> writes;
+
+        try
+        {
+            poses = mchorse.bbs_mod.ai.pose.PoseSolver.solve(generated, bones);
+            writes = mchorse.bbs_mod.ai.pose.PoseSolver.toChannelWrites(poses, replay.properties);
+        }
+        catch (Exception e)
+        {
+            /* A chat action must never take the game down (crash report 2026-10-02_11.56) */
+            thinking.setRole(AiChatMessage.Role.ERROR);
+            thinking.setText(L10n.lang("bbs.ui.ai.panel.failed").format(e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()).get());
+            this.history.refresh();
+
+            return;
+        }
 
         AiPreviewState.get().begin(replay, writes, this.buildPreviewDiff(writes));
 
@@ -287,18 +335,8 @@ public class UIAiChatBar extends UIElement
     }
 
     /** Polish: local intent parsing -> L3 on every numeric channel of the open replay -> preview. */
-    private void executePolish()
+    private void executePolish(String text, List<PolishOp> ops)
     {
-        String text = this.input.getText().trim();
-        List<PolishOp> ops = text.isEmpty() ? List.of() : PolishCommandParser.parse(text);
-
-        if (ops.isEmpty())
-        {
-            this.history.log(AiChatMessage.Role.SYSTEM, L10n.lang("bbs.ui.ai.bar.no_intent").get());
-
-            return;
-        }
-
         this.history.log(AiChatMessage.Role.USER, text);
         this.input.setText("");
 

@@ -280,12 +280,15 @@ public class UICreativeModePanel extends UIDashboardPanel
 
         BoneNameResolver.Result bones = BoneNameResolver.resolve(inventory);
 
+        /* Saved model bindings answer before the ask dialog */
+        mchorse.bbs_mod.ai.pose.AiBoneBindings.apply(modelForm.model.get(), inventory, bones);
+
         if (!bones.isComplete())
         {
             /* Ask - never guess (spec 12.2) */
             this.status.label = L10n.lang("bbs.ui.ai.ask.open");
 
-            UIAiAskOverlayPanel ask = new UIAiAskOverlayPanel(this.getContext(), bones.unresolved, inventory, (confirmed) ->
+            UIAiAskOverlayPanel ask = new UIAiAskOverlayPanel(this.getContext(), bones.unresolved, inventory, modelForm.model.get(), (confirmed) ->
             {
                 this.adoptContinue(latest, replay, panel, confirmed);
             });

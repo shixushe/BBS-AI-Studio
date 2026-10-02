@@ -40,6 +40,7 @@ import mchorse.bbs_mod.ui.framework.elements.input.UITrackpad;
 import mchorse.bbs_mod.ui.framework.elements.input.list.UISearchList;
 import mchorse.bbs_mod.ui.framework.elements.input.list.UIStringList;
 import mchorse.bbs_mod.ui.framework.elements.input.text.UITextbox;
+import mchorse.bbs_mod.ui.framework.elements.utils.UILabel;
 import mchorse.bbs_mod.ui.framework.elements.utils.UITabStrip;
 import mchorse.bbs_mod.ui.framework.elements.utils.UIText;
 import mchorse.bbs_mod.ui.framework.elements.utils.UITextTab;
@@ -104,6 +105,7 @@ public class UIModelConfigEditor extends UIElement
         ITEMS(Icons.HOTBAR, UIKeys.MODEL_EDITOR_ITEMS),
         FIRST_PERSON(Icons.LOOKING, UIKeys.MODEL_EDITOR_FIRST_PERSON),
         PROCEDURAL(Icons.PLAY, L10n.lang("bbs.ui.model_editor.procedural_tab")),
+        AI_BINDINGS(Icons.KEY_CAP, L10n.lang("bbs.ui.model_editor.ai_bindings")),
         POSES(Icons.POSE, UIKeys.MODEL_EDITOR_POSES);
 
         public final Icon icon;
@@ -309,6 +311,7 @@ public class UIModelConfigEditor extends UIElement
     private void openTab(Tab tab)
     {
         if (tab == Tab.PROCEDURAL && this.data != null) this.fillProcedural();
+        if (tab == Tab.AI_BINDINGS) this.fillAiBindings();
         this.showPage(tab);
         this.modelPanel.refreshPreview();
     }
@@ -650,6 +653,79 @@ public class UIModelConfigEditor extends UIElement
 
         page.resize();
         page.scroll.clamp();
+    }
+
+    /**
+     * The AI bindings page: which real bone plays each generic pose-library
+     * bone (head/body/arms/legs) for this model. Saved per model, consumed by
+     * the AI chat before it ever asks.
+     */
+    private void fillAiBindings()
+    {
+        UIScrollView page = this.page(Tab.AI_BINDINGS);
+
+        page.removeAll();
+
+        UILabel hint = UI.label(L10n.lang("bbs.ui.model_editor.ai_bindings_hint"), UIConstants.CONTROL_HEIGHT * 2);
+
+        hint.color(Colors.LIGHTER_GRAY, false);
+        page.add(hint);
+
+        String modelKey = this.modelPanel.getData() == null ? null : this.modelPanel.getData().getId();
+
+        if (modelKey == null)
+        {
+            page.add(UI.label(L10n.lang("bbs.ui.model_editor.ai_bindings_unsaved"), UIConstants.CONTROL_HEIGHT));
+
+            return;
+        }
+
+        java.util.List<String> bones = new java.util.ArrayList<>();
+
+        if (this.instance() != null && this.instance().getModel() != null)
+        {
+            bones.addAll(this.instance().getModel().getAllGroupKeys());
+        }
+
+        java.util.Collections.sort(bones);
+
+        Map<String, String> saved = mchorse.bbs_mod.ai.pose.AiBoneBindings.get(modelKey);
+
+        for (String generic : mchorse.bbs_mod.ai.pose.PoseLibrary.GENERIC_BONES)
+        {
+            java.util.List<String> options = new java.util.ArrayList<>();
+
+            options.add(L10n.lang("bbs.ui.model_editor.ai_bindings_none").get());
+            options.addAll(bones);
+
+            mchorse.bbs_mod.ui.framework.elements.buttons.UIChoiceButton<String> pick =
+                new mchorse.bbs_mod.ui.framework.elements.buttons.UIChoiceButton<>(
+                    options,
+                    (choice) -> mchorse.bbs_mod.ui.utils.icons.Icons.LIMB,
+                    (choice) -> mchorse.bbs_mod.l10n.keys.IKey.constant(choice));
+
+            String current = saved.get(generic);
+
+            pick.setValue(current == null || current.isEmpty() ? options.get(0) : current);
+            pick.h(UIConstants.CONTROL_HEIGHT);
+            pick.callback((choice) ->
+            {
+                Map<String, String> map = new LinkedHashMap<>(mchorse.bbs_mod.ai.pose.AiBoneBindings.get(modelKey));
+
+                if (choice == null || choice.equals(L10n.lang("bbs.ui.model_editor.ai_bindings_none").get()))
+                {
+                    map.remove(generic);
+                }
+                else
+                {
+                    map.put(generic, choice);
+                }
+
+                mchorse.bbs_mod.ai.pose.AiBoneBindings.set(modelKey, map);
+            });
+
+            page.add(UI.labelRow(L10n.lang("bbs.ui.ai.ask.bone").format(generic), pick));
+        }
     }
 
     private void fillProcedural()

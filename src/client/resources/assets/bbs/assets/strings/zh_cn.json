@@ -1268,7 +1268,7 @@
   "bbs.config.ai.image_size": "图像尺寸",
   "bbs.config.ai.ai_follow": "界面跟随",
   "bbs.config.ai.ai_follow-comment": "AI 入框后自动跳到改动所在面板",
-  "bbs.ui.ai.bar.execute_tooltip": "生成：需已配置后端且选中模型回放；打磨：完全离线，作用于当前回放的曲线",
+  "bbs.ui.ai.bar.execute_tooltip": "自动识别：含曲线调整词（平滑/缓入缓出/弧线…+强度/区间）走离线打磨；其余按剧本生成动作（需后端）",
   "bbs.ui.ai.bar.generate_tooltip": "剧本 → AnimationPlan → blocking 姿态帧（需已配置后端）",
   "bbs.ui.ai.bar.polish_tooltip": "纯本地曲线打磨 —— 无后端也能用",
   "bbs.ui.ai.bar.commit_tooltip": "将预览中的改动入框（一个撤销条目，Ctrl+Z 可回退）",
@@ -1321,7 +1321,7 @@
   "bbs.ui.ai.panel.vision_toggle": "视觉理解",
   "bbs.ui.ai.chat.you": "你",
   "bbs.ui.ai.chat.assistant": "AI 助手",
-  "bbs.ui.ai.chat.welcome": "直接下指令：「生成」把动作剧本变成姿态关键帧，「打磨」调整已有曲线（如「更柔和」「缓入缓出 0.7」「6-22」，完全离线可用）。结果先以幽灵帧预览，确认后「入框」，Ctrl+Z 可回退。",
+  "bbs.ui.ai.chat.welcome": "直接输入即可，无需选模式：曲线调整类指令（如「更柔和」「缓入缓出 0.7」「6-22」）自动走打磨——完全离线可用；其余按剧本生成动作（需配置后端）。结果先以幽灵帧预览，确认后「入框」，Ctrl+Z 可回退。",
   "bbs.ui.ai.chat.unconfigured": "尚未配置 AI 后端 —— 请到 设置 → AI 副驾 选择供应商并填写密钥；「打磨」无需配置即可使用。",
   "bbs.ui.ai.chat.thinking": "正在生成……",
   "bbs.ui.ai.chat.generated": "已生成 %s 拍 / %s tick 的姿态帧 —— 幽灵帧已叠加在时间轴上，检查无误后点「入框」。",
@@ -3623,5 +3623,11 @@
   "studio.ui.utility.open_fonts_folder": "字体",
   "studio.ui.utility.open_video_folder": "视频",
   "category.bbspp.keys": "BBS++ 按键",
-  "key.bbspp.open_quick_replays": "打开快速回放"
+  "key.bbspp.open_quick_replays": "打开快速回放",
+  "bbs.ui.model_editor.ai_bindings": "AI 绑定",
+  "bbs.ui.model_editor.ai_bindings_hint": "为 AI 生成动作指定该模型的通用骨骼（头/身体/四肢）分别对应哪根真实骨骼。绑定保存后，AI 对话不再重复询问。",
+  "bbs.ui.model_editor.ai_bindings_unsaved": "请先保存/选择模型后再设置 AI 绑定。",
+  "bbs.ui.model_editor.ai_bindings_none": "（未绑定）",
+  "bbs.ui.ai.chat.bindings_missing": "还有骨骼未绑定：%s —— 请到模型编辑器的「AI 绑定」页签完成绑定，或在确认对话框里为每一项选择真实骨骼。",
+  "bbs.ui.ai.bar.solve_error": "骨骼解析失败: %s"
 }

@@ -157,6 +157,8 @@ public class UIModelConfigEditor extends UIElement
     private final List<UIElement> bodies = new ArrayList<>();
     private UIElement proceduralBody;
     private int proceduralPreview;
+    /** 自定义通用骨骼的输入中名称（AI 绑定页签） */
+    private String aiBindingName;
     private UIElement generalBody;
     private UIElement renderBody;
     private UIElement sizeBody;
@@ -690,13 +692,22 @@ public class UIModelConfigEditor extends UIElement
         java.util.Collections.sort(bones);
 
         Map<String, String> saved = mchorse.bbs_mod.ai.pose.AiBoneBindings.get(modelKey);
+        String none = L10n.lang("bbs.ui.model_editor.ai_bindings_none").get();
 
-        for (String generic : mchorse.bbs_mod.ai.pose.PoseLibrary.GENERIC_BONES)
+        for (Map.Entry<String, String> entry : new LinkedHashMap<>(saved).entrySet())
         {
+            String generic = entry.getKey();
+            String current = entry.getValue();
+
             java.util.List<String> options = new java.util.ArrayList<>();
 
-            options.add(L10n.lang("bbs.ui.model_editor.ai_bindings_none").get());
+            options.add(none);
             options.addAll(bones);
+
+            if (!options.contains(current))
+            {
+                options.add(current);
+            }
 
             mchorse.bbs_mod.ui.framework.elements.buttons.UIChoiceButton<String> pick =
                 new mchorse.bbs_mod.ui.framework.elements.buttons.UIChoiceButton<>(
@@ -704,15 +715,13 @@ public class UIModelConfigEditor extends UIElement
                     (choice) -> mchorse.bbs_mod.ui.utils.icons.Icons.LIMB,
                     (choice) -> mchorse.bbs_mod.l10n.keys.IKey.constant(choice));
 
-            String current = saved.get(generic);
-
             pick.setValue(current == null || current.isEmpty() ? options.get(0) : current);
             pick.h(UIConstants.CONTROL_HEIGHT);
             pick.callback((choice) ->
             {
                 Map<String, String> map = new LinkedHashMap<>(mchorse.bbs_mod.ai.pose.AiBoneBindings.get(modelKey));
 
-                if (choice == null || choice.equals(L10n.lang("bbs.ui.model_editor.ai_bindings_none").get()))
+                if (choice == null || choice.equals(none))
                 {
                     map.remove(generic);
                 }
@@ -724,8 +733,55 @@ public class UIModelConfigEditor extends UIElement
                 mchorse.bbs_mod.ai.pose.AiBoneBindings.set(modelKey, map);
             });
 
-            page.add(UI.labelRow(L10n.lang("bbs.ui.ai.ask.bone").format(generic), pick));
+            UIElement row = UI.labelRow(L10n.lang("bbs.ui.ai.ask.bone").format(generic), pick);
+
+            /* 内置六骨骼之外的通用骨骼可删除；内置的选「未绑定」即等于删除 */
+            if (!mchorse.bbs_mod.ai.pose.PoseLibrary.GENERIC_BONES.contains(generic))
+            {
+                UIIcon remove = new UIIcon(Icons.REMOVE, (b) ->
+                {
+                    Map<String, String> map = new LinkedHashMap<>(mchorse.bbs_mod.ai.pose.AiBoneBindings.get(modelKey));
+
+                    map.remove(generic);
+                    mchorse.bbs_mod.ai.pose.AiBoneBindings.set(modelKey, map);
+                    this.fillAiBindings();
+                });
+
+                remove.h(UIConstants.CONTROL_HEIGHT);
+                row = UI.row(2, row, remove);
+            }
+
+            page.add(row);
         }
+
+        /* 自定义通用骨骼：想驱动任何骨骼（如尾巴/翅膀），起个通用名 + 挑真实骨骼 */
+        UIElement addRow = UI.row(2,
+            UI.label(L10n.lang("bbs.ui.model_editor.ai_bindings_add"), UIConstants.CONTROL_HEIGHT),
+            new UIButton(L10n.lang("bbs.ui.model_editor.ai_bindings_add_button"), (b) ->
+            {
+                String name = this.aiBindingName == null ? "" : this.aiBindingName.trim().toLowerCase().replace(" ", "_");
+
+                if (name.isEmpty() || saved.containsKey(name))
+                {
+                    return;
+                }
+
+                Map<String, String> map = new LinkedHashMap<>(mchorse.bbs_mod.ai.pose.AiBoneBindings.get(modelKey));
+
+                map.put(name, "");
+                mchorse.bbs_mod.ai.pose.AiBoneBindings.set(modelKey, map);
+                this.fillAiBindings();
+            }));
+
+        addRow.h(UIConstants.CONTROL_HEIGHT);
+
+        UITextbox name = new UITextbox(32, (t) -> this.aiBindingName = t);
+
+        name.h(UIConstants.CONTROL_HEIGHT);
+        name.setText(this.aiBindingName == null ? "" : this.aiBindingName);
+
+        page.add(addRow);
+        page.add(UI.row(2, UI.label(L10n.lang("bbs.ui.model_editor.ai_bindings_add_name"), UIConstants.CONTROL_HEIGHT), name));
     }
 
     private void fillProcedural()

@@ -60,6 +60,11 @@ public class AiBoneBindings
     /** Store and persist one model's generic -> actual map. */
     public static void set(String modelKey, Map<String, String> map)
     {
+        /* 丢弃空键/空值/UI 的「未绑定」占位，保持绑定表干净 */
+        map.entrySet().removeIf((e) ->
+            e.getKey() == null || e.getKey().trim().isEmpty()
+                || e.getValue() == null || e.getValue().trim().isEmpty());
+
         ensureLoaded();
 
         String key = normalize(modelKey);

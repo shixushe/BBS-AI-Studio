@@ -2988,7 +2988,7 @@
   "bbs.ui.ai.bar.solve_error": "Bone solve failed: %s",
   "bbs.ui.ai.capture.duration": "Capture duration (ticks)",
   "bbs.ui.ai.capture.none_hint": "No structures found.",
-  "bbs.ui.ai.structure.none_hint": "No structures found. Drop .nbt files into <game>/structures/ (or a datapack data/<ns>/structures/) and reopen this panel.",
+  "bbs.ui.ai.structure.none_hint": "No structures found. Two ways to show your builds to the AI:\n1) Axiom/WorldEdit builds live in the world - box-select and save them with the BBS structure wand (saved as structure files);\n2) drop .nbt files into <save>/generated/<ns>/structures/ or a resource pack, then reopen this panel.",
   "bbs.ui.ai.structure.ai_describe": "AI description",
   "bbs.ui.ai.structure.ai_describe_tooltip": "Hand the structure's size and block stats to the AI for a readable summary (needs a backend)",
   "bbs.ui.ai.structure.unreadable": "Could not read structure \"%s\" - the file may be damaged.",

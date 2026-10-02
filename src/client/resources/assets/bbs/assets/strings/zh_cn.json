@@ -3632,7 +3632,7 @@
   "bbs.ui.ai.bar.solve_error": "骨骼解析失败: %s",
   "bbs.ui.ai.capture.duration": "采集时长（tick）",
   "bbs.ui.ai.capture.none_hint": "没有找到结构。把 .nbt 结构文件放进 游戏目录/structures 文件夹（或资源包的 data/<命名空间>/structures），然后重新打开本面板。",
-  "bbs.ui.ai.structure.none_hint": "没有找到结构。把 .nbt 文件放进 游戏目录/structures/（或资源包 data/<命名空间>/structures/），再切走再切回本面板即可刷新。",
+  "bbs.ui.ai.structure.none_hint": "没有找到结构。两种方式让 AI 看到你的建筑：\n① Axiom/创世神在世界里建的建筑——用 BBS 结构魔杖框选并保存（会存成结构文件）；\n② 把 .nbt 文件放进 存档 generated/<命名空间>/structures/ 或资源包，切回本面板刷新。",
   "bbs.ui.ai.structure.ai_describe": "AI 描述",
   "bbs.ui.ai.structure.ai_describe_tooltip": "把选中结构的尺寸与方块统计交给 AI，翻译成一段可读说明（需已配置后端）",
   "bbs.ui.ai.structure.unreadable": "无法读取结构「%s」——文件可能损坏。",

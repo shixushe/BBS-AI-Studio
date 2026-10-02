@@ -434,3 +434,22 @@ hub 输入行+状态、采集的状态/输出栈）都落在被遮挡带内。�
   加入中文断言防再犯。
 
 - maxTokens 上限移除：0=请求不携带该字段，OpenAI 兼容/Gemini 走供应商最大值（Anthropic 仍有 2048 下限）。构建全绿，md5 校验部署。
+
+## 二十三、第十七轮（2026-10-02，AI 对话「失败（TIMEOUT）」修复）
+
+用户截图：聊天栏发「角色往前走路」→ 失败（TIMEOUT）。根因有两层：
+
+- **配置层**：bbs_ai.json 里 api_key 从未填写、base_url 停留在默认
+  api.openai.com（国内直连不可达）——请求干等 30s 超时。另发现 provider 字段
+  存着早期版本写入的索引 0（现下拉写键名，属陈旧值，无活动 bug）。
+- **体验层**：错误提示只显示类型名（失败（TIMEOUT）），把可行动消息丢了。
+
+修复：
+- 聊天栏错误消息追加具体原因（带主机名 + 检查建议）；OpenAI/Anthropic/Gemini
+  三个后端的 TIMEOUT/NETWORK/NOT_CONFIGURED 消息全部改为中文可行动提示
+  （未配置 → 「设置→AI→供应商选 GLM/DeepSeek 并填入密钥」）。
+- 默认超时 30s → 60s（LLM 生成常超 30s，_bounds 不变 1s-300s）。
+- 配置文件切 GLM（provider=glm, base_url=open.bigmodel.cn/api/paas/v4,
+  model=glm-4.6）——**api_key 需用户在 设置→AI 里粘贴**。
+- 构建事故处理：删增量 classes 后 remapJar 报 NoSuchFile，停守护进程全清理重建；
+  apiCheck 首跑 flake 失败，重跑通过。部署 md5 校验一致。

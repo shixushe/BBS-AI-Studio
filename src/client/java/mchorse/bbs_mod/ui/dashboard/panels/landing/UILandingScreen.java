@@ -111,9 +111,6 @@ public class UILandingScreen extends UIElement
         IKey createLabel = host.getCreateLabel();
         UILandingRow list = new UILandingRow(Icons.MORE, host.getListLabel(), (b) -> host.openDataManager());
         UIElement gap = new UIElement();
-        UILandingRow discord = new UILandingRow(Icons.DISCORD, IKey.constant("Discord"), (b) -> UIUtils.openWebLink(DISCORD_LINK));
-        UILandingRow tutorials = new UILandingRow(Icons.PLAY, UIKeys.SUPPORTERS_TUTORIALS, (b) -> UIUtils.openWebLink(TUTORIALS_LINK));
-        UILandingRow wiki = new UILandingRow(Icons.HELP, UIKeys.SUPPORTERS_WIKI, (b) -> UIUtils.openWebLink(WIKI_LINK));
 
         this.folder = new UILandingRow(Icons.FOLDER, UIKeys.PANELS_CONTEXT_OPEN, (b) -> this.openFolder());
 
@@ -138,9 +135,6 @@ public class UILandingScreen extends UIElement
         rows.add(list);
         rows.add(this.folder);
         rows.add(gap);
-        rows.add(discord);
-        rows.add(tutorials);
-        rows.add(wiki);
 
         this.menu = UI.column(0, rows.toArray(new UIElement[0]));
         this.menu.relative(this.card).xy(PADDING, LIST_Y).w(MENU_W).h(1F, -(LIST_Y + PADDING));

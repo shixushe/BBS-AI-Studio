@@ -24,10 +24,6 @@ public class UINextStepsPage extends UIWelcomePage
     {
         super(UIKeys.ONBOARDING_NEXT_TITLE, UIKeys.ONBOARDING_NEXT_SLOGAN);
 
-        UILandingRow tutorials = new UILandingRow(Icons.PLAY, UIKeys.SUPPORTERS_TUTORIALS, (b) -> UIUtils.openWebLink(UILandingScreen.TUTORIALS_LINK));
-        UILandingRow wiki = new UILandingRow(Icons.HELP, UIKeys.SUPPORTERS_WIKI, (b) -> UIUtils.openWebLink(UILandingScreen.WIKI_LINK));
-        UILandingRow discord = new UILandingRow(Icons.DISCORD, IKey.constant("Discord"), (b) -> UIUtils.openWebLink(UILandingScreen.DISCORD_LINK));
-
         UILabel keys = UI.label(UIKeys.ONBOARDING_NEXT_KEYS, UILandingRow.HEIGHT).color(DIMMED);
 
         keys.labelAnchor(0F, 0.5F);
@@ -37,6 +33,6 @@ public class UINextStepsPage extends UIWelcomePage
         /* A list reads as a column, not a spread: narrower than the tab, centered under it */
         this.narrow(COLUMN_W);
         this.body.column(2).vertical().stretch();
-        this.body.add(tutorials, wiki, discord, keys, new UIElement().h(8), start);
+        this.body.add(keys, new UIElement().h(8), start);
     }
 }

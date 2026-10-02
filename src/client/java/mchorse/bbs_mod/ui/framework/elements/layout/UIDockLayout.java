@@ -6,6 +6,7 @@ import mchorse.bbs_mod.l10n.keys.IKey;
 import mchorse.bbs_mod.settings.values.ui.EditorLayoutNode;
 import mchorse.bbs_mod.ui.UIKeys;
 import mchorse.bbs_mod.ui.framework.UIContext;
+import mchorse.bbs_mod.ui.framework.elements.IUIElement;
 import mchorse.bbs_mod.ui.framework.elements.UIElement;
 import mchorse.bbs_mod.ui.framework.elements.buttons.UIIcon;
 import mchorse.bbs_mod.ui.framework.elements.utils.UIDraggable;
@@ -755,6 +756,47 @@ public class UIDockLayout extends UIElement
      * a pixel offset. Keeping the pixels in the flex rather than converting them against the current
      * area is what lets a window resize be handled by the flex pass alone.
      */
+    /**
+     * Whether this pixel sits on a scrollbar of any panel the dock hosts. Splitter
+     * handles straddle the seam they resize across, and that seam is exactly where a
+     * docked timeline parks its scrollbar - the handle has to step aside there.
+     */
+    private boolean isOverPanelScrollbar(int x, int y)
+    {
+        for (IUIElement child : this.getChildren())
+        {
+            if (child instanceof UIElement element && isOverPanelScrollbar(x, y, element))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean isOverPanelScrollbar(int x, int y, UIElement element)
+    {
+        if (!element.isVisible())
+        {
+            return false;
+        }
+
+        if (element.isOverScrollbar(x, y))
+        {
+            return true;
+        }
+
+        for (IUIElement child : element.getChildren())
+        {
+            if (child instanceof UIElement ui && isOverPanelScrollbar(x, y, ui))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void applySplitterHandleBounds(UIDraggable handle, SplitterHandleInfo info)
     {
         int half = SPLITTER_HANDLE_PX / 2;
@@ -788,6 +830,15 @@ public class UIDockLayout extends UIElement
             @Override
             protected boolean subMouseClicked(UIContext context)
             {
+                /* A seam can run over a panel's scrollbar strip (a docked timeline's
+                 * track scrollbar sits exactly at the panel edge). The scrollbar gets
+                 * the click; the resize handle only takes what's left. */
+                if (context.mouseButton == 0 && this.area.isInside(context)
+                    && UIDockLayout.this.isOverPanelScrollbar(context.mouseX, context.mouseY))
+                {
+                    return false;
+                }
+
                 if (context.mouseButton == 0 && this.area.isInside(context)
                     && BBSSettings.editorResizablePanels.get()
                     && UIDockLayout.this.consumeSplitterDoubleClick(index))

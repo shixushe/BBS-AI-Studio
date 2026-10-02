@@ -242,6 +242,16 @@ public class UIElement implements IUIElement, IUndoElement
         return false;
     }
 
+    /**
+     * Whether this pixel sits on one of this element's scrollbars. Dock splitter
+     * handles consult this so a seam running over a panel's scrollbar strip lets
+     * the scrollbar have the click instead of starting a panel resize.
+     */
+    public boolean isOverScrollbar(int x, int y)
+    {
+        return false;
+    }
+
     public List<IUIElement> getChildren()
     {
         return this.children;

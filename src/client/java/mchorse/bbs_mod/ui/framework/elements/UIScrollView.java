@@ -70,6 +70,12 @@ public class UIScrollView extends UIElement implements IViewport
     }
 
     @Override
+    public boolean isOverScrollbar(int x, int y)
+    {
+        return this.scroll.hasScrollbar() && this.scroll.getScrollArea().isInside(x, y);
+    }
+
+    @Override
     public void resize()
     {
         super.resize();

@@ -117,6 +117,12 @@ public class UIClips extends UITimelineCanvas
 
     private int layerHeight = 20;
 
+    @Override
+    public boolean isOverScrollbar(int x, int y)
+    {
+        return this.vertical.hasScrollbar() && this.vertical.getScrollArea().isInside(x, y);
+    }
+
     public UIClips(IUIClipsDelegate delegate, IFactory<Clip, ClipFactoryData> factory)
     {
         super();

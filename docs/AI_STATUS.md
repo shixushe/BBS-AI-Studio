@@ -489,3 +489,18 @@ md5 校验一致部署，游戏已重启。
    error.message（OpenAI/GLM 通用 {"error":{...}} 结构）拼进主消息，
    聊天栏能直接看到「模型不存在/参数非法」级别的真实原因，不再只有状态码。
    CONTENT_REJECTED/CONTEXT_OVERFLOW 的 400 分支同样改为中文+详情。
+
+## 二十六、第二十轮（2026-10-02，模型名大小写 400：GLM-5.3-Flash → glm-5.3-flash）
+
+用户配置截图：模型填了「GLM-5.3-Flash」（大写）——GLM 模型 id 大小写敏感，
+请求原样发出即 400。修复两层：
+
+1. **发送前统一小写**（model.toLowerCase()）——所有主流供应商的模型 id 都
+   是小写，规范化对用户零负担，填 GLM-5.3-Flash / GLM-4.6 / GPT-4o 都能命中。
+2. **flash 变体跳过思考参数**——flash 本身不思考：glm-5.3-flash 若收到
+   reasoning_effort 有被拒风险，glm-4.7-flash 收到 thinking 字段同理。
+   现在模型名含 flash 就不发任何思考参数；glm-5*（非 flash）发
+   reasoning_effort=low；glm-4*（非 flash）发 thinking disabled。
+
+设置文件已预写 model=glm-5.3-flash。游戏经 taskkill（非强制）优雅退出以
+保留设置落盘窗口；api_key 因未提交输入未能保留，需用户重贴一次。

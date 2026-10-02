@@ -44,7 +44,7 @@ public class OpenAiCompatibleBackend implements AiTextBackend
     {
         String baseUrl = AiSettings.baseUrl.get().trim();
         String apiKey = AiSettings.apiKey.get().trim();
-        String model = AiSettings.model.get().trim();
+        String model = AiSettings.model.get().trim().toLowerCase(); /* 模型 id 全小写：GLM 等按大小写敏感校验 */
 
         if (baseUrl.isEmpty() || model.isEmpty() || apiKey.isEmpty())
         {
@@ -74,16 +74,21 @@ public class OpenAiCompatibleBackend implements AiTextBackend
         {
             String glmModel = model.toLowerCase();
 
-            if (glmModel.startsWith("glm-5") || glmModel.startsWith("glm5"))
+            /* flash 变体本身不思考，任何思考参数都可能被拒收，什么都不发 */
+            if (!glmModel.contains("flash"))
             {
-                body.putString("reasoning_effort", "low");
-            }
-            else
-            {
-                MapType thinking = new MapType();
+                if (glmModel.startsWith("glm-5") || glmModel.startsWith("glm5"))
+                {
+                    /* GLM-5.x 思考强制开启，只能调低推理强度（5.3 限 low/high/max） */
+                    body.putString("reasoning_effort", "low");
+                }
+                else
+                {
+                    MapType thinking = new MapType();
 
-                thinking.putString("type", "disabled");
-                body.put("thinking", thinking);
+                    thinking.putString("type", "disabled");
+                    body.put("thinking", thinking);
+                }
             }
         }
 

@@ -67,15 +67,24 @@ public class OpenAiCompatibleBackend implements AiTextBackend
             body.putInt("max_tokens", request.maxTokens);
         }
 
-        /* GLM-4.5+/5.x 默认开启思考模式（thinking=enabled），推理会显著拖慢响应；
-         * 动作方案生成要的是确定性 JSON，GLM 供应商下显式关闭。其他兼容网关不认
-         * 这个字段，所以只对 glm 供应商发送。 */
+        /* GLM 思考模式按代次处理：4.x 可以显式 disabled（要的是确定性 JSON，关掉
+         * 提速）；5.x 官方限制思考只能开启——发 disabled 会被 400 拒收，只能用
+         * reasoning_effort=low 把推理强度调到最低档。仅 glm 供应商发送这些字段。 */
         if ("glm".equals(AiSettings.provider.get().trim().toLowerCase()))
         {
-            MapType thinking = new MapType();
+            String glmModel = model.toLowerCase();
 
-            thinking.putString("type", "disabled");
-            body.put("thinking", thinking);
+            if (glmModel.startsWith("glm-5") || glmModel.startsWith("glm5"))
+            {
+                body.putString("reasoning_effort", "low");
+            }
+            else
+            {
+                MapType thinking = new MapType();
+
+                thinking.putString("type", "disabled");
+                body.put("thinking", thinking);
+            }
         }
 
         /* JSON mode is opt-in: plenty of OpenAI-compatible gateways reject

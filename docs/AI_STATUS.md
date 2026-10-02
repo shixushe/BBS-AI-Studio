@@ -476,3 +476,16 @@ temperature/max_tokens）、响应解析（choices[0].message.content、usage）
 （supports_json_mode 默认 false，GLM 对不支持该字段的模型会拒收）；glm-4.6 在
 官方模型列表内（文档示例用 glm-5.3，用户可随时在设置切换）。构建全绿，
 md5 校验一致部署，游戏已重启。
+
+## 二十五、第十九轮（2026-10-02，GLM 400 修因：thinking 与模型代次冲突 + 错误体透传）
+
+用户填 key 后收到「失败（UNKNOWN）Request failed (400)」。两个修复：
+
+1. **thinking 参数按模型代次发送**——上一轮对 glm 一律发
+   thinking.type=disabled，但官方文档明确 GLM-5.x 系列「思考只能开启」，
+   发 disabled 直接 400。现按模型名分流：glm-5* 发 reasoning_effort=low
+   （5.3 仅支持 low/high/max，low 合法），glm-4* 维持 thinking disabled。
+2. **供应商错误体透传**——fromHttp 的 UNKNOWN/400/422 分支现在解析
+   error.message（OpenAI/GLM 通用 {"error":{...}} 结构）拼进主消息，
+   聊天栏能直接看到「模型不存在/参数非法」级别的真实原因，不再只有状态码。
+   CONTENT_REJECTED/CONTEXT_OVERFLOW 的 400 分支同样改为中文+详情。

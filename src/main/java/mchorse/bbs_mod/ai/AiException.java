@@ -73,16 +73,65 @@ public class AiException extends Exception
 
             if (lower.contains("content_filter") || lower.contains("content policy") || lower.contains("content_policy"))
             {
-                return new AiException(Type.CONTENT_REJECTED, "Content rejected (" + statusCode + ")", -1L, snippet);
+                return new AiException(Type.CONTENT_REJECTED, "内容被拒绝（" + statusCode + "）" + detail(body), -1L, snippet);
             }
 
             if (lower.contains("context") || lower.contains("maximum") || lower.contains("too long") || lower.contains("too many tokens"))
             {
-                return new AiException(Type.CONTEXT_OVERFLOW, "Context too long (" + statusCode + ")", -1L, snippet);
+                return new AiException(Type.CONTEXT_OVERFLOW, "上下文过长（" + statusCode + "）" + detail(body), -1L, snippet);
             }
         }
 
-        return new AiException(Type.UNKNOWN, "Request failed (" + statusCode + ")", retryAfter, snippet);
+        /* 供应商的错误体（error.message）往往写明真实原因（模型不存在/参数非法），
+         * 直接拼进主消息，别让用户只看到一个状态码 */
+        return new AiException(Type.UNKNOWN, "请求失败（" + statusCode + "）" + detail(body), retryAfter, snippet);
+    }
+
+    /**
+     * Pull the vendor's error.message (OpenAI/GLM style {"error":{...}} or flat
+     * {"message":...}) out of an error body so it can travel in the main
+     * message instead of hiding in the debug-only snippet.
+     */
+    private static String detail(String body)
+    {
+        String text = body == null ? "" : body.trim();
+
+        if (text.isEmpty() || text.length() > 2000 || text.charAt(0) != '{')
+        {
+            return text.isEmpty() ? "" : "：" + text;
+        }
+
+        try
+        {
+            mchorse.bbs_mod.data.types.MapType map = mchorse.bbs_mod.data.DataToString.mapFromString(text);
+
+            if (map != null)
+            {
+                if (map.has("error") && map.get("error").isMap())
+                {
+                    String message = map.get("error").asMap().getString("message");
+
+                    if (!message.isEmpty())
+                    {
+                        return "：" + message;
+                    }
+                }
+
+                if (map.has("message"))
+                {
+                    String message = map.getString("message");
+
+                    if (!message.isEmpty())
+                    {
+                        return "：" + message;
+                    }
+                }
+            }
+        }
+        catch (Exception ignored)
+        {}
+
+        return "";
     }
 
     private static long parseRetryAfter(String header)

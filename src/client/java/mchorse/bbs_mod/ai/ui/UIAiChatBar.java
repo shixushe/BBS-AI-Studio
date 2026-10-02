@@ -253,6 +253,10 @@ public class UIAiChatBar extends UIElement
 
         mchorse.bbs_mod.ui.framework.UIContext context = this.getContext();
 
+        thinking.addProcess("请求模型 " + AiSettings.model.get()
+            + (AiSettings.thinking.get() ? "（思维链开）" : "（思维链关）"));
+        this.history.refresh();
+
         mchorse.bbs_mod.ai.AiPlans.generatePlan(request, (generated, reasoning) ->
         {
             this.busy = false;
@@ -260,8 +264,10 @@ public class UIAiChatBar extends UIElement
             if (reasoning != null && !reasoning.isEmpty())
             {
                 thinking.setReasoning(reasoning);
-                this.history.refresh();
             }
+
+            thinking.addProcess("动画方案已解析：" + generated.beats.size() + " 个节拍");
+            this.history.refresh();
 
             java.util.List<String> inventory = new ArrayList<>();
 
@@ -274,6 +280,9 @@ public class UIAiChatBar extends UIElement
 
             /* Saved model bindings (model editor's AI tab / past confirmations) answer first */
             mchorse.bbs_mod.ai.pose.AiBoneBindings.apply(modelForm.model.get(), inventory, bones);
+
+            thinking.addProcess("骨骼绑定：" + (inventory.size() - bones.unresolved.size()) + "/" + inventory.size());
+            this.history.refresh();
 
             if (!bones.isComplete())
             {
@@ -323,6 +332,8 @@ public class UIAiChatBar extends UIElement
         {
             poses = mchorse.bbs_mod.ai.pose.PoseSolver.solve(generated, bones);
             writes = mchorse.bbs_mod.ai.pose.PoseSolver.toChannelWrites(poses, replay.properties);
+
+            thinking.addProcess("姿态求解完成：" + poses.size() + " 个关键姿态，" + writes.size() + " 条通道写入待预览");
         }
         catch (Exception e)
         {
@@ -339,6 +350,7 @@ public class UIAiChatBar extends UIElement
         int lastTick = generated.beats.isEmpty() ? 0 : generated.beats.get(generated.beats.size() - 1).tick;
 
         thinking.setText(L10n.lang("bbs.ui.ai.chat.generated").format(generated.beats.size(), lastTick).get());
+        this.history.refresh();
         this.refreshPreviewRow();
     }
 

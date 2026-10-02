@@ -41,8 +41,11 @@ public class AiChatMessage extends UIElement
     private String text;
     /** 思维链（灰字显示在答案上方，仅思考型模型开启思考时才有） */
     private String reasoning;
+    /** 制作过程流水（请求→解析→绑定→求解→写入），无论有无思维链都显示 */
+    private final List<String> process = new ArrayList<>();
     private final List<String> lines = new ArrayList<>();
     private final List<String> reasoningLines = new ArrayList<>();
+    private final List<String> processLines = new ArrayList<>();
 
     public AiChatMessage(Role role, String text)
     {
@@ -77,6 +80,15 @@ public class AiChatMessage extends UIElement
         this.reasoning = reasoning == null ? "" : reasoning;
     }
 
+    /** Append one production-process line; the caller re-lays out afterwards. */
+    public void addProcess(String step)
+    {
+        if (step != null && !step.isEmpty())
+        {
+            this.process.add(step);
+        }
+    }
+
     /**
      * Wrap the text against the given bubble width and size this element to
      * fit. Called before the history's layout pass, on add and on resize.
@@ -96,7 +108,15 @@ public class AiChatMessage extends UIElement
             this.reasoningLines.addAll(font.wrap(this.reasoning, textWidth));
         }
 
-        int bodyLines = this.lines.size() + this.reasoningLines.size() + (this.reasoningLines.isEmpty() ? 0 : 1);
+        this.processLines.clear();
+
+        for (String step : this.process)
+        {
+            this.processLines.addAll(font.wrap("· " + step, textWidth));
+        }
+
+        int bodyLines = this.lines.size() + this.reasoningLines.size() + this.processLines.size()
+            + (this.reasoningLines.isEmpty() ? 0 : 1);
         this.h(bodyLines * font.getLineHeight() + TAG_H + PAD_Y * 2);
     }
 
@@ -136,7 +156,13 @@ public class AiChatMessage extends UIElement
             y += font.getLineHeight();
         }
 
-        if (!this.reasoningLines.isEmpty())
+        for (String line : this.processLines)
+        {
+            batcher.text(line, x, y, Colors.GRAY, false);
+            y += font.getLineHeight();
+        }
+
+        if (!this.reasoningLines.isEmpty() || !this.processLines.isEmpty())
         {
             batcher.box(x, y + font.getLineHeight() / 4, this.area.ex() - PAD_X, y + font.getLineHeight() / 4 + 1, Colors.A25);
             y += font.getLineHeight() / 2;

@@ -67,28 +67,25 @@ public class OpenAiCompatibleBackend implements AiTextBackend
             body.putInt("max_tokens", request.maxTokens);
         }
 
-        /* GLM 思考模式按代次处理：4.x 可以显式 disabled（要的是确定性 JSON，关掉
-         * 提速）；5.x 官方限制思考只能开启——发 disabled 会被 400 拒收，只能用
-         * reasoning_effort=low 把推理强度调到最低档。仅 glm 供应商发送这些字段。 */
-        if ("glm".equals(AiSettings.provider.get().trim().toLowerCase()) && !AiSettings.thinking.get())
+        /* GLM 思考模式按代次处理：5.x（含 flash）官方限制思考只能开启——发 disabled
+         * 会被 400 拒收，用 reasoning_effort=low 把推理强度压到最低档保速度；
+         * 4.x 可以显式 disabled（要确定性 JSON 时提速），思维链开关打开则不传、
+         * 走默认开启。仅 glm 供应商发送这些字段。 */
+        if ("glm".equals(AiSettings.provider.get().trim().toLowerCase()))
         {
             String glmModel = model.toLowerCase();
+            boolean thinkingOn = AiSettings.thinking.get();
 
-            /* flash 变体本身不思考，任何思考参数都可能被拒收，什么都不发 */
-            if (!glmModel.contains("flash"))
+            if (glmModel.startsWith("glm-5") || glmModel.startsWith("glm5"))
             {
-                if (glmModel.startsWith("glm-5") || glmModel.startsWith("glm5"))
-                {
-                    /* GLM-5.x 思考强制开启，只能调低推理强度（5.3 限 low/high/max） */
-                    body.putString("reasoning_effort", "low");
-                }
-                else
-                {
-                    MapType thinking = new MapType();
+                body.putString("reasoning_effort", "low");
+            }
+            else if (!thinkingOn && !glmModel.contains("flash"))
+            {
+                MapType thinking = new MapType();
 
-                    thinking.putString("type", "disabled");
-                    body.put("thinking", thinking);
-                }
+                thinking.putString("type", "disabled");
+                body.put("thinking", thinking);
             }
         }
 

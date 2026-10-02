@@ -160,6 +160,40 @@ public class ModelFormRenderer extends FormRenderer<ModelForm> implements ITicka
         return uiMatrix;
     }
 
+    /**
+     * Zoom factor for a UI preview cell: tiny models (eyes, mouths, held items)
+     * would otherwise render as specks in a picker grid. Only ever zooms in -
+     * models that already fill the frame come back 1F and draw exactly as before.
+     */
+    private static float previewFitScale(ModelInstance model)
+    {
+        try
+        {
+            float maxRadius = 0F;
+
+            for (mchorse.bbs_mod.cubic.data.model.ModelGroup group : model.getModel().getAllGroups())
+            {
+                for (mchorse.bbs_mod.cubic.data.model.ModelCube cube : group.cubes)
+                {
+                    float radius = cube.origin.length() + cube.size.length() / 2F + Math.max(0F, cube.inflate);
+
+                    maxRadius = Math.max(maxRadius, radius);
+                }
+            }
+
+            if (maxRadius > 0F)
+            {
+                return mchorse.bbs_mod.utils.MathUtils.clamp(1.1F / maxRadius, 1F, 40F);
+            }
+        }
+        catch (Exception e)
+        {
+            /* Any surprise in the model data degrades to the plain preview */
+        }
+
+        return 1F;
+    }
+
     public static ModelInstance getModel(ModelForm form)
     {
         return BBSModClient.getModels().getModel(form.model.get());
@@ -393,7 +427,7 @@ public class ModelFormRenderer extends FormRenderer<ModelForm> implements ITicka
             Link texture = link == null ? model.getTexture() : link;
             Color contextColor = Color.white();
             Color formColor = this.form.color.get();
-            float scale = this.form.uiScale.get() * model.getUiScale();
+            float scale = this.form.uiScale.get() * model.getUiScale() * previewFitScale(model);
 
             this.evaluateChannels(null, model, context.getTransition());
 

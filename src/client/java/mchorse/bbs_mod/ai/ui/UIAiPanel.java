@@ -15,6 +15,7 @@ import mchorse.bbs_mod.ai.ui.components.BeatTable.Row;
 import mchorse.bbs_mod.ai.ui.components.IntentChip;
 import mchorse.bbs_mod.ai.ui.components.StatusLamp;
 import mchorse.bbs_mod.l10n.L10n;
+import mchorse.bbs_mod.l10n.keys.IKey;
 import mchorse.bbs_mod.ui.dashboard.UIDashboard;
 import mchorse.bbs_mod.ui.dashboard.panels.UIDashboardPanel;
 import mchorse.bbs_mod.ui.framework.UIContext;
@@ -253,6 +254,14 @@ public class UIAiPanel extends UIDashboardPanel
         if (script.isEmpty())
         {
             this.status.label = L10n.lang("bbs.ui.ai.panel.empty_script");
+
+            return;
+        }
+
+        /* A bare greeting is conversation, not a script - answer locally */
+        if (mchorse.bbs_mod.ai.AiSmallTalk.isSmallTalk(script))
+        {
+            this.status.label = IKey.constant(mchorse.bbs_mod.ai.AiSmallTalk.reply(script));
 
             return;
         }

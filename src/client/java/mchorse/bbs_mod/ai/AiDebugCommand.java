@@ -25,7 +25,7 @@ public class AiDebugCommand
                 .then(ClientCommandManager.literal("film").executes((ctx) -> open(UIFilmPanel.class)))
                 .then(ClientCommandManager.literal("ai").executes((ctx) -> open(mchorse.bbs_mod.ai.ui.UIAiPanel.class)))
                 .then(ClientCommandManager.literal("capture").executes((ctx) -> open(mchorse.bbs_mod.ai.ui.UICapturePanel.class)))
-                .then(ClientCommandManager.literal("creative").executes((ctx) -> open(mchorse.bbs_mod.ai.ui.UICreativeModePanel.class))));
+                .then(ClientCommandManager.literal("creative").executes((ctx) -> open(mchorse.bbs_mod.ai.ui.UIAiPanel.class))));
         });
     }
 

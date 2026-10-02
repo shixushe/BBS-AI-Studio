@@ -52,7 +52,6 @@ public class Onboarding
         SHOWN.put(UIModelBlockPanel.class, Tours.MODEL_BLOCKS);
         SHOWN.put(UITextureManagerPanel.class, Tours.TEXTURES);
         SHOWN.put(mchorse.bbs_mod.ai.ui.UIAiPanel.class, Tours.AI);
-        SHOWN.put(mchorse.bbs_mod.ai.ui.UICreativeModePanel.class, Tours.CREATIVE);
         SHOWN.put(mchorse.bbs_mod.ai.ui.UICapturePanel.class, Tours.CAPTURE);
 
         OPENED.put(UIFilmPanel.class, Tours.FILM);

@@ -298,3 +298,23 @@ A 键名残留（zh+en 都缺）、B **英文回退**（zh 缺 en 有——中�
 - **UIStructureAiPanel**：套 AiUi header（可点选/事实/AI 描述逻辑上轮已建，不动）。
 - 新 l10n：capture.strip_empty（zh+en）。构建+测试全绿，部署重启无本模组异常。
 - 面板类行数变化：UIAiPanel 397→249，UICapturePanel 312→262，UICreative 408→359。
+
+## 十六、第十轮（2026-10-02，功能架构收敛：五入口 → 四入口）
+
+用户："界面还是很混乱，你要理清功能"。诊断：乱的根源不是样式，是**职责重叠**——
+五个入口都在"打字→AI 干活"（影片对话栏生成 vs AI 面板生成 vs 创意模式=生成的换皮）。
+
+- **新信息架构**（功能各管一件事）：
+  | 入口 | 职责 |
+  |---|---|
+  | **AI 对话中心**（AI 面板+创意模式合并，删 UICreativeModePanel） | 规划：对话→一批方案→点选看节拍→写入影片 |
+  | 影片对话栏（影片界面属性下半） | 执行：生成/打磨/入框，就在曲线上下文里 |
+  | 采集面板 | 视觉输入：抓帧→缩略图→（视觉后端）理解 |
+  | 结构面板 | 理解 .nbt：事实+AI 描述 |
+- **AI 对话中心（UIAiPanel 第三次重写）**：上=对话流（AiChatHistory+输入+发送，回车即发）；
+  下左=方案板（滚动+点选高亮）；下右=选中方案的节拍表；底部=[写入影片]+状态。
+  路由：问候本地回应 / 打磨词指回影片对话栏 / 其余 CreativeSession 出批
+  （预算、草稿持久化保留）。写入走绑定→M3 提交→try/catch。
+- **注册收敛**：AiClientInstall 删创意注册；/aiui creative 与 /openui creative 变成
+  hub 的别名；Onboarding 删 CREATIVE 独立导览；TourAnchors creative.* 改挂 hub。
+- 新 l10n zh+en 各 14 条（hub.*）。构建+测试全绿，部署重启无本模组异常。

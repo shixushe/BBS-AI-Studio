@@ -3001,5 +3001,19 @@
   "bbs.ui.ai.creative.pick_hint": "Type a theme here (like \"a chase at sunset\") and hit 换一批 - every distinct direction stays on the board. Click one to select it, then 采纳所选 writes it into the film.",
   "bbs.ui.ai.creative.pick_tooltip": "Click to select this candidate; 采纳所选 writes it into the film editor (one undo entry)",
   "bbs.ui.ai.panel.ready_hint": "Write an action description and hit 生成 for a storyboard beat sheet; to land it in the film, use the AI chat in the film editor.",
-  "bbs.ui.ai.capture.strip_empty": "Captured frames appear here"
+  "bbs.ui.ai.capture.strip_empty": "Captured frames appear here",
+  "bbs.ui.ai.hub.transcript": "Conversation",
+  "bbs.ui.ai.hub.placeholder": "Describe an action scene, or just say hi...",
+  "bbs.ui.ai.hub.send": "Send",
+  "bbs.ui.ai.hub.send_tooltip": "Auto-routed: greetings answer locally, curve words point to the film chat, the rest generates a batch of directions",
+  "bbs.ui.ai.hub.board": "Directions",
+  "bbs.ui.ai.hub.board_hint": "Generated directions stay here. Click one to see its beats on the right; happy with it, hit 写入影片.",
+  "bbs.ui.ai.hub.beats": "Beats (selected)",
+  "bbs.ui.ai.hub.write": "Write to film",
+  "bbs.ui.ai.hub.write_tooltip": "Writes the selected direction into the film editor's current replay (switches there, one undo entry)",
+  "bbs.ui.ai.hub.welcome": "Describe a scene above to get directions; select one and 写入影片 lands it in the replay.",
+  "bbs.ui.ai.hub.welcome_long": "This is the AI hub: describe an action scene (like \"a chase at sunset\") and I draft several distinct directions. Click one to inspect its beats, then 写入影片 lands it in the current replay. To adjust existing curves, use the chat in the film editor.",
+  "bbs.ui.ai.hub.generated": "Drafted %s directions (batch %s) - click one to inspect, then 写入影片.",
+  "bbs.ui.ai.hub.written": "Written to the film: %s poses, %s changes (one undo entry, Ctrl+Z to take back).",
+  "bbs.ui.ai.hub.polish_hint": "Curve polish (\"smoother\", \"ease in out\", ranges) belongs in the film editor's chat - that is where the curves live."
 }

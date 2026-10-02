@@ -6,7 +6,6 @@ import net.minecraft.client.MinecraftClient;
 import mchorse.bbs_mod.ui.film.UIFilmPanel;
 import mchorse.bbs_mod.ai.ui.UIAiPanel;
 import mchorse.bbs_mod.ai.ui.UICapturePanel;
-import mchorse.bbs_mod.ai.ui.UICreativeModePanel;
 import mchorse.bbs_mod.ai.ui.UIStructureAiPanel;
 import net.minecraft.client.util.Window;
 
@@ -111,7 +110,7 @@ public class AiDebugServer
                     case "film" -> UIFilmPanel.class;
                     case "ai" -> UIAiPanel.class;
                     case "capture" -> UICapturePanel.class;
-                    case "creative" -> UICreativeModePanel.class;
+                    case "creative" -> UIAiPanel.class;
                     case "structure" -> UIStructureAiPanel.class;
                     default -> null;
                 };

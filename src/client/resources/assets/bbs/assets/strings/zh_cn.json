@@ -3645,5 +3645,19 @@
   "bbs.ui.ai.creative.pick_hint": "在这里输入主题（例如「落日下的追逐」），点「换一批」——每个方向不同的候选都会留在黑板上，点一条选中它，再「采纳所选」写进影片。",
   "bbs.ui.ai.creative.pick_tooltip": "点击选中该候选；「采纳所选」会把它写进影片编辑器（一个撤销条目）",
   "bbs.ui.ai.panel.ready_hint": "写一段动作描述，点「生成」看分镜节拍表；要写进影片，请到影片编辑器的 AI 对话栏完成。",
-  "bbs.ui.ai.capture.strip_empty": "采集的帧会显示在这里"
+  "bbs.ui.ai.capture.strip_empty": "采集的帧会显示在这里",
+  "bbs.ui.ai.hub.transcript": "对话",
+  "bbs.ui.ai.hub.placeholder": "描述一个动作场景，或直接问候……",
+  "bbs.ui.ai.hub.send": "发送",
+  "bbs.ui.ai.hub.send_tooltip": "自动路由：问候本地回应；曲线调整词指回影片对话栏；其余生成一批方案",
+  "bbs.ui.ai.hub.board": "方案板",
+  "bbs.ui.ai.hub.board_hint": "生成的方案会留在这里。点选一条，右侧显示它的节拍分解；满意就点左下角「写入影片」。",
+  "bbs.ui.ai.hub.beats": "节拍（选中方案）",
+  "bbs.ui.ai.hub.write": "写入影片",
+  "bbs.ui.ai.hub.write_tooltip": "把选中的方案写进影片编辑器当前回放（切回影片界面，一个撤销条目）",
+  "bbs.ui.ai.hub.welcome": "在上方描述场景出方案；选中后「写入影片」落到当前回放。",
+  "bbs.ui.ai.hub.welcome_long": "这里是 AI 对话中心：直接描述动作场景（如「落日下的追逐」），我出多个方向的方案；点选方案看节拍，「写入影片」落到当前回放。要调已有曲线，请到影片编辑器下方的对话栏。",
+  "bbs.ui.ai.hub.generated": "已生成 %s 个方案（累计 %s 批）——点选查看节拍，满意就「写入影片」。",
+  "bbs.ui.ai.hub.written": "已写入影片：%s 个姿态、%s 处改动（一个撤销条目，Ctrl+Z 可回退）。",
+  "bbs.ui.ai.hub.polish_hint": "曲线打磨（更柔和/缓入缓出/区间）请在影片编辑器下方的对话栏里说——那里才有你要打磨的具体曲线。"
 }

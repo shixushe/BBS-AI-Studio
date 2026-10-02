@@ -1,177 +1,325 @@
 package mchorse.bbs_mod.ai.ui;
 
+import mchorse.bbs_mod.BBSMod;
 import mchorse.bbs_mod.BBSSettings;
 import mchorse.bbs_mod.ai.AiChatRequest;
+import mchorse.bbs_mod.ai.AiClient;
 import mchorse.bbs_mod.ai.AiException;
-import mchorse.bbs_mod.ai.AiPlans;
 import mchorse.bbs_mod.ai.AiSettings;
-import mchorse.bbs_mod.ai.plan.AnimationPlan;
+import mchorse.bbs_mod.ai.commit.FrameCommitter;
+import mchorse.bbs_mod.ai.creative.CreativeProposal;
+import mchorse.bbs_mod.ai.creative.CreativeSession;
+import mchorse.bbs_mod.ai.pose.BoneNameResolver;
+import mchorse.bbs_mod.ai.pose.PoseSolver;
+import mchorse.bbs_mod.ai.ui.components.AiChatHistory;
+import mchorse.bbs_mod.ai.ui.components.AiChatMessage;
 import mchorse.bbs_mod.ai.ui.components.AiUi;
 import mchorse.bbs_mod.ai.ui.components.BeatTable;
-import mchorse.bbs_mod.ai.ui.components.BeatTable.Row;
+import mchorse.bbs_mod.forms.forms.ModelForm;
 import mchorse.bbs_mod.l10n.L10n;
-import mchorse.bbs_mod.l10n.keys.IKey;
+import mchorse.bbs_mod.settings.values.core.ValueGroup;
 import mchorse.bbs_mod.ui.dashboard.UIDashboard;
 import mchorse.bbs_mod.ui.dashboard.panels.UIDashboardPanel;
+import mchorse.bbs_mod.ui.film.UIFilmPanel;
 import mchorse.bbs_mod.ui.framework.UIContext;
+import mchorse.bbs_mod.ui.framework.elements.UIScrollView;
 import mchorse.bbs_mod.ui.framework.elements.UIElement;
 import mchorse.bbs_mod.ui.framework.elements.buttons.UIButton;
-import mchorse.bbs_mod.ui.framework.elements.input.text.UITextarea;
 import mchorse.bbs_mod.ui.framework.elements.input.text.UITextbox;
 import mchorse.bbs_mod.ui.framework.elements.utils.UILabel;
 import mchorse.bbs_mod.ui.utils.UI;
 import mchorse.bbs_mod.ui.utils.UIConstants;
 import mchorse.bbs_mod.utils.colors.Colors;
 
+import org.lwjgl.glfw.GLFW;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * AI 副驾面板（copilot spec section 5.2）—— 从零重写的聚焦形态：
+ * AI 对话中心 —— 仪表盘里唯一的"想动作"入口（吸收并取代旧的 §5.2 面板与
+ * 创意模式两个面板：它们做的是同一件事，一个出单方案一个出多方案）。
  *
- * ┌ ① 剧本 ──────────────┬ ② 节拍表 ──────────┐
- * │ 大输入区              │ 分镜节拍（滚动）    │
- * │ 角色 + 时长（一行）   │                    │
- * ├ [生成] ───────────────┴────────────────────┤
- * └ 状态回执                                   ┘
- *
- * 旧版三栏的装饰物（意图 chips、拖入占位框、fps/供应商/视觉参数、输出统计框）
- * 全部移除：chips 和拖入框没有任何行为，供应商与视觉属于设置页——面板只留与
- * "这一句话生成什么"直接相关的两个参数。问候语照聊天栏一样本地回应。
+ * <p>一条时间线：对话（transcript + 输入）→ 方案板（每批候选留存、点选）
+ * → 节拍明细（选中方案的分解）→ 写入影片（切回影片编辑器，走 M3 提交，
+ * 恰一个撤销条目）。路由与影片对话栏一致：问候本地回应；曲线打磨词
+ * 指回影片编辑器（那里才有具体曲线上下文）；其余按主题出一批方案。</p>
  */
 public class UIAiPanel extends UIDashboardPanel
 {
-    private final UITextarea<?> script;
-    private final UITextbox character;
-    private final UITextbox duration;
+    private final AiChatHistory transcript;
+    private final UITextbox input;
+    private final UIScrollView board;
+    private final UILabel boardHint;
     private final BeatTable beats;
     private final UILabel status;
-    private final UIButton generate;
+    private final UIButton write;
 
-    private AnimationPlan plan;
+    private final CreativeSession session = new CreativeSession();
+
+    /** The variant the user picked on the board (-1 = none, write falls to the latest). */
+    private int selectedVariant = -1;
+    private int variantCount;
     private boolean busy;
 
     public UIAiPanel(UIDashboard dashboard)
     {
         super(dashboard);
 
-        this.script = new UITextarea<>((t) -> {});
+        /* Conversation half */
+        this.transcript = new AiChatHistory();
 
-        this.character = new UITextbox(64, (t) -> {});
-        this.character.placeholder(L10n.lang("bbs.ui.ai.panel.character_hint"));
+        UILabel chatHeader = AiUi.header(L10n.lang("bbs.ui.ai.hub.transcript"));
 
-        this.duration = new UITextbox(8, (t) -> {});
-        this.duration.setText("4");
+        this.input = new UITextbox(256, (t) -> {})
+        {
+            @Override
+            public boolean subKeyPressed(UIContext context)
+            {
+                if (this.isFocused() && (context.isPressed(GLFW.GLFW_KEY_ENTER) || context.isPressed(GLFW.GLFW_KEY_KP_ENTER)))
+                {
+                    UIAiPanel.this.send();
 
-        UIElement params = UI.row(UIConstants.MARGIN,
-            UI.label(L10n.lang("bbs.ui.ai.panel.character"), UIConstants.CONTROL_HEIGHT),
-            this.character.h(UIConstants.CONTROL_HEIGHT),
-            UI.label(L10n.lang("bbs.ui.ai.panel.duration"), UIConstants.CONTROL_HEIGHT),
-            this.duration.h(UIConstants.CONTROL_HEIGHT));
+                    return true;
+                }
 
-        params.row(UIConstants.MARGIN).preferred(0).height(UIConstants.CONTROL_HEIGHT);
+                return super.subKeyPressed(context);
+            }
+        };
+        this.input.placeholder(L10n.lang("bbs.ui.ai.hub.placeholder"));
 
-        UILabel scriptHeader = AiUi.header(L10n.lang("bbs.ui.ai.panel.script"));
+        UIButton send = new UIButton(L10n.lang("bbs.ui.ai.hub.send"), (b) -> this.send());
 
-        UIElement left = UI.column(UIConstants.MARGIN, scriptHeader, this.script, params);
+        send.color(BBSSettings.primaryColor.get() | Colors.A100);
+        send.tooltip(L10n.lang("bbs.ui.ai.hub.send_tooltip"));
 
-        left.w(0.45F).h(1F);
-        this.script.h(1F, -(AiUi.HEADER + UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN));
+        UIElement inputRow = UI.row(UIConstants.MARGIN, this.input, send);
+
+        inputRow.row(UIConstants.MARGIN).preferred(0).height(UIConstants.CONTROL_HEIGHT + 4);
+
+        UIElement chat = UI.column(UIConstants.MARGIN, chatHeader, this.transcript, inputRow);
+
+        chat.row(UIConstants.MARGIN).preferred(0);
+        chat.relative(this).x(0).y(0).w(1F).h(0.42F);
+
+        /* Board half: candidates on the left, the picked one's beats on the right */
+        UILabel boardHeader = AiUi.header(L10n.lang("bbs.ui.ai.hub.board"));
+        UILabel beatsHeader = AiUi.header(L10n.lang("bbs.ui.ai.hub.beats"));
+
+        this.board = new UIScrollView();
+        this.board.column(UIConstants.MARGIN).vertical().stretch().scroll().padding(UIConstants.MARGIN);
+
+        this.boardHint = UI.label(L10n.lang("bbs.ui.ai.hub.board_hint"), UIConstants.CONTROL_HEIGHT * 2);
+        this.boardHint.color(Colors.LIGHTER_GRAY, false);
+        this.board.add(this.boardHint);
 
         this.beats = new BeatTable();
 
-        UIElement right = UI.column(UIConstants.MARGIN, AiUi.header(L10n.lang("bbs.ui.ai.panel.beats")), this.beats);
+        UIElement boardColumn = UI.column(UIConstants.MARGIN, boardHeader, this.board);
 
-        right.w(0.55F, -UIConstants.MARGIN).h(1F);
+        boardColumn.w(0.55F).h(1F);
+        this.board.h(1F);
+
+        UIElement beatsColumn = UI.column(UIConstants.MARGIN, beatsHeader, this.beats);
+
+        beatsColumn.w(0.45F, -UIConstants.MARGIN).h(1F);
         this.beats.h(1F);
 
-        UIElement columns = UI.row(UIConstants.MARGIN, left, right);
+        UIElement boardRow = UI.row(UIConstants.MARGIN, boardColumn, beatsColumn);
 
-        columns.row(UIConstants.MARGIN).preferred(1);
-        columns.relative(this).x(0).y(0).w(1F).h(1F, -AiUi.BAR);
+        boardRow.row(UIConstants.MARGIN).preferred(1);
+        boardRow.relative(this).x(0).y(0.42F).w(1F).h(0.58F, -AiUi.BAR);
 
-        this.generate = new UIButton(L10n.lang("bbs.ui.ai.panel.generate"), (b) -> this.generate());
+        /* Bottom bar: write to film + the running receipt */
+        this.write = new UIButton(L10n.lang("bbs.ui.ai.hub.write"), (b) -> this.writeToFilm());
 
-        this.generate.color(BBSSettings.primaryColor.get() | Colors.A100);
-        this.generate.tooltip(L10n.lang("bbs.ui.ai.panel.generate_tooltip"));
+        this.write.color(BBSSettings.primaryColor.get() | Colors.A100);
+        this.write.tooltip(L10n.lang("bbs.ui.ai.hub.write_tooltip"));
 
-        this.status = new UILabel(L10n.lang("bbs.ui.ai.panel.ready_hint"));
+        this.status = new UILabel(L10n.lang("bbs.ui.ai.hub.welcome"));
         this.status.color(Colors.LIGHTER_GRAY, false);
 
-        UIElement bottom = UI.row(UIConstants.MARGIN, this.generate, this.status);
+        UIElement bottom = UI.row(UIConstants.MARGIN, this.write, this.status);
 
         bottom.row(UIConstants.MARGIN).preferred(1).height(AiUi.BAR - 8);
         bottom.relative(this).y(1F, -AiUi.BAR).w(1F).h(AiUi.BAR);
 
-        this.add(columns);
+        this.add(chat);
+        this.add(boardRow);
         this.add(bottom);
+
+        this.transcript.log(AiChatMessage.Role.SYSTEM, L10n.lang("bbs.ui.ai.hub.welcome_long").get());
+
+        mchorse.bbs_mod.ui.onboarding.TourAnchors.register("creative.theme", () -> this.input);
+        mchorse.bbs_mod.ui.onboarding.TourAnchors.register("creative.candidates", () -> this.board);
     }
 
-    /* 生成流程 */
-
-    private void generate()
+    /** One entry point: the sentence decides everything, same routing as the film chat. */
+    private void send()
     {
         if (this.busy)
         {
             return;
         }
 
-        String script = this.script.getText().trim();
+        String text = this.input.getText().trim();
 
-        if (script.isEmpty())
+        if (text.isEmpty())
         {
             this.status.label = L10n.lang("bbs.ui.ai.panel.empty_script");
 
             return;
         }
 
-        /* A bare greeting is conversation, not a script - answer locally */
-        if (mchorse.bbs_mod.ai.AiSmallTalk.isSmallTalk(script))
+        this.transcript.log(AiChatMessage.Role.USER, text);
+        this.input.setText("");
+
+        /* Small talk answers locally - never a backend call */
+        if (mchorse.bbs_mod.ai.AiSmallTalk.isSmallTalk(text))
         {
-            this.status.label = IKey.constant(mchorse.bbs_mod.ai.AiSmallTalk.reply(script));
+            this.transcript.log(AiChatMessage.Role.ASSISTANT, mchorse.bbs_mod.ai.AiSmallTalk.reply(text));
+
+            return;
+        }
+
+        /* Curve polish lives in the film editor's chat - that is where the
+         * concrete curves are; this panel plans actions */
+        if (!mchorse.bbs_mod.ai.curve.PolishCommandParser.parse(text).isEmpty())
+        {
+            this.transcript.log(AiChatMessage.Role.SYSTEM, L10n.lang("bbs.ui.ai.hub.polish_hint").get());
+
+            return;
+        }
+
+        this.generateBatch(text);
+    }
+
+    /** A theme becomes a BATCH of candidate directions; previous batches stay on the board. */
+    private void generateBatch(String theme)
+    {
+        if (!AiSettings.isConfigured())
+        {
+            this.transcript.log(AiChatMessage.Role.SYSTEM, L10n.lang("bbs.ui.ai.chat.unconfigured").get());
+
+            return;
+        }
+
+        if (!this.session.canCall())
+        {
+            /* Stop and ask, never silently burn the key (spec 11.3) */
+            this.transcript.log(AiChatMessage.Role.SYSTEM, L10n.lang("bbs.ui.ai.creative.budget_spent").format(CreativeSession.MAX_CALLS).get());
 
             return;
         }
 
         this.busy = true;
-        this.status.label = L10n.lang("bbs.ui.ai.panel.generating");
+        this.transcript.log(AiChatMessage.Role.ASSISTANT, L10n.lang("bbs.ui.ai.chat.thinking").get());
 
-        float durationSeconds = this.parseDuration();
-        int totalTicks = Math.max(1, Math.round(durationSeconds * 20F));
+        int count = CreativeSession.DEFAULT_CANDIDATES;
+        String system = L10n.lang("bbs.ui.ai.creative.prompt").format(count).get();
+        AiChatRequest request = new AiChatRequest(system, theme);
 
-        String system = L10n.lang("bbs.ui.ai.panel.prompt").get();
-        String characterName = this.character.getText().trim();
-        String user = script + (characterName.isEmpty() ? "" : "\n[" + L10n.lang("bbs.ui.ai.panel.character").get() + ": " + characterName + "]")
-            + "\n[" + L10n.lang("bbs.ui.ai.panel.prompt_ticks").get() + ": " + totalTicks + "]";
+        request.temperature(1F);
 
-        AiChatRequest request = new AiChatRequest(system, user);
+        AiClient.get().chat(request, (response) ->
+        {
+            this.busy = false;
 
-        request.temperature(AiSettings.temperature.get());
-        request.json(AiSettings.jsonMode.get() && AiSettings.supportsJsonMode.get());
+            try
+            {
+                CreativeProposal proposal = CreativeProposal.parse(theme, response.content);
 
-        AiPlans.generatePlan(request, this::onPlan, this::onError);
+                this.session.add(proposal);
+                this.selectedVariant = -1;
+                this.fillBoard();
+                this.persist();
+
+                this.transcript.log(AiChatMessage.Role.ASSISTANT,
+                    L10n.lang("bbs.ui.ai.hub.generated").format(proposal.variants.size(), this.session.proposals.size()).get());
+            }
+            catch (AiException e)
+            {
+                this.onError(e);
+            }
+        }, (error) ->
+        {
+            this.busy = false;
+            this.onError(error);
+        });
     }
 
-    private float parseDuration()
+    private void onError(AiException error)
     {
-        try
-        {
-            return Math.max(0.5F, Float.parseFloat(this.duration.getText().trim()));
-        }
-        catch (NumberFormatException e)
-        {
-            return 4F;
-        }
+        this.transcript.log(AiChatMessage.Role.ERROR, L10n.lang("bbs.ui.ai.panel.failed").format(error.type.name()).get());
     }
 
-    private void onPlan(AnimationPlan plan)
+    /** The board: every kept variant, oldest first; click to inspect its beats. */
+    private void fillBoard()
     {
-        this.busy = false;
-        this.plan = plan;
+        List<UIElement> rows = new ArrayList<>();
+        int index = 1;
+        int accent = BBSSettings.primaryColor.get() | Colors.A100;
+
+        this.variantCount = 0;
+
+        for (CreativeProposal proposal : this.session.proposals)
+        {
+            for (CreativeProposal.Variant variant : proposal.variants)
+            {
+                int beatsCount = variant.plan == null ? 0 : variant.plan.beats.size();
+                int captured = this.variantCount;
+
+                UIButton row = new UIButton(L10n.lang("bbs.ui.ai.creative.candidate_row")
+                    .format(index++, beatsCount, variant.notes.isBlank() ? "-" : variant.notes), (b) -> this.selectVariant(captured));
+
+                row.color(captured == this.selectedVariant ? accent : -1);
+                row.tooltip(L10n.lang("bbs.ui.ai.creative.pick_tooltip"));
+                rows.add(row);
+
+                this.variantCount++;
+            }
+        }
+
+        this.board.removeAll();
+
+        if (rows.isEmpty())
+        {
+            this.board.add(this.boardHint);
+        }
+        else
+        {
+            if (this.selectedVariant < 0 || this.selectedVariant >= this.variantCount)
+            {
+                this.selectedVariant = this.variantCount - 1;
+            }
+
+            this.board.add(UI.column(1, rows.toArray(new UIElement[0])));
+        }
+
+        this.showSelectedBeats();
+    }
+
+    private void selectVariant(int index)
+    {
+        this.selectedVariant = index;
+        this.fillBoard();
+    }
+
+    /** The right-hand beat table mirrors the picked variant. */
+    private void showSelectedBeats()
+    {
+        CreativeProposal.Variant variant = this.selectedOrLatest();
+
+        this.beats.setRows(new ArrayList<>());
+
+        if (variant == null || variant.plan == null)
+        {
+            return;
+        }
 
         List<BeatTable.Row> rows = new ArrayList<>();
 
-        for (AnimationPlan.Beat beat : plan.beats)
+        for (mchorse.bbs_mod.ai.plan.AnimationPlan.Beat beat : variant.plan.beats)
         {
             BeatTable.Row row = new BeatTable.Row();
 
@@ -179,7 +327,7 @@ public class UIAiPanel extends UIDashboardPanel
             row.tick = beat.tick;
             row.phase = beat.phase;
             row.pose = beat.pose;
-            row.selected = beat == plan.beats.get(plan.beats.size() - 1);
+            row.selected = beat == variant.plan.beats.get(variant.plan.beats.size() - 1);
 
             StringBuilder intents = new StringBuilder();
 
@@ -198,19 +346,134 @@ public class UIAiPanel extends UIDashboardPanel
         }
 
         this.beats.setRows(rows);
-
-        int lastTick = plan.beats.isEmpty() ? 0 : plan.beats.get(plan.beats.size() - 1).tick;
-
-        this.status.label = L10n.lang("bbs.ui.ai.panel.output_summary").format(plan.beats.size(), lastTick);
     }
 
-    private void onError(AiException error)
+    /** The variant writing takes: the user's pick, or the latest when untouched. */
+    private CreativeProposal.Variant selectedOrLatest()
     {
-        this.busy = false;
+        List<CreativeProposal.Variant> variants = this.session.variants();
 
-        String detail = error.detail == null || error.detail.isEmpty() ? "" : ": " + error.detail;
+        if (variants.isEmpty())
+        {
+            return null;
+        }
 
-        this.status.label = L10n.lang("bbs.ui.ai.panel.failed").format(error.type.name() + detail);
+        if (this.selectedVariant >= 0 && this.selectedVariant < variants.size())
+        {
+            return variants.get(this.selectedVariant);
+        }
+
+        return variants.get(variants.size() - 1);
+    }
+
+    /** 写入影片: switch to the film editor, then commit through M3 - one undo entry. */
+    private void writeToFilm()
+    {
+        if (this.session.proposals.isEmpty())
+        {
+            this.transcript.log(AiChatMessage.Role.SYSTEM, L10n.lang("bbs.ui.ai.creative.nothing").get());
+
+            return;
+        }
+
+        UIFilmPanel panel = this.dashboard.getPanel(UIFilmPanel.class);
+
+        if (panel == null || panel.getData() == null || panel.replayEditor.getReplay() == null)
+        {
+            this.transcript.log(AiChatMessage.Role.SYSTEM, L10n.lang("bbs.ui.ai.creative.no_replay").get());
+
+            return;
+        }
+
+        /* Switch to the film editor explicitly (spec 5.5 hard rule 2) */
+        this.dashboard.setPanel(panel);
+
+        CreativeProposal.Variant variant = this.selectedOrLatest();
+
+        if (variant == null || variant.plan == null)
+        {
+            this.transcript.log(AiChatMessage.Role.SYSTEM, L10n.lang("bbs.ui.ai.creative.nothing").get());
+
+            return;
+        }
+
+        var replay = panel.replayEditor.getReplay();
+
+        if (!(replay.form.get() instanceof ModelForm modelForm))
+        {
+            this.transcript.log(AiChatMessage.Role.SYSTEM, L10n.lang("bbs.ui.ai.creative.not_model").get());
+
+            return;
+        }
+
+        List<String> inventory = new ArrayList<>();
+
+        for (mchorse.bbs_mod.settings.values.base.BaseValue child : modelForm.bones.getAll())
+        {
+            inventory.add(child.getId());
+        }
+
+        BoneNameResolver.Result bones = BoneNameResolver.resolve(inventory);
+
+        mchorse.bbs_mod.ai.pose.AiBoneBindings.apply(modelForm.model.get(), inventory, bones);
+
+        if (!bones.isComplete())
+        {
+            UIAiAskOverlayPanel ask = new UIAiAskOverlayPanel(this.getContext(), bones.unresolved, inventory, modelForm.model.get(), (confirmed) ->
+            {
+                if (!confirmed.isComplete())
+                {
+                    this.transcript.log(AiChatMessage.Role.SYSTEM,
+                        L10n.lang("bbs.ui.ai.chat.bindings_missing").format(String.join(", ", confirmed.unresolved)).get());
+
+                    return;
+                }
+
+                this.commitWrites(panel, panel.getData(), variant, replay, confirmed);
+            });
+
+            mchorse.bbs_mod.ui.framework.elements.overlay.UIOverlay.addOverlay(this.getContext(), ask, 280, 0.7F);
+
+            return;
+        }
+
+        this.commitWrites(panel, panel.getData(), variant, replay, bones);
+    }
+
+    private void commitWrites(UIFilmPanel panel, ValueGroup film, CreativeProposal.Variant variant, mchorse.bbs_mod.film.replays.Replay replay, BoneNameResolver.Result bones)
+    {
+        try
+        {
+            List<PoseSolver.KeyPose> poses = PoseSolver.solve(variant.plan, bones);
+            List<FrameCommitter.ChannelWrite> writes = PoseSolver.toChannelWrites(poses, replay.properties);
+
+            mchorse.bbs_mod.ai.commit.FrameDiff diff = mchorse.bbs_mod.ai.commit.FrameCommitter.commit(film, panel.getUndoHandler().getUndoManager(), writes);
+
+            if (!diff.affectedChannels.isEmpty())
+            {
+                mchorse.bbs_mod.api.client.events.FilmEditEvents.notifyChanges(
+                    new ArrayList<mchorse.bbs_mod.settings.values.base.BaseValue>(diff.affectedChannels),
+                    mchorse.bbs_mod.api.client.events.FilmEditEvents.Cause.EDIT);
+            }
+
+            this.transcript.log(AiChatMessage.Role.ASSISTANT,
+                L10n.lang("bbs.ui.ai.hub.written").format(poses.size(), diff.changedKeyCount()).get());
+        }
+        catch (Exception e)
+        {
+            /* A panel action must never take the game down */
+            this.transcript.log(AiChatMessage.Role.ERROR,
+                L10n.lang("bbs.ui.ai.panel.failed").format(e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()).get());
+        }
+    }
+
+    /** Draft persistence (spec 5.5 hard rule 1) - one slug per theme. */
+    private void persist()
+    {
+        String theme = this.input.getText().trim();
+        String slug = theme.isEmpty() ? "draft" : theme.substring(0, Math.min(24, theme.length())).replaceAll("[^\\p{L}\\p{N}]+", "_");
+
+        this.session.save(CreativeSession.draftFile(BBSMod.getSettingsFolder(), slug));
     }
 
     @Override

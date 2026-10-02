@@ -64,15 +64,6 @@ public class UICapturePanel extends UIDashboardPanel
         this.capture = new UIButton(L10n.lang("bbs.ui.ai.capture.recapture"), (b) -> this.startCapture());
         this.capture.tooltip(L10n.lang("bbs.ui.ai.capture.recapture_tooltip"));
 
-        UIElement params = UI.row(UIConstants.MARGIN,
-            UI.label(L10n.lang("bbs.ui.ai.capture.interval"), UIConstants.CONTROL_HEIGHT),
-            this.interval.h(UIConstants.CONTROL_HEIGHT),
-            UI.label(L10n.lang("bbs.ui.ai.capture.duration"), UIConstants.CONTROL_HEIGHT),
-            this.duration.h(UIConstants.CONTROL_HEIGHT),
-            this.capture);
-
-        params.row(UIConstants.MARGIN).preferred(0).height(UIConstants.CONTROL_HEIGHT);
-
         this.strip = new AiUi.FrameStrip();
 
         this.path = new UITextbox(256, (t) -> {});
@@ -81,37 +72,69 @@ public class UICapturePanel extends UIDashboardPanel
         this.status = new UILabel(L10n.lang("bbs.ui.ai.capture.idle"));
         this.status.color(Colors.LIGHTER_GRAY, false);
 
-        UILabel framesHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.frames"));
-        UILabel outputHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.output"));
-
-        UIElement content = UI.column(UIConstants.MARGIN,
-            AiUi.header(L10n.lang("bbs.ui.ai.capture.source")),
-            params,
-            framesHeader,
-            this.strip,
-            outputHeader,
-            this.path.h(UIConstants.CONTROL_HEIGHT),
-            this.status);
-
-        content.row(UIConstants.MARGIN).preferred(0);
-        content.relative(this).x(0).y(0).w(1F).h(1F, -AiUi.BAR);
-
         UIButton send = new UIButton(L10n.lang("bbs.ui.ai.capture.send"), (b) -> this.sendForUnderstanding());
 
         send.color(BBSSettings.primaryColor.get() | Colors.A100);
         send.tooltip(L10n.lang("bbs.ui.ai.capture.send_tooltip"));
 
-        UILabel filler = new UILabel(IKey.EMPTY);
+        /* Absolute layout - fixed stack, every block pinned */
+        int m = UIConstants.MARGIN;
+        int row = UIConstants.CONTROL_HEIGHT;
+        int y = AiUi.HEADER + m;
 
-        UIElement bottom = UI.row(UIConstants.MARGIN, send, filler);
+        UILabel sourceHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.source"));
+        sourceHeader.relative(this).x(0).y(0).w(1F).h(AiUi.HEADER);
 
-        bottom.row(UIConstants.MARGIN).preferred(1).height(AiUi.BAR - 8);
+        UIElement params = UI.row(m,
+            UI.label(L10n.lang("bbs.ui.ai.capture.interval"), UIConstants.CONTROL_HEIGHT),
+            this.interval.h(UIConstants.CONTROL_HEIGHT),
+            UI.label(L10n.lang("bbs.ui.ai.capture.duration"), UIConstants.CONTROL_HEIGHT),
+            this.duration.h(UIConstants.CONTROL_HEIGHT),
+            this.capture);
+
+        params.relative(this).x(m).y(y).w(1F, -m * 2).h(row);
+        params.row(m).height(row);
+
+        y += row + m;
+        UILabel framesHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.frames"));
+        framesHeader.relative(this).x(0).y(y).w(1F).h(AiUi.HEADER);
+
+        y += AiUi.HEADER + m;
+        this.strip.relative(this).x(m).y(y).w(1F, -m * 2).h(AiUi.STRIP);
+
+        y += AiUi.STRIP + m;
+        UILabel outputHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.output"));
+        outputHeader.relative(this).x(0).y(y).w(1F).h(AiUi.HEADER);
+
+        y += AiUi.HEADER + m;
+        this.path.relative(this).x(m).y(y).w(1F, -m * 2).h(row);
+
+        y += row + m;
+        this.status.relative(this).x(m).y(y).w(1F, -m * 2).h(row);
+
+        UIElement bottom = UI.row(m, send, new UILabel(IKey.EMPTY));
+
+        bottom.row(m).preferred(1).height(AiUi.BAR - 8);
         bottom.relative(this).y(1F, -AiUi.BAR).w(1F).h(AiUi.BAR);
 
-        this.add(content);
+        this.add(sourceHeader);
+        this.add(params);
+        this.add(framesHeader);
+        this.add(this.strip);
+        this.add(outputHeader);
+        this.add(this.path);
+        this.add(this.status);
         this.add(bottom);
 
         mchorse.bbs_mod.ui.onboarding.TourAnchors.register("capture.frames", () -> this.strip);
+    }
+
+    @Override
+    public void render(UIContext context)
+    {
+        this.area.render(context.batcher, BBSSettings.baseSurface());
+
+        super.render(context);
     }
 
     /** Start a scene capture from the film editor's playhead over the given length. */

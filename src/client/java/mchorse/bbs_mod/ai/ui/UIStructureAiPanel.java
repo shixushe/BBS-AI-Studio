@@ -66,26 +66,25 @@ public class UIStructureAiPanel extends UIDashboardPanel
 
         pick.color(Colors.LIGHTER_GRAY, false);
 
-        UIElement left = UI.column(UIConstants.MARGIN, listHeader, this.structures);
+        /* Absolute layout: fixed 200px list on the left, description + AI button on the right */
+        int listWidth = 200;
 
-        left.w(200).h(1F);
-        listHeader.h(HEADER).w(1F);
-        this.structures.h(1F, -HEADER);
+        listHeader.relative(this).x(0).y(0).w(listWidth).h(HEADER);
+        this.structures.relative(this).x(0).y(HEADER).w(listWidth).h(1F, -HEADER);
 
-        UIElement right = UI.column(UIConstants.MARGIN, descHeader, this.description, this.describe.h(UIConstants.CONTROL_HEIGHT));
+        int rightX = listWidth + UIConstants.MARGIN;
 
-        right.h(1F);
-        descHeader.h(HEADER).w(1F);
-        this.description.h(1F, -(HEADER + UIConstants.CONTROL_HEIGHT));
-
-        UIElement columns = UI.row(UIConstants.MARGIN, left, right);
-
-        columns.row(UIConstants.MARGIN).preferred(1);
-        columns.relative(this).w(1F).h(1F);
+        descHeader.relative(this).x(rightX).y(0).w(1F, -rightX).h(HEADER);
+        this.description.relative(this).x(rightX).y(HEADER).w(1F, -rightX).h(1F, -(HEADER + UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN));
+        this.describe.relative(this).x(rightX).y(1F, -(UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN)).w(1F, -rightX).h(UIConstants.CONTROL_HEIGHT);
 
         this.onAppear(this::fillList);
 
-        this.add(columns);
+        this.add(listHeader);
+        this.add(this.structures);
+        this.add(descHeader);
+        this.add(this.description);
+        this.add(this.describe);
     }
 
 

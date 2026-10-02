@@ -93,44 +93,6 @@ public class UIAiPanel extends UIDashboardPanel
         send.color(BBSSettings.primaryColor.get() | Colors.A100);
         send.tooltip(L10n.lang("bbs.ui.ai.hub.send_tooltip"));
 
-        UIElement inputRow = UI.row(UIConstants.MARGIN, this.input, send);
-
-        inputRow.row(UIConstants.MARGIN).preferred(0).height(UIConstants.CONTROL_HEIGHT + 4);
-
-        UIElement chat = UI.column(UIConstants.MARGIN, chatHeader, this.transcript, inputRow);
-
-        chat.row(UIConstants.MARGIN).preferred(0);
-        chat.relative(this).x(0).y(0).w(1F).h(0.42F);
-
-        /* Board half: candidates on the left, the picked one's beats on the right */
-        UILabel boardHeader = AiUi.header(L10n.lang("bbs.ui.ai.hub.board"));
-        UILabel beatsHeader = AiUi.header(L10n.lang("bbs.ui.ai.hub.beats"));
-
-        this.board = new UIScrollView();
-        this.board.column(UIConstants.MARGIN).vertical().stretch().scroll().padding(UIConstants.MARGIN);
-
-        this.boardHint = UI.label(L10n.lang("bbs.ui.ai.hub.board_hint"), UIConstants.CONTROL_HEIGHT * 2);
-        this.boardHint.color(Colors.LIGHTER_GRAY, false);
-        this.board.add(this.boardHint);
-
-        this.beats = new BeatTable();
-
-        UIElement boardColumn = UI.column(UIConstants.MARGIN, boardHeader, this.board);
-
-        boardColumn.w(0.55F).h(1F);
-        this.board.h(1F);
-
-        UIElement beatsColumn = UI.column(UIConstants.MARGIN, beatsHeader, this.beats);
-
-        beatsColumn.w(0.45F, -UIConstants.MARGIN).h(1F);
-        this.beats.h(1F);
-
-        UIElement boardRow = UI.row(UIConstants.MARGIN, boardColumn, beatsColumn);
-
-        boardRow.row(UIConstants.MARGIN).preferred(1);
-        boardRow.relative(this).x(0).y(0.42F).w(1F).h(0.58F, -AiUi.BAR);
-
-        /* Bottom bar: write to film + the running receipt */
         this.write = new UIButton(L10n.lang("bbs.ui.ai.hub.write"), (b) -> this.writeToFilm());
 
         this.write.color(BBSSettings.primaryColor.get() | Colors.A100);
@@ -144,8 +106,48 @@ public class UIAiPanel extends UIDashboardPanel
         bottom.row(UIConstants.MARGIN).preferred(1).height(AiUi.BAR - 8);
         bottom.relative(this).y(1F, -AiUi.BAR).w(1F).h(AiUi.BAR);
 
-        this.add(chat);
-        this.add(boardRow);
+        UIElement inputRow = UI.row(UIConstants.MARGIN, this.input, send);
+
+        UILabel boardHeader = AiUi.header(L10n.lang("bbs.ui.ai.hub.board"));
+        UILabel beatsHeader = AiUi.header(L10n.lang("bbs.ui.ai.hub.beats"));
+
+        inputRow.row(UIConstants.MARGIN).preferred(0).height(UIConstants.CONTROL_HEIGHT + 4);
+
+        this.board = new UIScrollView();
+        this.board.column(UIConstants.MARGIN).vertical().stretch().scroll().padding(UIConstants.MARGIN);
+
+        this.boardHint = UI.label(L10n.lang("bbs.ui.ai.hub.board_hint"), UIConstants.CONTROL_HEIGHT * 2);
+        this.boardHint.color(Colors.LIGHTER_GRAY, false);
+        this.board.add(this.boardHint);
+
+        this.beats = new BeatTable();
+
+        /* Absolute layout - every block pinned; no nested resizers to guess at */
+        int m = UIConstants.MARGIN;
+        int row = UIConstants.CONTROL_HEIGHT + 4;
+        int topPx = AiUi.HEADER + m * 2 + row + m + AiUi.HEADER + m;
+
+        chatHeader.relative(this).x(0).y(0).w(1F).h(AiUi.HEADER);
+        this.transcript.relative(this).x(m).y(AiUi.HEADER + m).w(1F, -m * 2).h(0.32F);
+
+        inputRow.relative(this).x(m).y(0.32F, AiUi.HEADER + m * 2).w(1F, -m * 2).h(row);
+
+        boardHeader.relative(this).x(0).y(0.32F, AiUi.HEADER + m * 2 + row + m).w(0.55F, -m).h(AiUi.HEADER);
+        beatsHeader.relative(this).x(0.55F, m * 2).y(0.32F, AiUi.HEADER + m * 2 + row + m).w(0.45F, -m * 3).h(AiUi.HEADER);
+
+        this.board.relative(this).x(m).y(0.32F, topPx).w(0.55F, -m).h(0.68F, -(topPx + AiUi.BAR));
+        this.beats.relative(this).x(0.55F, m * 2).y(0.32F, topPx).w(0.45F, -m * 3).h(0.68F, -(topPx + AiUi.BAR));
+
+        this.write.relative(this).x(m).y(1F, -AiUi.BAR).w(UIConstants.VALUE_WIDTH).h(AiUi.BAR - 8);
+        this.status.relative(this).x(m + UIConstants.VALUE_WIDTH + m).y(1F, -AiUi.BAR).w(1F, -(UIConstants.VALUE_WIDTH + m * 3)).h(AiUi.BAR - 8);
+
+        this.add(chatHeader);
+        this.add(this.transcript);
+        this.add(inputRow);
+        this.add(boardHeader);
+        this.add(beatsHeader);
+        this.add(this.board);
+        this.add(this.beats);
         this.add(bottom);
 
         this.transcript.log(AiChatMessage.Role.SYSTEM, L10n.lang("bbs.ui.ai.hub.welcome_long").get());

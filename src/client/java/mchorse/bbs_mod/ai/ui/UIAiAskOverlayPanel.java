@@ -78,7 +78,11 @@ public class UIAiAskOverlayPanel extends UIOverlayPanel
                     (choice) -> mchorse.bbs_mod.ui.utils.icons.Icons.POSE,
                     (choice) -> mchorse.bbs_mod.l10n.keys.IKey.constant(choice));
 
-            pick.setValue(SKIP);
+            /* Preselect the best fuzzy guess so confirming is one click;
+             * SKIP stays the choice when nothing plausibly matches */
+            String suggestion = BoneNameResolver.suggest(generic, inventory);
+
+            pick.setValue(suggestion != null ? suggestion : SKIP);
             pick.h(UIConstants.CONTROL_HEIGHT);
             this.fields.put(generic, pick);
             rows.add(label);

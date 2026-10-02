@@ -107,6 +107,82 @@ public class BoneNameResolver
         return result;
     }
 
+    /**
+     * Best-effort guess for the confirmation dialog: alias scoring first, then
+     * plain edit-distance similarity over normalized names, so the dropdown can
+     * preselect the most likely real bone instead of "skip". Returns the
+     * original (unnormalized) inventory name, or null when nothing scores high
+     * enough to be worth preselecting.
+     */
+    public static String suggest(String generic, Collection<String> actualBones)
+    {
+        List<String> aliases = ALIASES.get(generic);
+
+        if (aliases == null)
+        {
+            return null;
+        }
+
+        String normalizedGeneric = normalize(generic);
+        String best = null;
+        double bestScore = 0D;
+
+        for (String actual : actualBones)
+        {
+            String normalized = normalize(actual);
+            double score = score(normalized, aliases);
+
+            if (score <= 0D)
+            {
+                /* Alias miss: fall back to edit distance so near-misses like
+                 * "HeadTop"/"heaad" or prefixed rig names still preselect */
+                score = 0.5D * similarity(normalized, normalizedGeneric);
+            }
+
+            /* Prefer higher score, then the shorter (less decorated) name */
+            if (score > bestScore || (score == bestScore && best != null && actual.length() < best.length()))
+            {
+                best = actual;
+                bestScore = score;
+            }
+        }
+
+        return bestScore >= 0.3D ? best : null;
+    }
+
+    /** 1 - levenshtein/maxLen, i.e. 1 for identical strings, 0 for disjoint ones. */
+    private static double similarity(String a, String b)
+    {
+        if (a.isEmpty() || b.isEmpty())
+        {
+            return 0D;
+        }
+
+        int[][] dp = new int[a.length() + 1][b.length() + 1];
+
+        for (int i = 0; i <= a.length(); i++)
+        {
+            dp[i][0] = i;
+        }
+
+        for (int j = 0; j <= b.length(); j++)
+        {
+            dp[0][j] = j;
+        }
+
+        for (int i = 1; i <= a.length(); i++)
+        {
+            for (int j = 1; j <= b.length(); j++)
+            {
+                int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;
+
+                dp[i][j] = Math.min(Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1), dp[i - 1][j - 1] + cost);
+            }
+        }
+
+        return 1D - dp[a.length()][b.length()] / (double) Math.max(a.length(), b.length());
+    }
+
     /** Candidates for the confirmation UI: every alias-based match, best first. */
     private static List<String> candidatesOf(String normalizedActual, String generic)
     {

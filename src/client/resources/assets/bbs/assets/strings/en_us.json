@@ -3032,5 +3032,8 @@
   "bbs.ui.ai.hub.import_script_tooltip": "Pick a storyboard text file (.txt/.md/.json) from the explorer; its content becomes the theme",
   "bbs.ui.ai.hub.import_script_filter": "Storyboard text",
   "bbs.ui.ai.hub.imported": "Imported storyboard: %s (%s chars) - drafting directions...",
-  "bbs.ui.ai.hub.import_empty": "This script is empty."
+  "bbs.ui.ai.hub.import_empty": "This script is empty.",
+  "bbs.ui.ai.hub.transcript_caption": "describe -> directions -> write to film",
+  "bbs.ui.ai.hub.board_count": "%s directions",
+  "bbs.ui.ai.hub.beats_no": "direction #%s"
 }

@@ -3676,5 +3676,8 @@
   "bbs.ui.ai.hub.import_script_tooltip": "从资源管理器选一个分镜脚本文本（.txt/.md/.json），内容直接作为主题生成方案",
   "bbs.ui.ai.hub.import_script_filter": "分镜脚本文本",
   "bbs.ui.ai.hub.imported": "已导入分镜脚本：%s（%s 字）—— 开始生成方案……",
-  "bbs.ui.ai.hub.import_empty": "这个脚本是空的。"
+  "bbs.ui.ai.hub.import_empty": "这个脚本是空的。",
+  "bbs.ui.ai.hub.transcript_caption": "描述场景 → 方案 → 写入影片",
+  "bbs.ui.ai.hub.board_count": "%s 个方案",
+  "bbs.ui.ai.hub.beats_no": "方案 #%s"
 }

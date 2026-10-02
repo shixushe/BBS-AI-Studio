@@ -54,9 +54,11 @@ public class UIAiPanel extends UIDashboardPanel
     private final UITextbox input;
     private final UIScrollView board;
     private final UILabel boardHint;
+    private final AiUi.Header boardHeader;
+    private final AiUi.Header beatsHeader;
     private final UILabel beatsHint;
     private final BeatTable beats;
-    private final UILabel status;
+    private final AiUi.StatusLine status;
     private final UIButton write;
 
     private final CreativeSession session = new CreativeSession();
@@ -73,7 +75,7 @@ public class UIAiPanel extends UIDashboardPanel
         /* Conversation half */
         this.transcript = new AiChatHistory();
 
-        UILabel chatHeader = AiUi.header(L10n.lang("bbs.ui.ai.hub.transcript"));
+        AiUi.Header chatHeader = AiUi.header(L10n.lang("bbs.ui.ai.hub.transcript")).caption(L10n.lang("bbs.ui.ai.hub.transcript_caption").get());
 
         this.input = new UITextbox(256, (t) -> {})
         {
@@ -102,8 +104,7 @@ public class UIAiPanel extends UIDashboardPanel
         this.write.color(BBSSettings.primaryColor.get() | Colors.A100);
         this.write.tooltip(L10n.lang("bbs.ui.ai.hub.write_tooltip"));
 
-        this.status = new UILabel(L10n.lang("bbs.ui.ai.hub.welcome"));
-        this.status.color(Colors.LIGHTER_GRAY, false);
+        this.status = new AiUi.StatusLine(L10n.lang("bbs.ui.ai.hub.welcome"));
 
         UIElement bottom = UI.row(UIConstants.MARGIN, this.write, this.status);
 
@@ -118,8 +119,8 @@ public class UIAiPanel extends UIDashboardPanel
 
         inputRow.row(UIConstants.MARGIN).preferred(0).height(UIConstants.CONTROL_HEIGHT + 4);
 
-        UILabel boardHeader = AiUi.header(L10n.lang("bbs.ui.ai.hub.board"));
-        UILabel beatsHeader = AiUi.header(L10n.lang("bbs.ui.ai.hub.beats"));
+        this.boardHeader = AiUi.header(L10n.lang("bbs.ui.ai.hub.board"));
+        this.beatsHeader = AiUi.header(L10n.lang("bbs.ui.ai.hub.beats"));
 
         inputRow.row(UIConstants.MARGIN).preferred(0).height(UIConstants.CONTROL_HEIGHT + 4);
 
@@ -127,7 +128,7 @@ public class UIAiPanel extends UIDashboardPanel
         this.board.column(UIConstants.MARGIN).vertical().stretch().scroll().padding(UIConstants.MARGIN);
 
         this.boardHint = UI.label(L10n.lang("bbs.ui.ai.hub.board_hint"), UIConstants.CONTROL_HEIGHT * 2);
-        this.boardHint.color(Colors.LIGHTER_GRAY, false);
+        this.boardHint.color(Colors.LIGHTER_GRAY, false).labelAnchor(0.5F, 0F);
         this.board.add(this.boardHint);
 
         /* Example themes: fill the empty board with one-click starts */
@@ -237,7 +238,7 @@ public class UIAiPanel extends UIDashboardPanel
 
         if (text.isEmpty())
         {
-            this.status.label = L10n.lang("bbs.ui.ai.panel.empty_script");
+            this.status.set(L10n.lang("bbs.ui.ai.panel.empty_script").get(), AiUi.StatusLine.State.IDLE);
 
             return;
         }
@@ -350,6 +351,11 @@ public class UIAiPanel extends UIDashboardPanel
                 this.variantCount++;
             }
         }
+
+        boardHeader.caption(L10n.lang("bbs.ui.ai.hub.board_count").format(this.variantCount).get());
+        beatsHeader.caption(this.selectedVariant >= 0 && !rows.isEmpty()
+            ? L10n.lang("bbs.ui.ai.hub.beats_no").format(this.selectedVariant + 1).get()
+            : "");
 
         this.board.removeAll();
 
@@ -552,6 +558,7 @@ public class UIAiPanel extends UIDashboardPanel
     public void render(UIContext context)
     {
         this.area.render(context.batcher, BBSSettings.baseSurface());
+        AiUi.topEdge(context, this.area.x, this.area.y, this.area.w);
 
         super.render(context);
     }

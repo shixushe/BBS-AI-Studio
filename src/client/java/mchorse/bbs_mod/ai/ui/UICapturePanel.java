@@ -45,9 +45,10 @@ public class UICapturePanel extends UIDashboardPanel
 
     private final UITextbox interval;
     private final UITextbox duration;
-    private final UILabel status;
+    private final AiUi.StatusLine status;
     private final UITextbox path;
     private final AiUi.FrameStrip strip;
+    private final AiUi.Header framesHeader;
     private final UIButton capture;
     private final UIButton pickVideo;
     private final UILabel pickedVideo;
@@ -79,8 +80,7 @@ public class UICapturePanel extends UIDashboardPanel
         this.path = new UITextbox(256, (t) -> {});
         this.path.placeholder(L10n.lang("bbs.ui.ai.capture.path_hint"));
 
-        this.status = new UILabel(L10n.lang("bbs.ui.ai.capture.idle"));
-        this.status.color(Colors.LIGHTER_GRAY, false);
+        this.status = new AiUi.StatusLine(L10n.lang("bbs.ui.ai.capture.idle"));
 
         UIButton send = new UIButton(L10n.lang("bbs.ui.ai.capture.send"), (b) -> this.sendForUnderstanding());
 
@@ -92,7 +92,7 @@ public class UICapturePanel extends UIDashboardPanel
         int row = UIConstants.CONTROL_HEIGHT;
         int y = AiUi.HEADER + m;
 
-        UILabel sourceHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.source"));
+        AiUi.Header sourceHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.source"));
         sourceHeader.relative(this).x(0).y(0).w(1F).h(AiUi.HEADER);
 
         UIElement params = UI.row(m,
@@ -113,14 +113,14 @@ public class UICapturePanel extends UIDashboardPanel
         externalRow.relative(this).x(m).y(y).w(1F, -m * 2).h(row);
 
         y += row + m;
-        UILabel framesHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.frames"));
+        this.framesHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.frames")).caption(L10n.lang("bbs.ui.ai.capture.no_frames").get());
         framesHeader.relative(this).x(0).y(y).w(1F).h(AiUi.HEADER);
 
         y += AiUi.HEADER + m;
         this.strip.relative(this).x(m).y(y).w(1F, -m * 2).h(1F, -(y + AiUi.HEADER + m * 5 + row * 4 + AiUi.BAR));
 
         y += 1F;
-        UILabel outputHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.output"));
+        AiUi.Header outputHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.output"));
         outputHeader.relative(this).x(0).y(1F, -(AiUi.HEADER + m * 4 + row * 3 + AiUi.BAR)).w(1F).h(AiUi.HEADER);
 
         y = 0;
@@ -156,6 +156,7 @@ public class UICapturePanel extends UIDashboardPanel
     public void render(UIContext context)
     {
         this.area.render(context.batcher, BBSSettings.baseSurface());
+        AiUi.topEdge(context, this.area.x, this.area.y, this.area.w);
 
         super.render(context);
     }
@@ -167,7 +168,7 @@ public class UICapturePanel extends UIDashboardPanel
 
         if (source == null)
         {
-            this.status.label = L10n.lang("bbs.ui.ai.capture.no_editor");
+            this.status.set(L10n.lang("bbs.ui.ai.capture.no_editor").get(), AiUi.StatusLine.State.IDLE);
 
             return;
         }
@@ -175,7 +176,7 @@ public class UICapturePanel extends UIDashboardPanel
         int to = source.getCursor() + this.parseDuration();
 
         this.session = new SceneFrameCapture(source.getCursor(), to, this.parseInterval());
-        this.status.label = L10n.lang("bbs.ui.ai.capture.capturing");
+        this.status.set(L10n.lang("bbs.ui.ai.capture.capturing").get(), AiUi.StatusLine.State.WORKING);
     }
 
     private int parseInt(String text, int fallback)
@@ -210,14 +211,14 @@ public class UICapturePanel extends UIDashboardPanel
                 }
 
                 this.pickedVideo.label = IKey.constant(file.getName());
-                this.status.label = L10n.lang("bbs.ui.ai.capture.sampling").format(file.getName());
+                this.status.set(L10n.lang("bbs.ui.ai.capture.sampling").format(file.getName()).get(), AiUi.StatusLine.State.WORKING);
 
                 float fps = 20F / Math.max(1, this.parseInterval());
                 FrameSequence sequence = ExternalVideoCapture.captureFile(this, file, fps, 0F, 0F);
 
                 if (sequence == null || sequence.isEmpty())
                 {
-                    this.status.label = L10n.lang("bbs.ui.ai.capture.sampling_empty");
+                    this.status.set(L10n.lang("bbs.ui.ai.capture.sampling_empty").get(), AiUi.StatusLine.State.FAIL);
 
                     return;
                 }
@@ -269,13 +270,14 @@ public class UICapturePanel extends UIDashboardPanel
 
         if (this.session.update(cursor, window.getWidth(), window.getHeight()))
         {
-            this.status.label = L10n.lang("bbs.ui.ai.capture.capturing").format(Math.round(this.session.progress() * 100F));
+            this.status.set(L10n.lang("bbs.ui.ai.capture.capturing").format(Math.round(this.session.progress() * 100F)).get(), AiUi.StatusLine.State.WORKING);
         }
         else
         {
             this.sequence = this.session.finish();
             this.session = null;
-            this.status.label = L10n.lang("bbs.ui.ai.capture.done").format(this.sequence.size());
+            this.status.set(L10n.lang("bbs.ui.ai.capture.done").format(this.sequence.size()).get(), AiUi.StatusLine.State.OK);
+            framesHeader.caption(L10n.lang("bbs.ui.ai.capture.frames_count").format(this.sequence.size()).get());
             this.showFrames();
             this.persist();
         }
@@ -284,17 +286,17 @@ public class UICapturePanel extends UIDashboardPanel
     /** Swap the strip to the freshly captured frames. */
     private void showFrames()
     {
-        List<mchorse.bbs_mod.utils.resources.Pixels> pixels = new ArrayList<>();
+        List<CapturedFrame> frames = new ArrayList<>();
 
         if (this.sequence != null)
         {
             for (int i = 0; i < this.sequence.frames.size() && i < 24; i++)
             {
-                pixels.add(this.sequence.frames.get(i).image);
+                frames.add(this.sequence.frames.get(i));
             }
         }
 
-        this.strip.setFrames(pixels);
+        this.strip.setFrames(frames);
     }
 
     /** 送去理解: with a configured vision backend this ships the frames; today it reports honestly. */
@@ -302,19 +304,19 @@ public class UICapturePanel extends UIDashboardPanel
     {
         if (this.sequence == null || this.sequence.isEmpty())
         {
-            this.status.label = L10n.lang("bbs.ui.ai.capture.nothing_to_send");
+            this.status.set(L10n.lang("bbs.ui.ai.capture.nothing_to_send").get(), AiUi.StatusLine.State.IDLE);
 
             return;
         }
 
         if (!AiSettingsGate.visionConfigured())
         {
-            this.status.label = L10n.lang("bbs.ui.ai.capture.vision_unconfigured").format(this.sequence.size());
+            this.status.set(L10n.lang("bbs.ui.ai.capture.vision_unconfigured").format(this.sequence.size()).get(), AiUi.StatusLine.State.IDLE);
 
             return;
         }
 
-        this.status.label = L10n.lang("bbs.ui.ai.capture.would_upload").format(this.sequence.size());
+        this.status.set(L10n.lang("bbs.ui.ai.capture.would_upload").format(this.sequence.size()).get(), AiUi.StatusLine.State.OK);
     }
 
     /** Persist frames + manifest so a panel rebuild (or a dashboard close) keeps them. */
@@ -350,7 +352,7 @@ public class UICapturePanel extends UIDashboardPanel
             }
             catch (Exception e)
             {
-                this.status.label = L10n.lang("bbs.ui.ai.capture.persist_failed").format(e.getMessage());
+                this.status.set(L10n.lang("bbs.ui.ai.capture.persist_failed").format(e.getMessage()).get(), AiUi.StatusLine.State.FAIL);
 
                 return;
             }

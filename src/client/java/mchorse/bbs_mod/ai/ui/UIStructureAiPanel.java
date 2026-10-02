@@ -42,6 +42,8 @@ public class UIStructureAiPanel extends UIDashboardPanel
 
     private final UIScrollView structures;
     private final UIScrollView description;
+    private final AiUi.Header listHeader;
+    private final AiUi.Header descHeader;
     private final UIButton describe;
 
     private String selected;
@@ -52,8 +54,8 @@ public class UIStructureAiPanel extends UIDashboardPanel
     {
         super(dashboard);
 
-        UILabel listHeader = AiUi.header(L10n.lang("bbs.ui.ai.structure.list"));
-        UILabel descHeader = AiUi.header(L10n.lang("bbs.ui.ai.structure.description"));
+        this.listHeader = AiUi.header(L10n.lang("bbs.ui.ai.structure.list"));
+        this.descHeader = AiUi.header(L10n.lang("bbs.ui.ai.structure.description"));
 
         this.structures = new UIScrollView();
         this.structures.column(UIConstants.MARGIN).vertical().stretch().padding(UIConstants.MARGIN);
@@ -122,6 +124,7 @@ public class UIStructureAiPanel extends UIDashboardPanel
 
         this.structures.removeAll();
         this.structures.add(UI.column(1, rows.toArray(new UIElement[0])));
+        this.listHeader.caption(L10n.lang("bbs.ui.ai.hub.board_count").format(ids.size()).get());
 
         if (this.selected == null && !ids.isEmpty())
         {
@@ -138,6 +141,7 @@ public class UIStructureAiPanel extends UIDashboardPanel
     private void select(String id)
     {
         this.selected = id;
+        this.descHeader.caption(id);
         this.describe.setEnabled(true);
         this.fillList();
 
@@ -265,6 +269,7 @@ public class UIStructureAiPanel extends UIDashboardPanel
     public void render(UIContext context)
     {
         this.area.render(context.batcher, BBSSettings.baseSurface());
+        AiUi.topEdge(context, this.area.x, this.area.y, this.area.w);
 
         super.render(context);
     }

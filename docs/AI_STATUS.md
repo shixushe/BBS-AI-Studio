@@ -68,7 +68,7 @@ E:\BBS FS AI\mc-mcp\mc_mcp_server.py        ← MCP 调试服务(config 指向 t
 | R3 | 模组名 BBS AI Studio | ✅ 2.8-1.20.1 |
 | R4 | **设置界面:AI 设置独立标签,且修"显示键值而非名称"** | ⬜ 本轮(补 `bbs.settings.ai.*` l10n) |
 | R5 | **MCP 无感调试不流畅** | ⬜ 本轮(命令序列批处理+动作后恢复原前台+少截图扰动) |
-| R6 | **AI 对话框移到属性面板下半截**(影片界面) | ⬜ 本轮(editArea 下半) |
+| R6 | **AI 对话框移到属性面板下半截**(影片界面) | ✅ editArea 对半分：上半属性(host)+下半 AI 对话（本轮升级为滚动对话流） |
 | R7 | **AI 建筑单独界面** | ⬜ 本轮(.nbt 结构理解:列表/读取/校验/描述) |
 | R8 | **视频采集:Windows 资源管理器选文件 + 加强**(自动走带/缩略图) | ⬜ 本轮 |
 | R9 | **按钮状态感知**(特定情节才可用,需 tooltip 说明)+ **向用户提问的对话框**(骨骼候选确认等) | ⬜ 本轮 |
@@ -116,7 +116,7 @@ E:\BBS FS AI\mc-mcp\mc_mcp_server.py        ← MCP 调试服务(config 指向 t
   采集面板自动走带 12 帧并持久化 ✓、QuickPlay 启动器直进世界 ✓。
 - **待验证/待修（下一轮入口）**：
   1. §5.2 左栏 script textarea 在游戏内渲染不可见（疑似 h(1F,-52) 塌陷或缺底色）——UI 照 mockup 像素级打磨的入口；
-  2. §5.1 对话条已移至属性面板下半截（editArea y(0.5F)），未目视验证；
+  2. §5.1 对话条已升级为对话界面并落位 editArea 下半（见下"本轮改动"），目视验证因用户会议占用屏幕未完成；
   3. 设置 AI 标签行名已补齐但未目视复验（bbs.config.ai.* 全量补齐后需重启游戏）；
   4. §5.9 跟随机制已实现未目视验证；
   5. §5.4 幽灵帧：时间轴标记+预览区边框已做，3D 剪影待 renderer 级；
@@ -124,3 +124,24 @@ E:\BBS FS AI\mc-mcp\mc_mcp_server.py        ← MCP 调试服务(config 指向 t
   7. 实例 mods `_disabled_backup/` 内有 bbs-2.7/bbsfsai-2.6/Cubed/posecurve 四个被禁 jar（合并后不再需要，用户可随时恢复）。
 - 游戏窗口焦点问题：QQ/其它窗口会盖住游戏导致截图黑屏——HTTP /screenshot 是游戏自己渲染，
   窗口最小化时会拍黑；走查前需还原窗口（mc_ping 的 focus 路径会自动 restore）。
+
+## 七、本轮改动（2026-10-02，R6 对话界面 + 影片属性分屏）
+
+- **影片界面 50/50 分屏**：`UIFilmPanel` 新增 `propertiesHost`（editArea 上半，y(0)~h(0.5F)），
+  相机剪辑面板（UIClipsPanel.target）与录制关键帧编辑器（UIReplaysEditor 里 keyframeEditor.target）
+  都改挂 propertiesHost；`aiChatBar` 落位 editArea 下半（y(0.5F) h(0.5F)）。时间线 main 恢复满高。
+- **UIAiChatBar 升级为对话界面**（类名不变，R6+R10）：
+  - 新组件 `AiChatHistory`（UIScrollView + column().scroll() 滚动条）+ `AiChatMessage`（角色气泡：
+    你=accent 淡底 / AI=深底 / 系统=灰字无底 / 错误=红底，自动换行、高度随内容、上限 100 条、自动跟底）；
+  - 底部两行：输入行（AI 徽标+生成/打磨模式切换+输入框+执行，回车即发送发送后清空）+ 预览行
+    （仅在有待入框预览时出现，不再用状态行常驻）；
+  - 一切反馈进对话流：未配置后端/无回放/非模型/无意图等不再挤在一行状态里，
+    生成中显示「正在生成…」气泡，完成/失败原地更新（失败转红），入框后留回执（含 Ctrl+Z 提示）；
+  - 欢迎语教流程（生成/打磨/幽灵帧预览/入框/撤销）。
+- **上半属性滚动条**：UIClip/UIKeyframeFactory 本就内建 UIScrollView（UI.scrollView → column().scroll()），
+  压到半高后内容溢出即出滚动条，无需改动。
+- 构建：compileClientJava + gradlew build（四套测试 + apiCheck）全绿；jar 已部署实例 mods。
+- 游戏内：/aiui film 打开影片面板成功、无任何 bbs_mod UI 异常（log 验证）。
+  **目视走查未完成**：走查时用户桌面被在线会议窗口占据，为不打扰已停止抢焦点截图；
+  下轮入口=会议结束后 mc_ping → `/aiui film` → OS 抓图核对分屏/滚动条/气泡观感。
+- 新 l10n（en+zh）：bbs.ui.ai.chat.you/assistant/welcome/unconfigured/thinking/generated。

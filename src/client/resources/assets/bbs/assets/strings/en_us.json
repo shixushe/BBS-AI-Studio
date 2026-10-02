@@ -2520,5 +2520,11 @@
   "bbspp.config.bbs_enhancements.snow_actions": "Snow Actions",
   "bbspp.config.bbs_enhancements.locked_layout_prevents_rotation": "Locked Layout Prevents Rotation",
   "bbspp.config.bbs_enhancements.item_spray": "Item Spray",
-  "bbs.ui.ai.panel.vision_toggle": "Vision understanding"
+  "bbs.ui.ai.panel.vision_toggle": "Vision understanding",
+  "bbs.ui.ai.chat.you": "You",
+  "bbs.ui.ai.chat.assistant": "AI",
+  "bbs.ui.ai.chat.welcome": "Talk to the copilot here: 生成 turns an action script into pose keyframes, 打磨 adjusts existing curves (like \"smoother\", \"ease in out 0.7\", \"6-22\") fully offline. Results arrive as ghost-frame previews first - commit with 入框, one undo entry, Ctrl+Z to take back.",
+  "bbs.ui.ai.chat.unconfigured": "No AI backend configured - pick a provider and API key under Settings > AI copilot; 打磨 works without one.",
+  "bbs.ui.ai.chat.thinking": "Generating...",
+  "bbs.ui.ai.chat.generated": "Generated %s beats / %s ticks of pose frames - the ghost overlay is on the timeline. Commit once it looks right."
 }

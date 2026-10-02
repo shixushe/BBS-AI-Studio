@@ -105,6 +105,8 @@ public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSu
 
     public UIElement main;
     public mchorse.bbs_mod.ai.ui.UIAiChatBar aiChatBar;
+    /** The upper half of {@link #editArea}: where the picked clip's / keyframe's properties land. */
+    public UIElement propertiesHost;
     public UIElement editArea;
     public UIDockLayout dock;
     public UIFilmRecorder recorder;
@@ -182,8 +184,14 @@ public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSu
         this.editArea = new UIElement();
         this.preview = new UIFilmPreview(this);
 
+        /* The properties column splits in two: the picked thing's editors on
+         * top, the AI chat on the bottom (both halves scroll their content) */
+        this.propertiesHost = new UIElement();
+        this.propertiesHost.relative(this.editArea).x(0).y(0).w(1F).h(0.5F);
+        this.editArea.add(this.propertiesHost);
+
         /* Editors */
-        this.cameraEditor = new UIClipsPanel(this, BBSMod.getFactoryCameraClips()).target(this.editArea);
+        this.cameraEditor = new UIClipsPanel(this, BBSMod.getFactoryCameraClips()).target(this.propertiesHost);
         this.cameraEditor.full(this.main);
 
         this.cameraEditor.clips.context((menu) ->
@@ -235,8 +243,9 @@ public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSu
         /* Setup elements */
 
         this.aiChatBar = new mchorse.bbs_mod.ai.ui.UIAiChatBar(this);
-        this.aiChatBar.relative(this.main).y(1F, -mchorse.bbs_mod.ai.ui.UIAiChatBar.BAR_HEIGHT).w(1F).h(mchorse.bbs_mod.ai.ui.UIAiChatBar.BAR_HEIGHT);
-        this.main.add(this.cameraEditor, this.replayEditor, this.aiChatBar);
+        this.aiChatBar.relative(this.editArea).x(0).y(0.5F).w(1F).h(0.5F);
+        this.editArea.add(this.aiChatBar);
+        this.main.add(this.cameraEditor, this.replayEditor);
         this.add(new mchorse.bbs_mod.ai.preview.AiGhostBorder(this));
         this.add(this.controller);
         this.overlay.namesList.setFileIcon(Icons.FILM);

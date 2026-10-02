@@ -636,7 +636,7 @@ public class UIReplaysEditor extends UIElement implements IBoneSelectionHost
         if (!sheets.isEmpty() || filteredOutEverything)
         {
             this.keyframeEditor = new UIKeyframeEditor((consumer) -> new UIFilmKeyframes(this.filmPanel.cameraEditor, consumer).absolute())
-                .target(this.filmPanel.editArea);
+                .target(this.filmPanel.propertiesHost);
             this.keyframeEditor.relative(this).x(CATEGORY_BAR_WIDTH).y(0).w(1F, -CATEGORY_BAR_WIDTH).h(1F);
             this.keyframeEditor.setUndoId("replay_keyframe_editor");
             this.keyframeEditor.view.getDopeSheet().setEmptyState(UIKeys.KEYFRAMES_EMPTY_FILTERED, UIKeys.KEYFRAMES_EMPTY_FILTERED_HINT);

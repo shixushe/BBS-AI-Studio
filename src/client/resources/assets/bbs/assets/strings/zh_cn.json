@@ -1322,5 +1322,11 @@
   "bbspp.config.bbs_enhancements.snow_actions": "雪花动作",
   "bbspp.config.bbs_enhancements.locked_layout_prevents_rotation": "锁定布局阻止旋转",
   "bbspp.config.bbs_enhancements.item_spray": "物品喷洒",
-  "bbs.ui.ai.panel.vision_toggle": "视觉理解"
+  "bbs.ui.ai.panel.vision_toggle": "视觉理解",
+  "bbs.ui.ai.chat.you": "你",
+  "bbs.ui.ai.chat.assistant": "AI 助手",
+  "bbs.ui.ai.chat.welcome": "直接下指令：「生成」把动作剧本变成姿态关键帧，「打磨」调整已有曲线（如「更柔和」「缓入缓出 0.7」「6-22」，完全离线可用）。结果先以幽灵帧预览，确认后「入框」，Ctrl+Z 可回退。",
+  "bbs.ui.ai.chat.unconfigured": "尚未配置 AI 后端 —— 请到 设置 → AI 副驾 选择供应商并填写密钥；「打磨」无需配置即可使用。",
+  "bbs.ui.ai.chat.thinking": "正在生成……",
+  "bbs.ui.ai.chat.generated": "已生成 %s 拍 / %s tick 的姿态帧 —— 幽灵帧已叠加在时间轴上，检查无误后点「入框」。"
 }

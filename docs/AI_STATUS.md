@@ -453,3 +453,26 @@ hub 输入行+状态、采集的状态/输出栈）都落在被遮挡带内。�
   model=glm-4.6）——**api_key 需用户在 设置→AI 里粘贴**。
 - 构建事故处理：删增量 classes 后 remapJar 报 NoSuchFile，停守护进程全清理重建；
   apiCheck 首跑 flake 失败，重跑通过。部署 md5 校验一致。
+
+## 二十四、第十八轮（2026-10-02，对照智谱官方文档审查 GLM 对接）
+
+用户提供文档 https://docs.bigmodel.cn/cn/guide/develop/http/introduction，
+逐项核对 OpenAiCompatibleBackend 与 GLM 的对接。**正确的部分**：端点拼接
+（paas/v4 + /chat/completions）、Bearer 认证、请求字段（model/messages/
+temperature/max_tokens）、响应解析（choices[0].message.content、usage）、
+错误码映射（401→AUTH、429→RATE_LIMIT、5xx→NETWORK）、error.message 提取。
+
+**修掉三个真 bug**：
+1. **思考模式未关闭**——GLM-4.5+/5.x 默认 thinking=enabled，推理显著拖慢响应
+   （也是超时体验的帮凶）。现 provider=glm 时显式发送
+   `"thinking":{"type":"disabled"}`（其他网关不认该字段，仅 glm 发送）。
+2. **finish_reason 失败态未处理**——sensitive（安全拦截）会被报成「空内容/格式
+   错误」、length（输出截断）会让 JSON 方案截半后报莫名其妙的解析错、
+   network_error（推理异常）无从知晓。现在各自映射到对应异常类型 + 中文提示。
+3. **temperature 上限 2.0 超出 GLM 的 [0,1]**——设置滑条已收窄到 1.0（默认
+   0.7 合规不动）。
+
+另核对无误：max_tokens=8192 在 GLM 128K 上限内；response_format 默认不发送
+（supports_json_mode 默认 false，GLM 对不支持该字段的模型会拒收）；glm-4.6 在
+官方模型列表内（文档示例用 glm-5.3，用户可随时在设置切换）。构建全绿，
+md5 校验一致部署，游戏已重启。

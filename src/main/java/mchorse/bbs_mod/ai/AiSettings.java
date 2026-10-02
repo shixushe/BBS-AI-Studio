@@ -47,7 +47,7 @@ public class AiSettings
         model = builder.getString("model", "");
         stream = builder.getBoolean("stream", false);
         jsonMode = builder.getBoolean("json_mode", false);
-        temperature = builder.getFloat("temperature", 0.7F, 0F, 2F);
+        temperature = builder.getFloat("temperature", 0.7F, 0F, 1F); /* GLM 限 [0,1] */
         timeoutMs = builder.getInt("timeout_ms", 60000, 1000, 300000);
         maxRetries = builder.getInt("max_retries", 1, 0, 5);
         supportsVision = builder.getBoolean("supports_vision", false);

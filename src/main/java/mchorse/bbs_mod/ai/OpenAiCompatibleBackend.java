@@ -67,6 +67,17 @@ public class OpenAiCompatibleBackend implements AiTextBackend
             body.putInt("max_tokens", request.maxTokens);
         }
 
+        /* GLM-4.5+/5.x 默认开启思考模式（thinking=enabled），推理会显著拖慢响应；
+         * 动作方案生成要的是确定性 JSON，GLM 供应商下显式关闭。其他兼容网关不认
+         * 这个字段，所以只对 glm 供应商发送。 */
+        if ("glm".equals(AiSettings.provider.get().trim().toLowerCase()))
+        {
+            MapType thinking = new MapType();
+
+            thinking.putString("type", "disabled");
+            body.put("thinking", thinking);
+        }
+
         /* JSON mode is opt-in: plenty of OpenAI-compatible gateways reject
          * response_format outright, so it only goes out when the user (or a
          * capability probe) has confirmed the model accepts it. */
@@ -188,6 +199,32 @@ public class OpenAiCompatibleBackend implements AiTextBackend
 
         String content = message.getString("content");
         String model = first.has("model") ? first.getString("model") : fallbackModel;
+
+        /* finish_reason 里的失败态不能放过去：sensitive 是安全拦截、network_error
+         * 是服务端推理异常、length 说明输出被 max_tokens 截断（JSON 方案会被截半，
+         * 下游只会报一个莫名其妙的格式错误）。GLM 文档枚举这三种失败态。 */
+        String finish = first.has("finish_reason") ? first.getString("finish_reason") : "";
+
+        if (content == null || content.isEmpty())
+        {
+            if ("sensitive".equals(finish))
+            {
+                throw new AiException(Type.CONTENT_REJECTED, "内容被安全审核拦截（finish_reason=sensitive）——换个说法再试");
+            }
+
+            if ("network_error".equals(finish))
+            {
+                throw new AiException(Type.NETWORK, "服务端推理异常（finish_reason=network_error）——稍后重试");
+            }
+
+            throw new AiException(Type.PARSE, "模型返回了空内容" + (finish.isEmpty() ? "" : "（finish_reason=" + finish + "）"));
+        }
+
+        if ("length".equals(finish))
+        {
+            throw new AiException(Type.CONTEXT_OVERFLOW, "输出达到 max_tokens 上限被截断（finish_reason=length）——在 设置→AI 里调大最大输出");
+        }
+
         int prompt = 0;
         int completion = 0;
 

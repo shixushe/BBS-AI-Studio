@@ -277,3 +277,24 @@ A 键名残留（zh+en 都缺）、B **英文回退**（zh 缺 en 有——中�
   （写描述→生成看节拍表→入框去影片编辑器对话栏）；问候语守卫上轮已接。
 - 新 l10n zh+en 各 21 条（structure.facts_*/ai_prompt/none_hint、creative.pick_*、
   capture.duration、panel.ready_hint）。构建+测试全绿，部署重启日志零本模组异常。
+
+## 十五、第九轮（2026-10-02，四个面板推倒重写 + 共享设计语言）
+
+用户："直接把整个界面重新搞，不要在史山上堆史"。执行：不再修补，四个面板的布局代码
+全部重写，公共视觉抽到一个组件类。
+
+- **新增 `AiUi`（ai/ui/components）**：四个面板唯一的视觉语言来源——accent 通栏标题条
+  （header）、教学提示（hint）、滚动内容列（scrollColumn）、**帧缩略图条（FrameStrip）**
+  （Pixels→Texture.textureFromPixels 懒上传，采集中零开销，空态居中提示，release 可释放）。
+- **删除死组件**：AiSectionHeader、AiDropZone（无拖入行为）、IntentChip（纯静态）、
+  StatusLamp（只剩文案功能）——`git rm`，UIAiPanel 不再引用。
+- **UIAiPanel 从零重写**：三栏装饰布局 → 两列聚焦流（左 45%：大剧本输入区+角色/时长
+  一行参数；右：节拍表滚动）。砍掉：意图 chips、拖入框、fps、供应商下拉、视觉开关、
+  输出统计框。问候语守卫保留。
+- **UICapturePanel 从零重写**：两栏半空布局 → 单列流：参数行（间隔/时长/开始采集同行）→
+  **帧序列缩略图条**（替代"N 帧"文字，最多 24 帧真实画面）→ 输出路径+状态 → 底部[送去理解]。
+- **UICreativeModePanel 从零重写**：左右两栏（左栏几乎空）→ 竖向流：主题（3 行输入）
+  +换一批同行 → 候选板滚动+点选高亮 → 底部[采纳所选]+状态。骨骼绑定/不完整解算保护保留。
+- **UIStructureAiPanel**：套 AiUi header（可点选/事实/AI 描述逻辑上轮已建，不动）。
+- 新 l10n：capture.strip_empty（zh+en）。构建+测试全绿，部署重启无本模组异常。
+- 面板类行数变化：UIAiPanel 397→249，UICapturePanel 312→262，UICreative 408→359。

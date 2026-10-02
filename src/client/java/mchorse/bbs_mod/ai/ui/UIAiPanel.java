@@ -6,14 +6,9 @@ import mchorse.bbs_mod.ai.AiException;
 import mchorse.bbs_mod.ai.AiPlans;
 import mchorse.bbs_mod.ai.AiSettings;
 import mchorse.bbs_mod.ai.plan.AnimationPlan;
-import mchorse.bbs_mod.ai.ui.components.AiDropZone;
-import mchorse.bbs_mod.ai.ui.components.AiSectionHeader;
-
-import static mchorse.bbs_mod.ai.ui.components.AiSectionHeader.HEADER_HEIGHT;
+import mchorse.bbs_mod.ai.ui.components.AiUi;
 import mchorse.bbs_mod.ai.ui.components.BeatTable;
 import mchorse.bbs_mod.ai.ui.components.BeatTable.Row;
-import mchorse.bbs_mod.ai.ui.components.IntentChip;
-import mchorse.bbs_mod.ai.ui.components.StatusLamp;
 import mchorse.bbs_mod.l10n.L10n;
 import mchorse.bbs_mod.l10n.keys.IKey;
 import mchorse.bbs_mod.ui.dashboard.UIDashboard;
@@ -32,41 +27,26 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * AI 对话面板（copilot spec section 5.2，milestone M1），mockup 02 一比一：
+ * AI 副驾面板（copilot spec section 5.2）—— 从零重写的聚焦形态：
  *
- * ┌ ① 剧本/提示 ┬ ② AnimationPlan 节拍表 ┬ ③ 生成参数 ┐
- * │ 剧本文本     │ 节拍表(5列网格)         │ 供应商下拉  │
- * │ 拖入框       │ 选中行 accent 洗染      │ 参数控件    │
- * │ 意图 chips   │                        │ 输出统计框  │
- * └ 生成 blocking ┴ 后端状态灯 ─────────────┘
+ * ┌ ① 剧本 ──────────────┬ ② 节拍表 ──────────┐
+ * │ 大输入区              │ 分镜节拍（滚动）    │
+ * │ 角色 + 时长（一行）   │                    │
+ * ├ [生成] ───────────────┴────────────────────┤
+ * └ 状态回执                                   ┘
  *
- * 面向对象设计：三个区域各自封装（AiSectionHeader/BeatTable/StatusLamp/
- * IntentChip/AiDropZone 组件类），布局全按窗口比例（fraction）伸缩——
- * 分辨率与 UI 缩放下形态一致，不再有固定像素小窗。
- *
- * 无后端时面板完全可用（iron rule 4）：状态灯提示未配置，生成动作说明缺什么。
+ * 旧版三栏的装饰物（意图 chips、拖入占位框、fps/供应商/视觉参数、输出统计框）
+ * 全部移除：chips 和拖入框没有任何行为，供应商与视觉属于设置页——面板只留与
+ * "这一句话生成什么"直接相关的两个参数。问候语照聊天栏一样本地回应。
  */
 public class UIAiPanel extends UIDashboardPanel
 {
-    /** 底部操作栏高度。 */
-    public static final int BAR = UIConstants.CONTROL_HEIGHT + 8;
-
-    /* 三栏比例（mockup 02：左窄、中宽、右中） */
-    private static final float LEFT_W = 0.26F;
-    private static final float MID_W = 0.46F;
-    private static final float RIGHT_W = 0.27F;
-
-    private UITextarea<?> script;
-    private UITextbox character;
-    private mchorse.bbs_mod.ui.framework.elements.buttons.UIToggle visionToggle;
-    private BeatTable beats;
-    private StatusLamp lamp;
-    private UILabel status;
-    private UILabel output;
-    private ParamField duration;
-    private ParamField fps;
-
-    private final List<IntentChip> chips = new ArrayList<>();
+    private final UITextarea<?> script;
+    private final UITextbox character;
+    private final UITextbox duration;
+    private final BeatTable beats;
+    private final UILabel status;
+    private final UIButton generate;
 
     private AnimationPlan plan;
     private boolean busy;
@@ -75,161 +55,55 @@ public class UIAiPanel extends UIDashboardPanel
     {
         super(dashboard);
 
-        this.buildLeft();
-        this.buildMiddle();
-        this.buildRight();
-        this.buildBottom();
-    }
-
-    /* ① 剧本 / 提示 */
-
-    private void buildLeft()
-    {
-        AiSectionHeader header = new AiSectionHeader(L10n.lang("bbs.ui.ai.panel.script").get());
-
-        header.relative(this).x(0F).y(0F).w(LEFT_W).h(HEADER_HEIGHT);
-
         this.script = new UITextarea<>((t) -> {});
 
-        this.script.relative(this).x(0F).y(HEADER_HEIGHT).w(LEFT_W).h(1F, -(HEADER_HEIGHT + 120));
-
-        UILabel draggable = UI.label(L10n.lang("bbs.ui.ai.panel.draggable"), UIConstants.CONTROL_HEIGHT);
-
-        draggable.relative(this).x(0F).y(1F, -(120 + 2 * UIConstants.MARGIN)).w(LEFT_W).h(UIConstants.CONTROL_HEIGHT);
-
-        AiDropZone image = new AiDropZone(L10n.lang("bbs.ui.ai.panel.drop_image"));
-        AiDropZone video = new AiDropZone(L10n.lang("bbs.ui.ai.panel.drop_video"));
-
-        image.relative(this).x(0F).y(1F, -(120 + 44 + 3 * UIConstants.MARGIN)).w((LEFT_W - UIConstants.MARGIN) / 2).h(44);
-        video.relative(this).x((LEFT_W - UIConstants.MARGIN) / 2 + UIConstants.MARGIN).y(1F, -(120 + 44 + 3 * UIConstants.MARGIN)).w((LEFT_W - UIConstants.MARGIN) / 2).h(44);
-
-        UILabel intentsTitle = UI.label(L10n.lang("bbs.ui.ai.panel.intents"), UIConstants.CONTROL_HEIGHT);
-
-        intentsTitle.relative(this).x(0F).y(1F, -(120 + 88 + 4 * UIConstants.MARGIN)).w(LEFT_W).h(UIConstants.CONTROL_HEIGHT);
-
-        float chipW = (LEFT_W - UIConstants.MARGIN) / 2;
-        String[] tags = {"起势 anticipation", "蓄力 compress", "腾空 rise", "落地 impact"};
-
-        for (int i = 0; i < tags.length; i++)
-        {
-            IntentChip chip = new IntentChip(tags[i]);
-
-            int row = i / 2;
-            int col = i % 2;
-
-            chip.relative(this).x(col * (chipW + UIConstants.MARGIN)).y(1F, -(120 + 88 + 5 * UIConstants.MARGIN + row * (UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN))).w(chipW).h(UIConstants.CONTROL_HEIGHT);
-            this.add(chip);
-        }
-
-        this.add(header);
-        this.add(this.script);
-        this.add(draggable);
-        this.add(image);
-        this.add(video);
-        this.add(intentsTitle);
-    }
-
-    /* ② AnimationPlan 节拍表 */
-
-    private void buildMiddle()
-    {
-        UIElement column = UI.column(UIConstants.MARGIN);
-
-        column.relative(this).x(LEFT_W).y(0F).w(MID_W).h(1F, -BAR);
-
-        column.add(new AiSectionHeader(L10n.lang("bbs.ui.ai.panel.beats").get()));
-
-        this.beats = new BeatTable();
-        this.beats.h(1F, -AiSectionHeader.HEADER_HEIGHT);
-        column.add(this.beats);
-
-        this.add(column);
-    }
-
-    /* ③ 生成参数 */
-
-    private void buildRight()
-    {
-        this.duration = ParamField.seconds();
-        this.fps = ParamField.fps();
         this.character = new UITextbox(64, (t) -> {});
-
         this.character.placeholder(L10n.lang("bbs.ui.ai.panel.character_hint"));
-        this.visionToggle = new mchorse.bbs_mod.ui.framework.elements.buttons.UIToggle(
-            L10n.lang("bbs.ui.ai.panel.vision_toggle"),
-            AiSettings.supportsVision.get(),
-            (t) -> AiSettings.supportsVision.set(t.getValue()));
 
-        this.lamp = new StatusLamp();
+        this.duration = new UITextbox(8, (t) -> {});
+        this.duration.setText("4");
 
-        this.output = new UILabel(L10n.lang("bbs.ui.ai.panel.output_empty"));
-        this.output.color(Colors.LIGHTER_GRAY, false).background(BBSSettings.deepSurface());
-
-        UIElement column = UI.column(UIConstants.MARGIN,
-            new AiSectionHeader(L10n.lang("bbs.ui.ai.panel.params").get()),
-            UI.label(L10n.lang("bbs.ui.ai.panel.provider_label"), UIConstants.CONTROL_HEIGHT),
-            this.providerPick().h(UIConstants.CONTROL_HEIGHT),
-            UI.label(L10n.lang("bbs.ui.ai.panel.duration"), UIConstants.CONTROL_HEIGHT),
-            this.duration.element().h(UIConstants.CONTROL_HEIGHT),
-            UI.label(L10n.lang("bbs.ui.ai.panel.fps"), UIConstants.CONTROL_HEIGHT),
-            this.fps.element().h(UIConstants.CONTROL_HEIGHT),
+        UIElement params = UI.row(UIConstants.MARGIN,
             UI.label(L10n.lang("bbs.ui.ai.panel.character"), UIConstants.CONTROL_HEIGHT),
             this.character.h(UIConstants.CONTROL_HEIGHT),
-            this.visionToggle.h(UIConstants.CONTROL_HEIGHT),
-            UI.label(L10n.lang("bbs.ui.ai.panel.output"), UIConstants.CONTROL_HEIGHT),
-            this.output.h(UIConstants.CONTROL_HEIGHT * 3)
-        );
+            UI.label(L10n.lang("bbs.ui.ai.panel.duration"), UIConstants.CONTROL_HEIGHT),
+            this.duration.h(UIConstants.CONTROL_HEIGHT));
 
-        column.relative(this).x(LEFT_W + MID_W).y(0F).w(RIGHT_W).h(1F, -BAR);
+        params.row(UIConstants.MARGIN).preferred(0).height(UIConstants.CONTROL_HEIGHT);
 
-        this.add(column);
-    }
+        UILabel scriptHeader = AiUi.header(L10n.lang("bbs.ui.ai.panel.script"));
 
-    /* 供应商下拉框（11 家预设，选完自动填接口地址） */
+        UIElement left = UI.column(UIConstants.MARGIN, scriptHeader, this.script, params);
 
-    private mchorse.bbs_mod.ui.framework.elements.buttons.UIChoiceButton<String> providerPick()
-    {
-        mchorse.bbs_mod.ui.framework.elements.buttons.UIChoiceButton<String> pick =
-            new mchorse.bbs_mod.ui.framework.elements.buttons.UIChoiceButton<>(
-                AiSettings.PRESETS.keySet(),
-                (key) -> mchorse.bbs_mod.ui.utils.icons.Icons.SERVER,
-                (key) -> mchorse.bbs_mod.l10n.keys.IKey.constant(key));
+        left.w(0.45F).h(1F);
+        this.script.h(1F, -(AiUi.HEADER + UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN));
 
-        pick.callback((key) ->
-        {
-            AiSettings.provider.set(key);
-            AiSettings.applyPreset(key);
-        });
+        this.beats = new BeatTable();
 
-        String current = AiSettings.provider.get();
+        UIElement right = UI.column(UIConstants.MARGIN, AiUi.header(L10n.lang("bbs.ui.ai.panel.beats")), this.beats);
 
-        if (current != null && !current.isEmpty())
-        {
-            pick.setValue(current);
-        }
+        right.w(0.55F, -UIConstants.MARGIN).h(1F);
+        this.beats.h(1F);
 
-        return pick;
-    }
+        UIElement columns = UI.row(UIConstants.MARGIN, left, right);
 
-    /* 底部操作栏 */
+        columns.row(UIConstants.MARGIN).preferred(1);
+        columns.relative(this).x(0).y(0).w(1F).h(1F, -AiUi.BAR);
 
-    private void buildBottom()
-    {
-        UIButton generate = new UIButton(L10n.lang("bbs.ui.ai.panel.generate"), (b) -> this.generate());
+        this.generate = new UIButton(L10n.lang("bbs.ui.ai.panel.generate"), (b) -> this.generate());
 
-        generate.color(BBSSettings.primaryColor.get() | Colors.A100);
-        generate.tooltip(L10n.lang("bbs.ui.ai.panel.generate_tooltip"));
-
-        this.lamp = new StatusLamp();
+        this.generate.color(BBSSettings.primaryColor.get() | Colors.A100);
+        this.generate.tooltip(L10n.lang("bbs.ui.ai.panel.generate_tooltip"));
 
         this.status = new UILabel(L10n.lang("bbs.ui.ai.panel.ready_hint"));
         this.status.color(Colors.LIGHTER_GRAY, false);
 
-        UIElement bottom = UI.row(UIConstants.MARGIN, generate, this.status);
+        UIElement bottom = UI.row(UIConstants.MARGIN, this.generate, this.status);
 
-        bottom.row(UIConstants.MARGIN).preferred(1).height(BAR - 8);
-        bottom.relative(this).y(1F, -BAR).x(0F).w(1F).h(BAR);
+        bottom.row(UIConstants.MARGIN).preferred(1).height(AiUi.BAR - 8);
+        bottom.relative(this).y(1F, -AiUi.BAR).w(1F).h(AiUi.BAR);
 
+        this.add(columns);
         this.add(bottom);
     }
 
@@ -239,13 +113,6 @@ public class UIAiPanel extends UIDashboardPanel
     {
         if (this.busy)
         {
-            return;
-        }
-
-        if (!AiSettings.isConfigured())
-        {
-            this.lamp.set(StatusLamp.State.OFF);
-
             return;
         }
 
@@ -269,7 +136,7 @@ public class UIAiPanel extends UIDashboardPanel
         this.busy = true;
         this.status.label = L10n.lang("bbs.ui.ai.panel.generating");
 
-        float durationSeconds = (float) this.duration.value();
+        float durationSeconds = this.parseDuration();
         int totalTicks = Math.max(1, Math.round(durationSeconds * 20F));
 
         String system = L10n.lang("bbs.ui.ai.panel.prompt").get();
@@ -283,6 +150,18 @@ public class UIAiPanel extends UIDashboardPanel
         request.json(AiSettings.jsonMode.get() && AiSettings.supportsJsonMode.get());
 
         AiPlans.generatePlan(request, this::onPlan, this::onError);
+    }
+
+    private float parseDuration()
+    {
+        try
+        {
+            return Math.max(0.5F, Float.parseFloat(this.duration.getText().trim()));
+        }
+        catch (NumberFormatException e)
+        {
+            return 4F;
+        }
     }
 
     private void onPlan(AnimationPlan plan)
@@ -322,8 +201,7 @@ public class UIAiPanel extends UIDashboardPanel
 
         int lastTick = plan.beats.isEmpty() ? 0 : plan.beats.get(plan.beats.size() - 1).tick;
 
-        this.output.label = L10n.lang("bbs.ui.ai.panel.output_summary").format(plan.beats.size(), lastTick);
-        this.lamp.set(StatusLamp.State.READY);
+        this.status.label = L10n.lang("bbs.ui.ai.panel.output_summary").format(plan.beats.size(), lastTick);
     }
 
     private void onError(AiException error)
@@ -333,11 +211,6 @@ public class UIAiPanel extends UIDashboardPanel
         String detail = error.detail == null || error.detail.isEmpty() ? "" : ": " + error.detail;
 
         this.status.label = L10n.lang("bbs.ui.ai.panel.failed").format(error.type.name() + detail);
-
-        if (error.type == AiException.Type.TIMEOUT)
-        {
-            this.lamp.set(StatusLamp.State.TIMEOUT);
-        }
     }
 
     @Override
@@ -346,61 +219,5 @@ public class UIAiPanel extends UIDashboardPanel
         this.area.render(context.batcher, BBSSettings.baseSurface());
 
         super.render(context);
-
-        /* 剧本框可见外框(mockup 02:深色输入区有清晰边界) */
-        var scriptArea = this.script.area;
-
-        if (scriptArea.w > 0 && scriptArea.h > 0)
-        {
-            int border = Colors.setA(Colors.opaque(BBSSettings.primaryColor.get()), 0.5F);
-
-            context.batcher.box(scriptArea.x - 1, scriptArea.y - 1, scriptArea.ex() + 1, scriptArea.y, border);
-            context.batcher.box(scriptArea.x - 1, scriptArea.ey(), scriptArea.ex() + 1, scriptArea.ey() + 1, border);
-            context.batcher.box(scriptArea.x - 1, scriptArea.y - 1, scriptArea.x, scriptArea.ey() + 1, border);
-            context.batcher.box(scriptArea.ex(), scriptArea.y - 1, scriptArea.ex() + 1, scriptArea.ey() + 1, border);
-            context.batcher.box(scriptArea.x, scriptArea.y, scriptArea.ex(), scriptArea.ey(), BBSSettings.inputSurface());
-        }
-    }
-
-    /* 数值参数字段封装（trackpad，原生数值输入） */
-
-    private static class ParamField
-    {
-        private final mchorse.bbs_mod.ui.framework.elements.input.UITrackpad pad;
-
-        private ParamField(mchorse.bbs_mod.ui.framework.elements.input.UITrackpad pad)
-        {
-            this.pad = pad;
-        }
-
-        static ParamField seconds()
-        {
-            mchorse.bbs_mod.ui.framework.elements.input.UITrackpad pad = new mchorse.bbs_mod.ui.framework.elements.input.UITrackpad((v) -> {});
-
-            pad.limit(0.5D, 600D);
-            pad.setValue(4D);
-
-            return new ParamField(pad);
-        }
-
-        static ParamField fps()
-        {
-            mchorse.bbs_mod.ui.framework.elements.input.UITrackpad pad = new mchorse.bbs_mod.ui.framework.elements.input.UITrackpad((v) -> {});
-
-            pad.limit(1D, 120D);
-            pad.setValue(20D);
-
-            return new ParamField(pad);
-        }
-
-        UIElement element()
-        {
-            return this.pad;
-        }
-
-        double value()
-        {
-            return this.pad.getValue();
-        }
     }
 }

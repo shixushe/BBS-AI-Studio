@@ -11,9 +11,9 @@ import mchorse.bbs_mod.ai.creative.CreativeProposal;
 import mchorse.bbs_mod.ai.creative.CreativeSession;
 import mchorse.bbs_mod.ai.pose.BoneNameResolver;
 import mchorse.bbs_mod.ai.pose.PoseSolver;
+import mchorse.bbs_mod.ai.ui.components.AiUi;
 import mchorse.bbs_mod.forms.forms.ModelForm;
 import mchorse.bbs_mod.l10n.L10n;
-import mchorse.bbs_mod.l10n.keys.IKey;
 import mchorse.bbs_mod.settings.values.core.ValueGroup;
 import mchorse.bbs_mod.ui.dashboard.UIDashboard;
 import mchorse.bbs_mod.ui.dashboard.panels.UIDashboardPanel;
@@ -33,41 +33,34 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Creative mode (copilot spec sections 5.5 + 11): a top-level dashboard panel
- * where a fuzzy theme becomes MULTIPLE candidate directions. The rules that
- * make it creative mode and not "a looser execution mode":
+ * 创意模式（copilot spec sections 5.5 + 11）—— 从零重写的竖向流：
  *
- * <ul>
- * <li>products are batches - 换一批 keeps every previous batch (11.3)</li>
- * <li>NOTHING is written to the film from here; adoption is an explicit
- * selection that switches back to the film editor and goes through the M3
- * commit - exactly one undo entry (11.2 rule 2)</li>
- * <li>the session's call budget stops and asks instead of silently burning
- * the key (11.3)</li>
- * <li>drafts persist under {@code <settings>/ai_creative}, so closing the
- * panel loses nothing (5.5 hard rule)</li>
- * </ul>
+ * ┌ 主题 ──────────────────────────┐
+ * │ [主题输入……]         [换一批]  │
+ * ├ 候选板 ────────────────────────┤
+ * │ #1 摔跤…   ← 点选（高亮）       │
+ * │ #2 舞蹈…                       │
+ * └ [采纳所选]  状态回执 ──────────┘
  *
- * <p>It stops after 分镜 by design (spec 11.1): no modeling, no fake scene
- * building - adoption hands the beat plan to the execution pipeline.</p>
+ * 规则不变：候选成批保留（换一批不清板）；这里不写影片——采纳是显式选择，
+ * 切回影片编辑器走 M3 提交（恰一个撤销条目）；调用额度到顶即停（11.3）；
+ * 草稿持久化，面板关闭不丢（5.5 硬规则）。止步分镜（11.1）。
  */
 public class UICreativeModePanel extends UIDashboardPanel
 {
-    private static final int BAR = UIConstants.CONTROL_HEIGHT + 8;
-    private static final int HEADER = UIConstants.CONTROL_HEIGHT + 2;
+    private static final int THEME_HEIGHT = UIConstants.CONTROL_HEIGHT * 3;
 
     private final UITextarea<?> theme;
-
-    private final UILabel status;
     private final UIScrollView candidates;
     private final UILabel candidatesHint;
+    private final UILabel status;
+    private final UIButton refresh;
+
+    private final CreativeSession session = new CreativeSession();
 
     /** The variant the user picked on the board (-1 = none, adopt falls to the latest). */
     private int selectedVariant = -1;
     private int variantCount;
-
-    private final CreativeSession session = new CreativeSession();
-
     private boolean busy;
 
     public UICreativeModePanel(UIDashboard dashboard)
@@ -75,67 +68,47 @@ public class UICreativeModePanel extends UIDashboardPanel
         super(dashboard);
 
         this.theme = new UITextarea<>((t) -> {});
+        this.theme.h(THEME_HEIGHT);
 
-        UILabel themeHeader = this.header(L10n.lang("bbs.ui.ai.creative.theme"));
-        UILabel paramsHeader = this.header(L10n.lang("bbs.ui.ai.creative.params"));
+        this.refresh = new UIButton(L10n.lang("bbs.ui.ai.creative.refresh"), (b) -> this.refresh());
+        this.refresh.tooltip(L10n.lang("bbs.ui.ai.creative.budget").format(CreativeSession.MAX_CALLS));
 
-        UILabel themeLabel = UI.label(L10n.lang("bbs.ui.ai.creative.theme_hint"), UIConstants.CONTROL_HEIGHT);
-        UILabel budgetLabel = UI.label(L10n.lang("bbs.ui.ai.creative.budget").format(CreativeSession.MAX_CALLS), UIConstants.CONTROL_HEIGHT);
+        UIElement themeRow = UI.row(UIConstants.MARGIN, this.theme, this.refresh);
 
-        UIElement left = UI.column(UIConstants.MARGIN, themeHeader, themeLabel, this.theme, paramsHeader, budgetLabel);
+        themeRow.row(UIConstants.MARGIN).preferred(0).height(THEME_HEIGHT);
 
-        left.w(180).h(1F);
-        themeHeader.h(HEADER).w(1F);
-        this.theme.h(1F, -(HEADER + UIConstants.CONTROL_HEIGHT + HEADER));
-        paramsHeader.h(HEADER).w(1F);
-
-        UILabel candidatesHeader = this.header(L10n.lang("bbs.ui.ai.creative.candidates"));
+        UILabel themeHeader = AiUi.header(L10n.lang("bbs.ui.ai.creative.theme"));
+        UILabel boardHeader = AiUi.header(L10n.lang("bbs.ui.ai.creative.candidates"));
 
         this.candidates = new UIScrollView();
         this.candidates.column(UIConstants.MARGIN).vertical().stretch().scroll().padding(UIConstants.MARGIN);
 
         this.candidatesHint = UI.label(L10n.lang("bbs.ui.ai.creative.pick_hint"), UIConstants.CONTROL_HEIGHT * 2);
         this.candidatesHint.color(Colors.LIGHTER_GRAY, false);
-
-        UIElement middle = UI.column(UIConstants.MARGIN, candidatesHeader, this.candidates);
-
-        middle.h(1F);
-        candidatesHeader.h(HEADER).w(1F);
-        this.candidates.h(1F, -HEADER);
         this.candidates.add(this.candidatesHint);
-
-        UIElement columns = UI.row(UIConstants.MARGIN, left, middle);
-
-        columns.row(UIConstants.MARGIN).preferred(1);
-        columns.relative(this).w(1F).h(1F, -BAR);
-
-        UIButton refresh = new UIButton(L10n.lang("bbs.ui.ai.creative.refresh"), (b) -> this.refresh());
-        UIButton adopt = new UIButton(L10n.lang("bbs.ui.ai.creative.adopt"), (b) -> this.adopt());
-
-        adopt.color(BBSSettings.primaryColor.get() | Colors.A100);
 
         this.status = new UILabel(L10n.lang("bbs.ui.ai.creative.idle"));
         this.status.color(Colors.LIGHTER_GRAY, false);
 
-        UIElement bottom = UI.row(UIConstants.MARGIN, refresh, adopt, this.status);
+        UIButton adopt = new UIButton(L10n.lang("bbs.ui.ai.creative.adopt"), (b) -> this.adopt());
 
-        bottom.row(UIConstants.MARGIN).preferred(1).height(UIConstants.CONTROL_HEIGHT + 4);
-        bottom.relative(this).y(1F, -BAR).w(1F).h(BAR);
+        adopt.color(BBSSettings.primaryColor.get() | Colors.A100);
 
-        this.add(columns);
+        UIElement bottom = UI.row(UIConstants.MARGIN, adopt, this.status);
+
+        bottom.row(UIConstants.MARGIN).preferred(1).height(AiUi.BAR - 8);
+        bottom.relative(this).y(1F, -AiUi.BAR).w(1F).h(AiUi.BAR);
+
+        UIElement content = UI.column(UIConstants.MARGIN, themeHeader, themeRow, boardHeader, this.candidates);
+
+        content.row(UIConstants.MARGIN).preferred(0);
+        content.relative(this).x(0).y(0).w(1F).h(1F, -AiUi.BAR);
+
+        this.add(content);
         this.add(bottom);
 
         mchorse.bbs_mod.ui.onboarding.TourAnchors.register("creative.theme", () -> this.theme);
         mchorse.bbs_mod.ui.onboarding.TourAnchors.register("creative.candidates", () -> this.candidates);
-    }
-
-    private UILabel header(IKey title)
-    {
-        UILabel label = new UILabel(title);
-
-        label.color(Colors.WHITE, false).background(BBSSettings.primaryColor(Colors.A25));
-
-        return label;
     }
 
     /** 换一批: ask for another batch; previous batches stay on the board. */
@@ -191,6 +164,7 @@ public class UICreativeModePanel extends UIDashboardPanel
             CreativeProposal proposal = CreativeProposal.parse(this.theme.getText().trim(), response.content);
 
             this.session.add(proposal);
+            this.selectedVariant = -1;
             this.fillCandidates();
             this.persist();
 
@@ -280,11 +254,8 @@ public class UICreativeModePanel extends UIDashboardPanel
     }
 
     /**
-     * 采纳所选: the LAST generated variant is the selection (the board is a
-     * flat list; row-level selection arrives with the semantic panel's
-     * RowStyle work). Adoption switches to the film editor FIRST and then
-     * commits through the M3 machinery - one undo entry, and this panel has
-     * no write path of its own.
+     * 采纳所选: switches to the film editor FIRST and then commits through the
+     * M3 machinery - one undo entry, and this panel has no write path of its own.
      */
     private void adopt()
     {
@@ -325,9 +296,8 @@ public class UICreativeModePanel extends UIDashboardPanel
             return;
         }
 
-        /* Bone inventory from ModelForm.bones (spec 3 L2); only EXACT alias
-         * matches auto-confirm - anything fuzzier refuses and waits for the
-         * user's pick, never guesses */
+        /* Bone inventory from ModelForm.bones (spec 3 L2); saved bindings answer
+         * first, anything still unresolved asks - never guesses (spec 12.2) */
         List<String> inventory = new ArrayList<>();
 
         for (mchorse.bbs_mod.settings.values.base.BaseValue child : modelForm.bones.getAll())
@@ -337,16 +307,19 @@ public class UICreativeModePanel extends UIDashboardPanel
 
         BoneNameResolver.Result bones = BoneNameResolver.resolve(inventory);
 
-        /* Saved model bindings answer before the ask dialog */
         mchorse.bbs_mod.ai.pose.AiBoneBindings.apply(modelForm.model.get(), inventory, bones);
 
         if (!bones.isComplete())
         {
-            /* Ask - never guess (spec 12.2) */
-            this.status.label = L10n.lang("bbs.ui.ai.ask.open");
-
             UIAiAskOverlayPanel ask = new UIAiAskOverlayPanel(this.getContext(), bones.unresolved, inventory, modelForm.model.get(), (confirmed) ->
             {
+                if (!confirmed.isComplete())
+                {
+                    this.status.label = L10n.lang("bbs.ui.ai.chat.bindings_missing").format(String.join(", ", confirmed.unresolved));
+
+                    return;
+                }
+
                 this.adoptContinue(latest, replay, panel, confirmed);
             });
 

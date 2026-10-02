@@ -4,6 +4,7 @@ import mchorse.bbs_mod.BBSSettings;
 import mchorse.bbs_mod.ai.AiChatRequest;
 import mchorse.bbs_mod.ai.AiClient;
 import mchorse.bbs_mod.ai.AiSettings;
+import mchorse.bbs_mod.ai.ui.components.AiUi;
 import mchorse.bbs_mod.forms.structure.StructureManager;
 import mchorse.bbs_mod.forms.structure.StructureRenderData;
 import mchorse.bbs_mod.l10n.L10n;
@@ -35,7 +36,7 @@ import java.util.List;
 public class UIStructureAiPanel extends UIDashboardPanel
 {
     private static final int BAR = UIConstants.CONTROL_HEIGHT + 8;
-    private static final int HEADER = UIConstants.CONTROL_HEIGHT + 4;
+    private static final int HEADER = AiUi.HEADER;
 
     private final UIScrollView structures;
     private final UIScrollView description;
@@ -49,8 +50,8 @@ public class UIStructureAiPanel extends UIDashboardPanel
     {
         super(dashboard);
 
-        UILabel listHeader = this.header(L10n.lang("bbs.ui.ai.structure.list"));
-        UILabel descHeader = this.header(L10n.lang("bbs.ui.ai.structure.description"));
+        UILabel listHeader = AiUi.header(L10n.lang("bbs.ui.ai.structure.list"));
+        UILabel descHeader = AiUi.header(L10n.lang("bbs.ui.ai.structure.description"));
 
         this.structures = new UIScrollView();
         this.structures.column(UIConstants.MARGIN).vertical().stretch().padding(UIConstants.MARGIN);
@@ -87,14 +88,6 @@ public class UIStructureAiPanel extends UIDashboardPanel
         this.add(columns);
     }
 
-    private UILabel header(IKey title)
-    {
-        UILabel label = new UILabel(title);
-
-        label.color(Colors.WHITE, false).background(Colors.opaque(BBSSettings.primaryColor.get()));
-
-        return label;
-    }
 
     private void fillList()
     {

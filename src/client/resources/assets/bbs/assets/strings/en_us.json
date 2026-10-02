@@ -3000,5 +3000,6 @@
   "bbs.ui.ai.structure.ai_system": "You are a Minecraft building assistant. Given structure stats (id, size, block count, block entities), infer what the structure is for. Answer in 2-3 short sentences. Do not invent details.",
   "bbs.ui.ai.creative.pick_hint": "Type a theme here (like \"a chase at sunset\") and hit 换一批 - every distinct direction stays on the board. Click one to select it, then 采纳所选 writes it into the film.",
   "bbs.ui.ai.creative.pick_tooltip": "Click to select this candidate; 采纳所选 writes it into the film editor (one undo entry)",
-  "bbs.ui.ai.panel.ready_hint": "Write an action description and hit 生成 for a storyboard beat sheet; to land it in the film, use the AI chat in the film editor."
+  "bbs.ui.ai.panel.ready_hint": "Write an action description and hit 生成 for a storyboard beat sheet; to land it in the film, use the AI chat in the film editor.",
+  "bbs.ui.ai.capture.strip_empty": "Captured frames appear here"
 }

@@ -195,19 +195,11 @@ public abstract class UIClip <T extends Clip> extends UIElement
         this.envelope = new UIEnvelope(this);
         this.envelope.channel.setUndoId("envelope_keyframes");
 
-        boolean horizontal = BBSSettings.isHorizontalClipEditorEffective();
-
-        this.panels = new UIScrollView(horizontal ? ScrollDirection.HORIZONTAL : ScrollDirection.VERTICAL);
+        /* 始终上下排列+上下滚动：横向排列在半高属性区里会把字段卷出分界线，
+         * 滚轮方向也对不上——属性面板的滚动回归默认的竖排。 */
+        this.panels = new UIScrollView(ScrollDirection.VERTICAL);
         this.panels.scroll.cancelScrolling();
-
-        if (horizontal)
-        {
-            this.panels.full(this).column(UIConstants.MARGIN).scroll().width(140).padding(UIConstants.SCROLL_PADDING);
-        }
-        else
-        {
-            this.panels.full(this).column(UIConstants.MARGIN).scroll().vertical().stretch().padding(UIConstants.SCROLL_PADDING);
-        }
+        this.panels.full(this).column(UIConstants.MARGIN).scroll().vertical().stretch().padding(UIConstants.SCROLL_PADDING);
 
         this.registerUI();
         this.registerPanels();

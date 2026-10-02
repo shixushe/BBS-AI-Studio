@@ -66,9 +66,6 @@ public class UIAiChatBar extends UIElement
     private final UIElement previewRow;
     private final UILabel status;
 
-    /** The mockup's numbered chip - shows pending change count while previewing. */
-    private final UILabel chip;
-
     /** Whether the polish mode is active (generate is the other face). */
     private boolean polishMode = false;
 
@@ -116,11 +113,8 @@ public class UIAiChatBar extends UIElement
         this.generate.tooltip(L10n.lang("bbs.ui.ai.bar.generate_tooltip"));
         this.polish.tooltip(L10n.lang("bbs.ui.ai.bar.polish_tooltip"));
 
-        this.chip = new UILabel(L10n.lang("bbs.ui.ai.bar.chip"));
-        this.chip.color(Colors.WHITE, false).background(Colors.opaque(BBSSettings.primaryColor.get())).labelAnchor(0.5F, 0.5F).h(ROW);
-
-        this.inputRow = UI.row(1, this.chip, this.generate, this.polish, this.input, this.execute);
-        this.inputRow.row(1).preferred(3).height(ROW);
+        this.inputRow = UI.row(1, this.generate, this.polish, this.input, this.execute);
+        this.inputRow.row(1).preferred(2).height(ROW);
         this.add(this.inputRow);
 
         this.status = new UILabel(L10n.lang("bbs.ui.ai.bar.preview"));
@@ -416,7 +410,6 @@ public class UIAiChatBar extends UIElement
         if (active)
         {
             this.status.label = L10n.lang("bbs.ui.ai.bar.preview").format(state.getChangeCount());
-            this.chip.label = L10n.lang("bbs.ui.ai.bar.chip_count").format(state.getChangeCount());
 
             if (state.getChangeCount() != this.lastLoggedCount)
             {
@@ -426,7 +419,6 @@ public class UIAiChatBar extends UIElement
         }
         else
         {
-            this.chip.label = L10n.lang("bbs.ui.ai.bar.chip");
             this.lastLoggedCount = -1;
         }
 

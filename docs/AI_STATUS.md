@@ -149,3 +149,19 @@ E:\BBS FS AI\mc-mcp\mc_mcp_server.py        ← MCP 调试服务(config 指向 t
   `panel.propertiesHost`（上半），BBS++ 全部重挂路径（UIClipInspectorEmbedMixin 等）随之归位。
 - AnimationStateLayoutSupport 的 editArea 是 statesKeyframes 自己的元素（非影片面板的），无需改动。
 - 新 l10n（en+zh）：bbs.ui.ai.chat.you/assistant/welcome/unconfigured/thinking/generated。
+
+## 八、第二轮修复（2026-10-02 上午，用户走查反馈）
+
+用户反馈四点：关键帧轴改回默认、属性面板超出分界线+滚动失效、属性滚动改上下、删掉 [AI] 徽标。
+
+- **属性面板回归竖排+上下滚动**：`UIClip` 不再读 `timeline.horizontal_clip_editor`
+  （用户配置为 true，横向排列在半高属性区里字段卷成横向列、滚轮方向对不上——即"滚动失效/显示问题"）。
+  固定 `UIScrollView(VERTICAL)` + `column().scroll().vertical().stretch()`，即 BBS 默认形态。
+  设置项仍注册（与 BBSSettings 540 行列表耦合）但已无消费者，配置里残留的 true 无效果。
+- **删除输入行 [AI] 徽标**：UIAiChatBar 的 chip 字段/创建/行成员/refreshPreviewRow 里的计数更新全部移除；
+  预览计数仍在预览行状态与对话流里。
+- **超出分界线**：用户截图实为上一轮旧 jar 的现象（editAreaPanel 缝合点修复前）；
+  本轮复核 BBS++ 全部重挂路径均指 propertiesHost，refreshOffsets 仅 resize，安全。
+- 构建+四套测试+apiCheck 全绿，jar 已部署，/aiui film 打开无异常（log 验证）。
+  **目视复验未完成**：用户正在钉钉沟通（窗口最小化了游戏），为不打扰只做零干扰验证；
+  待用户方便时自行核看：右栏上半=竖排属性+竖向滚动条、下半对话无 [AI] 徽标。

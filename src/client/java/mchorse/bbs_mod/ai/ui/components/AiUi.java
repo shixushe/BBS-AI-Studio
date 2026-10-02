@@ -33,6 +33,9 @@ public final class AiUi
     /** Thumbnail strip height. */
     public static final int STRIP = 72;
 
+    /** The dashboard taskbar overlays a panel's bottom edge - bottom-anchored rows keep this clearance. */
+    public static final int TASKBAR = 20;
+
     private AiUi()
     {}
 

@@ -107,12 +107,12 @@ public class UIStructureAiPanel extends UIDashboardPanel
 
         int stack = UIConstants.CONTROL_HEIGHT * 2 + AiUi.HEADER + UIConstants.MARGIN * 3;
 
-        this.description.relative(this).x(rightX).y(HEADER).w(1F, -rightX).h(1F, -(HEADER + stack + UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN));
-        this.describe.relative(this).x(rightX).y(1F, -(stack + UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN)).w(1F, -rightX).h(UIConstants.CONTROL_HEIGHT);
+        this.description.relative(this).x(rightX).y(HEADER).w(1F, -rightX).h(1F, -(HEADER + stack + UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN + AiUi.TASKBAR));
+        this.describe.relative(this).x(rightX).y(1F, -(stack + UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN + AiUi.TASKBAR)).w(1F, -rightX).h(UIConstants.CONTROL_HEIGHT);
         buildHeader.relative(this).x(rightX).y(1F, -stack).w(1F, -rightX).h(AiUi.HEADER);
-        this.buildTheme.relative(this).x(rightX).y(1F, -(UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN)).w(1F, -rightX - 60 - UIConstants.MARGIN * 2).h(UIConstants.CONTROL_HEIGHT);
-        this.generateBuild.relative(this).x(1F, -(60 + UIConstants.MARGIN)).y(1F, -(UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN)).w(60).h(UIConstants.CONTROL_HEIGHT);
-        this.placeBuild.relative(this).x(rightX).y(1F, -UIConstants.MARGIN).w(1F, -rightX).h(UIConstants.CONTROL_HEIGHT);
+        this.buildTheme.relative(this).x(rightX).y(1F, -(UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN + AiUi.TASKBAR)).w(1F, -rightX - 60 - UIConstants.MARGIN * 2).h(UIConstants.CONTROL_HEIGHT);
+        this.generateBuild.relative(this).x(1F, -(60 + UIConstants.MARGIN)).y(1F, -(UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN + AiUi.TASKBAR)).w(60).h(UIConstants.CONTROL_HEIGHT);
+        this.placeBuild.relative(this).x(rightX).y(1F, -(UIConstants.MARGIN + AiUi.TASKBAR)).w(1F, -rightX).h(UIConstants.CONTROL_HEIGHT);
 
         this.onAppear(this::fillList);
 

@@ -28,7 +28,9 @@ import java.util.concurrent.TimeoutException;
  *
  * <p>Endpoints: GET /ping (status), GET /log?lines=N, GET /screenshot[&path=],
  * POST /command {"command":"/aiui ai"} (chat message, slash command or
- * BBS action). Bound to 127.0.0.1 only, off by default, toggled with the
+ * BBS action), POST /mouse {"x":0,"y":0,"button":0} (synthetic click into the
+ * open screen; coordinates are window pixels, button 0=left 1=right).
+ * Bound to 127.0.0.1 only, off by default, toggled with the
  * ai_debug_server setting (dev-time tooling, never shipped enabled).</p>
  */
 public class AiDebugServer
@@ -146,6 +148,48 @@ public class AiDebugServer
                 }
 
                 return "sent";
+            });
+
+            respond(exchange, jsonMap("result", result));
+        });
+
+        server.createContext("/mouse", (exchange) ->
+        {
+            String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            mchorse.bbs_mod.data.types.MapType map = mchorse.bbs_mod.data.DataToString.mapFromString(body);
+            int x = map == null ? 0 : map.getInt("x");
+            int y = map == null ? 0 : map.getInt("y");
+            int button = map == null ? 0 : map.getInt("button");
+
+            String result = onClient(() ->
+            {
+                MinecraftClient client = MinecraftClient.getInstance();
+
+                if (client.currentScreen == null)
+                {
+                    return "no screen open";
+                }
+
+                /* Callers speak window pixels (screenshot space); the UI tree
+                 * speaks GUI units, so divide by the current GUI scale */
+                double scale = client.getWindow().getScaleFactor();
+                int gx = (int) Math.round(x / scale);
+                int gy = (int) Math.round(y / scale);
+
+                try
+                {
+                    boolean pressed = client.currentScreen.mouseClicked(gx, gy, button);
+
+                    client.currentScreen.mouseReleased(gx, gy, button);
+
+                    return "click " + gx + "," + gy + " btn=" + button
+                        + " handled=" + pressed
+                        + " screen=" + client.currentScreen.getClass().getSimpleName();
+                }
+                catch (Exception e)
+                {
+                    return "(click failed: " + e + ")";
+                }
             });
 
             respond(exchange, jsonMap("result", result));

@@ -109,7 +109,7 @@ public class UIAiPanel extends UIDashboardPanel
         UIElement bottom = UI.row(UIConstants.MARGIN, this.write, this.status);
 
         bottom.row(UIConstants.MARGIN).preferred(1).height(AiUi.BAR - 8);
-        bottom.relative(this).y(1F, -AiUi.BAR).w(1F).h(AiUi.BAR);
+        bottom.relative(this).y(1F, -(AiUi.BAR + AiUi.TASKBAR)).w(1F).h(AiUi.BAR);
 
         UIButton importScript = new UIButton(L10n.lang("bbs.ui.ai.hub.import_script"), (b) -> this.importScript());
 
@@ -163,8 +163,8 @@ public class UIAiPanel extends UIDashboardPanel
         boardHeader.relative(this).x(0).y(0.32F, AiUi.HEADER + m * 2 + row + m).w(0.55F, -m).h(AiUi.HEADER);
         beatsHeader.relative(this).x(0.55F, m * 2).y(0.32F, AiUi.HEADER + m * 2 + row + m).w(0.45F, -m * 3).h(AiUi.HEADER);
 
-        this.board.relative(this).x(m).y(0.32F, topPx).w(0.55F, -m).h(0.68F, -(topPx + AiUi.BAR));
-        this.beats.relative(this).x(0.55F, m * 2).y(0.32F, topPx).w(0.45F, -m * 3).h(0.68F, -(topPx + AiUi.BAR));
+        this.board.relative(this).x(m).y(0.32F, topPx).w(0.55F, -m).h(0.68F, -(topPx + AiUi.BAR + AiUi.TASKBAR));
+        this.beats.relative(this).x(0.55F, m * 2).y(0.32F, topPx).w(0.45F, -m * 3).h(0.68F, -(topPx + AiUi.BAR + AiUi.TASKBAR));
         this.beatsHint.relative(this).x(0.55F, m * 3).y(0.32F, topPx + m).w(0.45F, -m * 4).h(UIConstants.CONTROL_HEIGHT * 2);
 
         this.write.relative(this).x(m).y(1F, -AiUi.BAR).w(UIConstants.VALUE_WIDTH).h(AiUi.BAR - 8);

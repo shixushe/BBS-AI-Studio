@@ -117,25 +117,25 @@ public class UICapturePanel extends UIDashboardPanel
         framesHeader.relative(this).x(0).y(y).w(1F).h(AiUi.HEADER);
 
         y += AiUi.HEADER + m;
-        this.strip.relative(this).x(m).y(y).w(1F, -m * 2).h(1F, -(y + AiUi.HEADER + m * 5 + row * 4 + AiUi.BAR));
+        this.strip.relative(this).x(m).y(y).w(1F, -m * 2).h(1F, -(y + AiUi.HEADER + m * 5 + row * 4 + AiUi.BAR + AiUi.TASKBAR));
 
         y += 1F;
         AiUi.Header outputHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.output"));
-        outputHeader.relative(this).x(0).y(1F, -(AiUi.HEADER + m * 4 + row * 3 + AiUi.BAR)).w(1F).h(AiUi.HEADER);
+        outputHeader.relative(this).x(0).y(1F, -(AiUi.HEADER + m * 4 + row * 3 + AiUi.BAR + AiUi.TASKBAR)).w(1F).h(AiUi.HEADER);
 
         y = 0;
-        this.path.relative(this).x(m).y(1F, -(AiUi.HEADER + m * 3 + row * 2 + AiUi.BAR)).w(1F, -m * 2).h(row);
+        this.path.relative(this).x(m).y(1F, -(AiUi.HEADER + m * 3 + row * 2 + AiUi.BAR + AiUi.TASKBAR)).w(1F, -m * 2).h(row);
 
-        this.status.relative(this).x(m).y(1F, -(AiUi.HEADER + m * 2 + row + AiUi.BAR)).w(1F, -m * 2).h(row);
+        this.status.relative(this).x(m).y(1F, -(AiUi.HEADER + m * 2 + row + AiUi.BAR + AiUi.TASKBAR)).w(1F, -m * 2).h(row);
 
         UILabel tips = UI.label(L10n.lang("bbs.ui.ai.capture.tips"), UIConstants.CONTROL_HEIGHT * 2);
         tips.color(Colors.LIGHTER_GRAY, false);
-        tips.relative(this).x(m).y(1F, -(row + AiUi.BAR)).w(1F, -m * 2).h(UIConstants.CONTROL_HEIGHT * 2);
+        tips.relative(this).x(m).y(1F, -(row + AiUi.BAR + AiUi.TASKBAR)).w(1F, -m * 2).h(UIConstants.CONTROL_HEIGHT * 2);
 
         UIElement bottom = UI.row(m, send, new UILabel(IKey.EMPTY));
 
         bottom.row(m).preferred(1).height(AiUi.BAR - 8);
-        bottom.relative(this).y(1F, -AiUi.BAR).w(1F).h(AiUi.BAR);
+        bottom.relative(this).y(1F, -(AiUi.BAR + AiUi.TASKBAR)).w(1F).h(AiUi.BAR);
 
         this.add(sourceHeader);
         this.add(params);

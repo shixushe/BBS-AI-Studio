@@ -100,17 +100,20 @@ public class UICapturePanel extends UIDashboardPanel
         framesHeader.relative(this).x(0).y(y).w(1F).h(AiUi.HEADER);
 
         y += AiUi.HEADER + m;
-        this.strip.relative(this).x(m).y(y).w(1F, -m * 2).h(AiUi.STRIP);
+        this.strip.relative(this).x(m).y(y).w(1F, -m * 2).h(1F, -(y + AiUi.HEADER + m * 4 + row * 3 + AiUi.BAR));
 
-        y += AiUi.STRIP + m;
+        y += 1F;
         UILabel outputHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.output"));
-        outputHeader.relative(this).x(0).y(y).w(1F).h(AiUi.HEADER);
+        outputHeader.relative(this).x(0).y(1F, -(AiUi.HEADER + m * 4 + row * 3 + AiUi.BAR)).w(1F).h(AiUi.HEADER);
 
-        y += AiUi.HEADER + m;
-        this.path.relative(this).x(m).y(y).w(1F, -m * 2).h(row);
+        y = 0;
+        this.path.relative(this).x(m).y(1F, -(AiUi.HEADER + m * 3 + row * 2 + AiUi.BAR)).w(1F, -m * 2).h(row);
 
-        y += row + m;
-        this.status.relative(this).x(m).y(y).w(1F, -m * 2).h(row);
+        this.status.relative(this).x(m).y(1F, -(AiUi.HEADER + m * 2 + row + AiUi.BAR)).w(1F, -m * 2).h(row);
+
+        UILabel tips = UI.label(L10n.lang("bbs.ui.ai.capture.tips"), UIConstants.CONTROL_HEIGHT * 2);
+        tips.color(Colors.LIGHTER_GRAY, false);
+        tips.relative(this).x(m).y(1F, -(row + AiUi.BAR)).w(1F, -m * 2).h(UIConstants.CONTROL_HEIGHT * 2);
 
         UIElement bottom = UI.row(m, send, new UILabel(IKey.EMPTY));
 
@@ -124,6 +127,7 @@ public class UICapturePanel extends UIDashboardPanel
         this.add(outputHeader);
         this.add(this.path);
         this.add(this.status);
+        this.add(tips);
         this.add(bottom);
 
         mchorse.bbs_mod.ui.onboarding.TourAnchors.register("capture.frames", () -> this.strip);

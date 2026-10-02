@@ -23,7 +23,9 @@ import mchorse.bbs_mod.ui.utils.UIConstants;
 import mchorse.bbs_mod.utils.colors.Colors;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * AI 建筑 —— 独立 Dashboard 面板（用户要求；范围按企划书 §9/§10.8：结构【理解】——
@@ -154,6 +156,28 @@ public class UIStructureAiPanel extends UIDashboardPanel
         lines.add(L10n.lang("bbs.ui.ai.structure.facts_size").format(data.size.getX(), data.size.getY(), data.size.getZ()).get());
         lines.add(L10n.lang("bbs.ui.ai.structure.facts_blocks").format(data.getBlocks().size()).get());
         lines.add(L10n.lang("bbs.ui.ai.structure.facts_entities").format(data.getBlockEntities().size()).get());
+
+        /* What it is made of: the five most common blocks, so the description
+         * area reads like a material list even before the AI says anything */
+        Map<String, Integer> counts = new LinkedHashMap<>();
+
+        for (net.minecraft.block.BlockState state : data.getBlocks().values())
+        {
+            String name = String.valueOf(state.getBlock());
+            counts.merge(name, 1, Integer::sum);
+        }
+
+        if (!counts.isEmpty())
+        {
+            lines.add("");
+            lines.add(L10n.lang("bbs.ui.ai.structure.facts_makeup").get());
+
+            counts.entrySet().stream()
+                .sorted((a, b) -> b.getValue() - a.getValue())
+                .limit(5)
+                .forEach((e) -> lines.add("  " + L10n.lang("bbs.ui.ai.structure.facts_block_row").format(
+                    e.getKey().substring(e.getKey().lastIndexOf('.') + 1), e.getValue()).get()));
+        }
 
         this.showLines(lines);
     }

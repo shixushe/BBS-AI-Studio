@@ -17,6 +17,7 @@ import mchorse.bbs_mod.ai.ui.components.AiUi;
 import mchorse.bbs_mod.ai.ui.components.BeatTable;
 import mchorse.bbs_mod.forms.forms.ModelForm;
 import mchorse.bbs_mod.l10n.L10n;
+import mchorse.bbs_mod.l10n.keys.IKey;
 import mchorse.bbs_mod.settings.values.core.ValueGroup;
 import mchorse.bbs_mod.ui.dashboard.UIDashboard;
 import mchorse.bbs_mod.ui.dashboard.panels.UIDashboardPanel;
@@ -51,6 +52,7 @@ public class UIAiPanel extends UIDashboardPanel
     private final UITextbox input;
     private final UIScrollView board;
     private final UILabel boardHint;
+    private final UILabel beatsHint;
     private final BeatTable beats;
     private final UILabel status;
     private final UIButton write;
@@ -120,7 +122,24 @@ public class UIAiPanel extends UIDashboardPanel
         this.boardHint.color(Colors.LIGHTER_GRAY, false);
         this.board.add(this.boardHint);
 
+        /* Example themes: fill the empty board with one-click starts */
+        for (String example : new String[]{"bbs.ui.ai.hub.example_1", "bbs.ui.ai.hub.example_2", "bbs.ui.ai.hub.example_3"})
+        {
+            String theme = L10n.lang(example).get();
+            UIButton chip = new UIButton(IKey.constant(theme), (b) ->
+            {
+                this.input.setText(theme);
+                this.getContext().focus(this.input);
+            });
+
+            chip.tooltip(L10n.lang("bbs.ui.ai.hub.example_tooltip"));
+            this.board.add(chip);
+        }
+
         this.beats = new BeatTable();
+
+        this.beatsHint = UI.label(L10n.lang("bbs.ui.ai.hub.beats_hint"), UIConstants.CONTROL_HEIGHT * 2);
+        this.beatsHint.color(Colors.LIGHTER_GRAY, false);
 
         /* Absolute layout - every block pinned; no nested resizers to guess at */
         int m = UIConstants.MARGIN;
@@ -137,6 +156,7 @@ public class UIAiPanel extends UIDashboardPanel
 
         this.board.relative(this).x(m).y(0.32F, topPx).w(0.55F, -m).h(0.68F, -(topPx + AiUi.BAR));
         this.beats.relative(this).x(0.55F, m * 2).y(0.32F, topPx).w(0.45F, -m * 3).h(0.68F, -(topPx + AiUi.BAR));
+        this.beatsHint.relative(this).x(0.55F, m * 3).y(0.32F, topPx + m).w(0.45F, -m * 4).h(UIConstants.CONTROL_HEIGHT * 2);
 
         this.write.relative(this).x(m).y(1F, -AiUi.BAR).w(UIConstants.VALUE_WIDTH).h(AiUi.BAR - 8);
         this.status.relative(this).x(m + UIConstants.VALUE_WIDTH + m).y(1F, -AiUi.BAR).w(1F, -(UIConstants.VALUE_WIDTH + m * 3)).h(AiUi.BAR - 8);
@@ -148,6 +168,7 @@ public class UIAiPanel extends UIDashboardPanel
         this.add(beatsHeader);
         this.add(this.board);
         this.add(this.beats);
+        this.add(this.beatsHint);
         this.add(bottom);
 
         this.transcript.log(AiChatMessage.Role.SYSTEM, L10n.lang("bbs.ui.ai.hub.welcome_long").get());
@@ -313,6 +334,7 @@ public class UIAiPanel extends UIDashboardPanel
         CreativeProposal.Variant variant = this.selectedOrLatest();
 
         this.beats.setRows(new ArrayList<>());
+        this.beatsHint.setVisible(variant == null || variant.plan == null);
 
         if (variant == null || variant.plan == null)
         {

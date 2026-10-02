@@ -3015,5 +3015,13 @@
   "bbs.ui.ai.hub.welcome_long": "This is the AI hub: describe an action scene (like \"a chase at sunset\") and I draft several distinct directions. Click one to inspect its beats, then 写入影片 lands it in the current replay. To adjust existing curves, use the chat in the film editor.",
   "bbs.ui.ai.hub.generated": "Drafted %s directions (batch %s) - click one to inspect, then 写入影片.",
   "bbs.ui.ai.hub.written": "Written to the film: %s poses, %s changes (one undo entry, Ctrl+Z to take back).",
-  "bbs.ui.ai.hub.polish_hint": "Curve polish (\"smoother\", \"ease in out\", ranges) belongs in the film editor's chat - that is where the curves live."
+  "bbs.ui.ai.hub.polish_hint": "Curve polish (\"smoother\", \"ease in out\", ranges) belongs in the film editor's chat - that is where the curves live.",
+  "bbs.ui.ai.hub.example_1": "A chase at sunset",
+  "bbs.ui.ai.hub.example_2": "A cafe encounter",
+  "bbs.ui.ai.hub.example_3": "A standoff in the rain",
+  "bbs.ui.ai.hub.example_tooltip": "Click to fill the input; edit then send",
+  "bbs.ui.ai.hub.beats_hint": "Pick a direction on the left and its beat breakdown (tick, phase, pose, intents) shows here.",
+  "bbs.ui.ai.capture.tips": "Capture walks the play head for the set duration; frames stay above for vision understanding, and the film editor keeps editing.",
+  "bbs.ui.ai.structure.facts_makeup": "Main materials:",
+  "bbs.ui.ai.structure.facts_block_row": "%s × %s"
 }

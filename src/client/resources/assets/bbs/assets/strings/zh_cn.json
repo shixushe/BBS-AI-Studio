@@ -3659,5 +3659,13 @@
   "bbs.ui.ai.hub.welcome_long": "这里是 AI 对话中心：直接描述动作场景（如「落日下的追逐」），我出多个方向的方案；点选方案看节拍，「写入影片」落到当前回放。要调已有曲线，请到影片编辑器下方的对话栏。",
   "bbs.ui.ai.hub.generated": "已生成 %s 个方案（累计 %s 批）——点选查看节拍，满意就「写入影片」。",
   "bbs.ui.ai.hub.written": "已写入影片：%s 个姿态、%s 处改动（一个撤销条目，Ctrl+Z 可回退）。",
-  "bbs.ui.ai.hub.polish_hint": "曲线打磨（更柔和/缓入缓出/区间）请在影片编辑器下方的对话栏里说——那里才有你要打磨的具体曲线。"
+  "bbs.ui.ai.hub.polish_hint": "曲线打磨（更柔和/缓入缓出/区间）请在影片编辑器下方的对话栏里说——那里才有你要打磨的具体曲线。",
+  "bbs.ui.ai.hub.example_1": "落日下的追逐",
+  "bbs.ui.ai.hub.example_2": "咖啡店的偶遇",
+  "bbs.ui.ai.hub.example_3": "雨夜的对峙",
+  "bbs.ui.ai.hub.example_tooltip": "点击填入输入框，可修改后发送",
+  "bbs.ui.ai.hub.beats_hint": "在左侧点选一个方案，这里会显示它的节拍分解（tick、阶段、姿势、意图）。",
+  "bbs.ui.ai.capture.tips": "采集会自动驱动播放头走完设定时长；完成后帧图留在上方，可送去视觉理解，也可在影片编辑器继续剪辑。",
+  "bbs.ui.ai.structure.facts_makeup": "主要构成：",
+  "bbs.ui.ai.structure.facts_block_row": "%s × %s"
 }

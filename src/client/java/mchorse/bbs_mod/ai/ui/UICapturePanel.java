@@ -1,6 +1,8 @@
 package mchorse.bbs_mod.ai.ui;
 
 import mchorse.bbs_mod.BBSSettings;
+import mchorse.bbs_mod.ai.capture.ExternalVideoCapture;
+import mchorse.bbs_mod.ui.utils.UIFileDialogs;
 import mchorse.bbs_mod.ai.capture.CapturedFrame;
 import mchorse.bbs_mod.ai.capture.FrameSequence;
 import mchorse.bbs_mod.ai.capture.SceneFrameCapture;
@@ -47,6 +49,8 @@ public class UICapturePanel extends UIDashboardPanel
     private final UITextbox path;
     private final AiUi.FrameStrip strip;
     private final UIButton capture;
+    private final UIButton pickVideo;
+    private final UILabel pickedVideo;
 
     private FrameSequence sequence;
     private SceneFrameCapture session;
@@ -63,6 +67,12 @@ public class UICapturePanel extends UIDashboardPanel
 
         this.capture = new UIButton(L10n.lang("bbs.ui.ai.capture.recapture"), (b) -> this.startCapture());
         this.capture.tooltip(L10n.lang("bbs.ui.ai.capture.recapture_tooltip"));
+
+        this.pickVideo = new UIButton(L10n.lang("bbs.ui.ai.capture.pick_video"), (b) -> this.pickExternalVideo());
+        this.pickVideo.tooltip(L10n.lang("bbs.ui.ai.capture.pick_video_tooltip"));
+
+        this.pickedVideo = new UILabel(IKey.EMPTY);
+        this.pickedVideo.color(Colors.LIGHTER_GRAY, false);
 
         this.strip = new AiUi.FrameStrip();
 
@@ -96,11 +106,18 @@ public class UICapturePanel extends UIDashboardPanel
         params.row(m).height(row);
 
         y += row + m;
+        UILabel externalLabel = UI.label(L10n.lang("bbs.ui.ai.capture.external"), row);
+        UIElement externalRow = UI.row(m, this.pickVideo, this.pickedVideo);
+
+        externalRow.row(m).preferred(1).height(row);
+        externalRow.relative(this).x(m).y(y).w(1F, -m * 2).h(row);
+
+        y += row + m;
         UILabel framesHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.frames"));
         framesHeader.relative(this).x(0).y(y).w(1F).h(AiUi.HEADER);
 
         y += AiUi.HEADER + m;
-        this.strip.relative(this).x(m).y(y).w(1F, -m * 2).h(1F, -(y + AiUi.HEADER + m * 4 + row * 3 + AiUi.BAR));
+        this.strip.relative(this).x(m).y(y).w(1F, -m * 2).h(1F, -(y + AiUi.HEADER + m * 5 + row * 4 + AiUi.BAR));
 
         y += 1F;
         UILabel outputHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.output"));
@@ -122,6 +139,8 @@ public class UICapturePanel extends UIDashboardPanel
 
         this.add(sourceHeader);
         this.add(params);
+        this.add(externalLabel);
+        this.add(externalRow);
         this.add(framesHeader);
         this.add(this.strip);
         this.add(outputHeader);
@@ -174,6 +193,40 @@ public class UICapturePanel extends UIDashboardPanel
     private int parseInterval()
     {
         return this.parseInt(this.interval.getText(), 4);
+    }
+
+    /** Explorer-picked reference video: sample it into the strip right away. */
+    private void pickExternalVideo()
+    {
+        UIFileDialogs.pickFile(L10n.lang("bbs.ui.ai.capture.pick_video"),
+            null,
+            new String[]{"*.mp4", "*.mkv", "*.webm", "*.mov", "*.avi"},
+            L10n.lang("bbs.ui.ai.capture.video_filter"),
+            (file) ->
+            {
+                if (file == null)
+                {
+                    return;
+                }
+
+                this.pickedVideo.label = IKey.constant(file.getName());
+                this.status.label = L10n.lang("bbs.ui.ai.capture.sampling").format(file.getName());
+
+                float fps = 20F / Math.max(1, this.parseInterval());
+                FrameSequence sequence = ExternalVideoCapture.captureFile(this, file, fps, 0F, 0F);
+
+                if (sequence == null || sequence.isEmpty())
+                {
+                    this.status.label = L10n.lang("bbs.ui.ai.capture.sampling_empty");
+
+                    return;
+                }
+
+                this.sequence = sequence;
+                this.status.label = L10n.lang("bbs.ui.ai.capture.done").format(sequence.size());
+                this.showFrames();
+                this.persist();
+            });
     }
 
     private int parseDuration()

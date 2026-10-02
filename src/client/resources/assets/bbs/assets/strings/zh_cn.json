@@ -3667,5 +3667,14 @@
   "bbs.ui.ai.hub.beats_hint": "在左侧点选一个方案，这里会显示它的节拍分解（tick、阶段、姿势、意图）。",
   "bbs.ui.ai.capture.tips": "采集会自动驱动播放头走完设定时长；完成后帧图留在上方，可送去视觉理解，也可在影片编辑器继续剪辑。",
   "bbs.ui.ai.structure.facts_makeup": "主要构成：",
-  "bbs.ui.ai.structure.facts_block_row": "%s × %s"
+  "bbs.ui.ai.structure.facts_block_row": "%s × %s",
+  "bbs.ui.ai.capture.pick_video": "选择视频文件...",
+  "bbs.ui.ai.capture.pick_video_tooltip": "调用系统文件选择器选一段参考视频，按抽帧间隔采样成帧序列",
+  "bbs.ui.ai.capture.sampling": "正在采样：%s ……",
+  "bbs.ui.ai.capture.sampling_empty": "这段视频没有采到帧——文件可能损坏或编码不受支持。",
+  "bbs.ui.ai.hub.import_script": "导入剧本",
+  "bbs.ui.ai.hub.import_script_tooltip": "从资源管理器选一个分镜脚本文本（.txt/.md/.json），内容直接作为主题生成方案",
+  "bbs.ui.ai.hub.import_script_filter": "分镜脚本文本",
+  "bbs.ui.ai.hub.imported": "已导入分镜脚本：%s（%s 字）—— 开始生成方案……",
+  "bbs.ui.ai.hub.import_empty": "这个脚本是空的。"
 }

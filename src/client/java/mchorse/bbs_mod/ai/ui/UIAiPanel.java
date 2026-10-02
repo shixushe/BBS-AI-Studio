@@ -12,6 +12,7 @@ import mchorse.bbs_mod.ai.creative.CreativeSession;
 import mchorse.bbs_mod.ai.pose.BoneNameResolver;
 import mchorse.bbs_mod.ai.pose.PoseSolver;
 import mchorse.bbs_mod.ai.ui.components.AiChatHistory;
+import mchorse.bbs_mod.ui.utils.UIFileDialogs;
 import mchorse.bbs_mod.ai.ui.components.AiChatMessage;
 import mchorse.bbs_mod.ai.ui.components.AiUi;
 import mchorse.bbs_mod.ai.ui.components.BeatTable;
@@ -30,6 +31,7 @@ import mchorse.bbs_mod.ui.framework.elements.input.text.UITextbox;
 import mchorse.bbs_mod.ui.framework.elements.utils.UILabel;
 import mchorse.bbs_mod.ui.utils.UI;
 import mchorse.bbs_mod.ui.utils.UIConstants;
+import mchorse.bbs_mod.utils.IOUtils;
 import mchorse.bbs_mod.utils.colors.Colors;
 
 import org.lwjgl.glfw.GLFW;
@@ -108,7 +110,13 @@ public class UIAiPanel extends UIDashboardPanel
         bottom.row(UIConstants.MARGIN).preferred(1).height(AiUi.BAR - 8);
         bottom.relative(this).y(1F, -AiUi.BAR).w(1F).h(AiUi.BAR);
 
-        UIElement inputRow = UI.row(UIConstants.MARGIN, this.input, send);
+        UIButton importScript = new UIButton(L10n.lang("bbs.ui.ai.hub.import_script"), (b) -> this.importScript());
+
+        importScript.tooltip(L10n.lang("bbs.ui.ai.hub.import_script_tooltip"));
+
+        UIElement inputRow = UI.row(UIConstants.MARGIN, this.input, importScript, send);
+
+        inputRow.row(UIConstants.MARGIN).preferred(0).height(UIConstants.CONTROL_HEIGHT + 4);
 
         UILabel boardHeader = AiUi.header(L10n.lang("bbs.ui.ai.hub.board"));
         UILabel beatsHeader = AiUi.header(L10n.lang("bbs.ui.ai.hub.beats"));
@@ -175,6 +183,46 @@ public class UIAiPanel extends UIDashboardPanel
 
         mchorse.bbs_mod.ui.onboarding.TourAnchors.register("creative.theme", () -> this.input);
         mchorse.bbs_mod.ui.onboarding.TourAnchors.register("creative.candidates", () -> this.board);
+    }
+
+    /**
+     * 导入分镜脚本: an explorer-picked .txt/.md/.json becomes the theme and
+     * generation starts right away - the file IS the instruction.
+     */
+    private void importScript()
+    {
+        UIFileDialogs.pickFile(L10n.lang("bbs.ui.ai.hub.import_script"),
+            null,
+            new String[]{"*.txt", "*.md", "*.json"},
+            L10n.lang("bbs.ui.ai.hub.import_script_filter"),
+            (file) ->
+            {
+                if (file == null)
+                {
+                    return;
+                }
+
+                try
+                {
+                    String text = mchorse.bbs_mod.utils.IOUtils.readText(file).trim();
+
+                    if (text.isEmpty())
+                    {
+                        this.transcript.log(AiChatMessage.Role.SYSTEM, L10n.lang("bbs.ui.ai.hub.import_empty").get());
+
+                        return;
+                    }
+
+                    this.transcript.log(AiChatMessage.Role.SYSTEM,
+                        L10n.lang("bbs.ui.ai.hub.imported").format(file.getName(), text.length()).get());
+                    this.generateBatch(text);
+                }
+                catch (Exception e)
+                {
+                    this.transcript.log(AiChatMessage.Role.ERROR,
+                        L10n.lang("bbs.ui.ai.panel.failed").format(e.getMessage() == null ? "read" : e.getMessage()).get());
+                }
+            });
     }
 
     /** One entry point: the sentence decides everything, same routing as the film chat. */

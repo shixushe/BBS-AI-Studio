@@ -5,6 +5,7 @@ import mchorse.bbs_mod.utils.resources.Pixels;
 import mchorse.bbs_mod.video.VideoManager;
 import mchorse.bbs_mod.video.VideoPlayer;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,13 +34,45 @@ public class ExternalVideoCapture
      */
     public static FrameSequence capture(VideoManager videos, Object owner, Link link, float fps, float fromSeconds, float toSeconds)
     {
-        FrameSequence sequence = new FrameSequence(FrameSequence.Source.EXTERNAL);
         VideoPlayer player = videos.getPlayer(owner, link);
 
         if (player == null || player.isInvalid())
         {
-            return sequence;
+            return new FrameSequence(FrameSequence.Source.EXTERNAL);
         }
+
+        FrameSequence sequence = sample(player, fps, fromSeconds, toSeconds);
+
+        videos.release(owner);
+
+        return sequence;
+    }
+
+    /**
+     * Same sampling for a file the user picked in the explorer - it lives
+     * outside the asset provider, so it gets its own player, released right
+     * after the pass.
+     */
+    public static FrameSequence captureFile(Object owner, File file, float fps, float fromSeconds, float toSeconds)
+    {
+        VideoPlayer player = new VideoPlayer(file);
+
+        if (player.isInvalid())
+        {
+            return new FrameSequence(FrameSequence.Source.EXTERNAL);
+        }
+
+        FrameSequence sequence = sample(player, fps, fromSeconds, toSeconds);
+
+        player.delete();
+
+        return sequence;
+    }
+
+    /** The shared sampling loop: walk the window, grab a frame every 1/fps. */
+    private static FrameSequence sample(VideoPlayer player, float fps, float fromSeconds, float toSeconds)
+    {
+        FrameSequence sequence = new FrameSequence(FrameSequence.Source.EXTERNAL);
 
         player.ensureProbed();
 
@@ -62,8 +95,6 @@ public class ExternalVideoCapture
             grabbed.add(FrameGrabber.grab(texture.id, texture.width, texture.height));
             times.add(time);
         }
-
-        videos.release(owner);
 
         /* Map sampled seconds onto film ticks at 20 tps so both sources speak
          * the same unit downstream */

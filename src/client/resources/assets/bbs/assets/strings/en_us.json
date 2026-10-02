@@ -3023,5 +3023,14 @@
   "bbs.ui.ai.hub.beats_hint": "Pick a direction on the left and its beat breakdown (tick, phase, pose, intents) shows here.",
   "bbs.ui.ai.capture.tips": "Capture walks the play head for the set duration; frames stay above for vision understanding, and the film editor keeps editing.",
   "bbs.ui.ai.structure.facts_makeup": "Main materials:",
-  "bbs.ui.ai.structure.facts_block_row": "%s × %s"
+  "bbs.ui.ai.structure.facts_block_row": "%s × %s",
+  "bbs.ui.ai.capture.pick_video": "Pick a video file...",
+  "bbs.ui.ai.capture.pick_video_tooltip": "Use the system file explorer to pick a reference video, sampled at the frame interval",
+  "bbs.ui.ai.capture.sampling": "Sampling: %s ...",
+  "bbs.ui.ai.capture.sampling_empty": "No frames came out of this video - the file may be damaged or in an unsupported codec.",
+  "bbs.ui.ai.hub.import_script": "Import script",
+  "bbs.ui.ai.hub.import_script_tooltip": "Pick a storyboard text file (.txt/.md/.json) from the explorer; its content becomes the theme",
+  "bbs.ui.ai.hub.import_script_filter": "Storyboard text",
+  "bbs.ui.ai.hub.imported": "Imported storyboard: %s (%s chars) - drafting directions...",
+  "bbs.ui.ai.hub.import_empty": "This script is empty."
 }

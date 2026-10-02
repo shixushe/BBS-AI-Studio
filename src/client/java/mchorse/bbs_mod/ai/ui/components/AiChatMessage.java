@@ -39,7 +39,10 @@ public class AiChatMessage extends UIElement
 
     private Role role;
     private String text;
+    /** 思维链（灰字显示在答案上方，仅思考型模型开启思考时才有） */
+    private String reasoning;
     private final List<String> lines = new ArrayList<>();
+    private final List<String> reasoningLines = new ArrayList<>();
 
     public AiChatMessage(Role role, String text)
     {
@@ -69,6 +72,11 @@ public class AiChatMessage extends UIElement
         this.text = text == null ? "" : text;
     }
 
+    public void setReasoning(String reasoning)
+    {
+        this.reasoning = reasoning == null ? "" : reasoning;
+    }
+
     /**
      * Wrap the text against the given bubble width and size this element to
      * fit. Called before the history's layout pass, on add and on resize.
@@ -80,7 +88,16 @@ public class AiChatMessage extends UIElement
 
         this.lines.clear();
         this.lines.addAll(font.wrap(this.text, textWidth));
-        this.h(this.lines.size() * font.getLineHeight() + TAG_H + PAD_Y * 2);
+
+        this.reasoningLines.clear();
+
+        if (this.reasoning != null && !this.reasoning.isEmpty())
+        {
+            this.reasoningLines.addAll(font.wrap(this.reasoning, textWidth));
+        }
+
+        int bodyLines = this.lines.size() + this.reasoningLines.size() + (this.reasoningLines.isEmpty() ? 0 : 1);
+        this.h(bodyLines * font.getLineHeight() + TAG_H + PAD_Y * 2);
     }
 
     @Override
@@ -111,6 +128,18 @@ public class AiChatMessage extends UIElement
         {
             batcher.text(tag, x, y, tagColor, true);
             y += font.getLineHeight();
+        }
+
+        for (String line : this.reasoningLines)
+        {
+            batcher.text(line, x, y, Colors.setA(Colors.LIGHTER_GRAY, 0.8F), false);
+            y += font.getLineHeight();
+        }
+
+        if (!this.reasoningLines.isEmpty())
+        {
+            batcher.box(x, y + font.getLineHeight() / 4, this.area.ex() - PAD_X, y + font.getLineHeight() / 4 + 1, Colors.A25);
+            y += font.getLineHeight() / 2;
         }
 
         for (String line : this.lines)

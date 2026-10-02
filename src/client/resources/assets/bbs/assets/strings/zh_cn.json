@@ -1246,6 +1246,8 @@
   "bbs.ui.ai.bar.chip": "AI",
   "bbs.ui.ai.bar.chip_count": "%s",
   "bbs.config.ai.title": "AI 副驾",
+  "bbs.config.ai.thinking": "思维链（思考模式）",
+  "bbs.config.ai.thinking-comment": "开启后 GLM 思考型模型（如 glm-5.3、glm-4.6）会保留思考过程，回复上方以灰字显示思维链；flash 系列模型无思维链。关闭则强制关闭思考以加快响应",
   "bbs.config.ai.provider": "供应商",
   "bbs.config.ai.provider-comment": "openai_compatible 覆盖 OpenAI/DeepSeek/通义/Kimi/GLM/硅基流动/OpenRouter/Ollama/LM Studio；anthropic 与 gemini 走专用适配器",
   "bbs.config.ai.base_url": "接口地址",

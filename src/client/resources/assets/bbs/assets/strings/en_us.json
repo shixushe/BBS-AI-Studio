@@ -2444,6 +2444,8 @@
   "bbs.ui.ai.bar.chip": "AI",
   "bbs.ui.ai.bar.chip_count": "%s",
   "bbs.config.ai.title": "AI Copilot",
+  "bbs.config.ai.thinking": "Chain of thought (thinking mode)",
+  "bbs.config.ai.thinking-comment": "When enabled, GLM thinking models (glm-5.3, glm-4.6...) keep their thinking process and show it as gray text above the reply; flash models have no chain of thought. Off = force thinking off for faster responses",
   "bbs.config.ai.provider": "Provider",
   "bbs.config.ai.provider-comment": "openai_compatible covers OpenAI/DeepSeek/Qwen/Kimi/GLM/SiliconFlow/OpenRouter/Ollama/LM Studio; anthropic and gemini have dedicated adapters",
   "bbs.config.ai.base_url": "Base URL",

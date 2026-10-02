@@ -12,18 +12,18 @@ import java.util.function.Consumer;
  */
 public class AiPlans
 {
-    public static void generatePlan(AiChatRequest request, Consumer<AnimationPlan> onSuccess, Consumer<AiException> onError)
+    public static void generatePlan(AiChatRequest request, java.util.function.BiConsumer<AnimationPlan, String> onSuccess, Consumer<AiException> onError)
     {
         attempt(request, onSuccess, onError, 0);
     }
 
-    private static void attempt(AiChatRequest request, Consumer<AnimationPlan> onSuccess, Consumer<AiException> onError, int attempt)
+    private static void attempt(AiChatRequest request, java.util.function.BiConsumer<AnimationPlan, String> onSuccess, Consumer<AiException> onError, int attempt)
     {
         AiClient.get().chat(request, (response) ->
         {
             try
             {
-                onSuccess.accept(AnimationPlan.parse(response.content));
+                onSuccess.accept(AnimationPlan.parse(response.content), response.reasoning);
             }
             catch (AiException e)
             {

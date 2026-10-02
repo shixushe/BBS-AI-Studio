@@ -504,3 +504,18 @@ md5 校验一致部署，游戏已重启。
 
 设置文件已预写 model=glm-5.3-flash。游戏经 taskkill（非强制）优雅退出以
 保留设置落盘窗口；api_key 因未提交输入未能保留，需用户重贴一次。
+
+## 二十七、第二十一轮（2026-10-02，思维链显示功能）
+
+用户新增需求：显示思维链。实现（默认关，设置可开）：
+
+- **AiChatResponse.reasoning** 字段 + OpenAI 兼容后端解析 message.reasoning_content
+  （GLM 思考型模型的思维链字段；Anthropic/Gemini 后端暂不涉及）。
+- **设置新增「思维链（思考模式）」开关**（ai/thinking，默认关）：开启后 GLM
+  请求不再发 thinking=disabled / reasoning_effort=low，模型保留思考并回传
+  思维链；flash 变体永远不发思考参数（flash 无思维链，官方行为）。
+- **聊天气泡**：答案上方以灰字渲染思维链 + 细分隔线，自动换行计高；
+  成功路径补了缺失的 history.refresh()（此前 setText 后不重排版，长文本会被裁剪）。
+- AiPlans.generatePlan 回调改为 BiConsumer<AnimationPlan, reasoning> 穿透思维链。
+- 提示：用户当前模型 glm-5.3-flash 无思维链（flash 不思考）；想看思维链需
+  切 glm-5.3 / glm-4.6 等思考型模型 + 打开该开关。

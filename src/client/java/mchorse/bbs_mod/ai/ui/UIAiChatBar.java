@@ -253,9 +253,15 @@ public class UIAiChatBar extends UIElement
 
         mchorse.bbs_mod.ui.framework.UIContext context = this.getContext();
 
-        mchorse.bbs_mod.ai.AiPlans.generatePlan(request, (generated) ->
+        mchorse.bbs_mod.ai.AiPlans.generatePlan(request, (generated, reasoning) ->
         {
             this.busy = false;
+
+            if (reasoning != null && !reasoning.isEmpty())
+            {
+                thinking.setReasoning(reasoning);
+                this.history.refresh();
+            }
 
             java.util.List<String> inventory = new ArrayList<>();
 

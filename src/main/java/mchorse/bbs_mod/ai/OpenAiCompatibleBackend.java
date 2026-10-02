@@ -70,7 +70,7 @@ public class OpenAiCompatibleBackend implements AiTextBackend
         /* GLM 思考模式按代次处理：4.x 可以显式 disabled（要的是确定性 JSON，关掉
          * 提速）；5.x 官方限制思考只能开启——发 disabled 会被 400 拒收，只能用
          * reasoning_effort=low 把推理强度调到最低档。仅 glm 供应商发送这些字段。 */
-        if ("glm".equals(AiSettings.provider.get().trim().toLowerCase()))
+        if ("glm".equals(AiSettings.provider.get().trim().toLowerCase()) && !AiSettings.thinking.get())
         {
             String glmModel = model.toLowerCase();
 
@@ -250,6 +250,6 @@ public class OpenAiCompatibleBackend implements AiTextBackend
             completion = usage.getInt("completion_tokens");
         }
 
-        return new AiChatResponse(content, model, prompt, completion);
+        return new AiChatResponse(content, model, prompt, completion, message.getString("reasoning_content"));
     }
 }

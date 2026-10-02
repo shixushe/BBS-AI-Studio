@@ -29,6 +29,9 @@ public class AiSettings
     public static ValueFloat temperature;
     public static ValueInt timeoutMs;
     public static ValueInt maxRetries;
+    /** 思维链开关：开启后思考型模型（GLM-4.6/5.x 非 flash）保留思考并回传思维链 */
+    public static ValueBoolean thinking;
+
     public static ValueBoolean supportsVision;
     public static ValueBoolean supportsTools;
     public static ValueBoolean supportsJsonMode;
@@ -50,6 +53,7 @@ public class AiSettings
         temperature = builder.getFloat("temperature", 0.7F, 0F, 1F); /* GLM 限 [0,1] */
         timeoutMs = builder.getInt("timeout_ms", 60000, 1000, 300000);
         maxRetries = builder.getInt("max_retries", 1, 0, 5);
+        thinking = builder.getBoolean("thinking", false);
         supportsVision = builder.getBoolean("supports_vision", false);
         supportsTools = builder.getBoolean("supports_tools", false);
         supportsJsonMode = builder.getBoolean("supports_json_mode", false);

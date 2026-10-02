@@ -180,3 +180,23 @@ E:\BBS FS AI\mc-mcp\mc_mcp_server.py        ← MCP 调试服务(config 指向 t
 - 补 film_alt_wheel_timeline_mode 的三个模式标签（默认缩放/禁用/水平滚动）。
 - 剩余未补的只有 `.invisible()` 隐藏键（不在界面渲染，无需名称）。
 - 构建+测试全绿，jar 已部署重启。验证方式：重启后打开设置（0 → 设置）逐页核对。
+
+## 十、第四轮（2026-10-02，R4''：键名清理收官 + bbspp 语言文件从未加载的合并 bug）
+
+用户三张截图：影片可见性菜单（bbspp.ui.film.visibility.*）、`bbspp.ui.film.visibility.title`、
+`bbs.config.ai.ai_uv_overlay` 仍是键名；并要求"设置里的总名称也要改"。
+
+- **根因（合并 bug）**：BBS-Cubed（FSloveCML）合并时没带 Fabric 入口——fabric.mod.json 只有
+  BBSMod/BBSModClient，`BBSFSloveCMLClient.onInitializeClient` 与其 Addon 事件订阅从未执行，
+  `assets/bbspp/{strings,lang}/*.json`（约 1351 键）从未被 L10n 加载——bbspp 的所有 UI 标签
+  一直在显示键名（可见性菜单、动画状态面板等），F5 可见性菜单键位也一直没注册。
+- **修复**：`BBSModClient` 初始化里把 `BBSFSloveCMLClientAddon` 挂上事件总线
+  （恢复 RegisterDashboardPanelsEvent→F5 键位）；bbspp 两个语言文件并入主 strings 文件
+  （merge 脚本 tools/merge_bbspp_l10n.py，主文件优先只补缺）；addon 内部失效的
+  bbspp 路径注册删除（主 provider 读不到 assets/bbspp/...，注册只会报加载失败）。
+- **反向对账**（tools/audit_lang_keys4.py）：运行时命名空间 = 主 jar 全部语言文件 + 活跃插件 jar，
+  以"en_us 与 zh_cn 都缺才显示键名"为准——修复后 2229 个 lang() 字面量调用零键名残留。
+- **补齐**：bbs.config.ai.ai_uv_overlay（+AI 分类 tooltip）、bbspp.config.title（设置模块总名称
+  「BBS++ 设置」）、动画状态三个停靠面板标题、回放关键帧分区×6、循环菜单×7、轨道分类×5、
+  模型调试元素×6、程序化骨骼×7、内置曲线通道×3（zh+en 全配）。
+- 构建+测试全绿；启动日志无语言加载失败；重启后可见性菜单/设置 AI 页/设置模块标题即正常。

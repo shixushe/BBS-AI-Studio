@@ -53,15 +53,9 @@ public class BBSFSloveCMLClient implements ClientModInitializer {
             return;
         }
 
-        l10n.registerOne((lang) -> Link.assets("bbspp/strings/" + lang + ".json"));
+        /* bbspp/strings 与 bbspp/lang 已并入主 strings 文件（主 provider 读不到
+         * assets/bbspp/... 这条路径，注册只会每此启动报两条加载失败）。 */
         registeredL10n = l10n;
-
-        try {
-            l10n.reload();
-            LOGGER.info("[FSloveCML] addon translations registered and loaded");
-        } catch (RuntimeException e) {
-            LOGGER.error("[FSloveCML] addon translation reload failed", e);
-        }
     }
 
     @Override

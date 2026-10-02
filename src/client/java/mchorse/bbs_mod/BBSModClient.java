@@ -553,6 +553,13 @@ public class BBSModClient implements ClientModInitializer
         l10n = new L10n();
         l10n.register((lang) -> Collections.singletonList(Link.assets("strings/" + lang + ".json")));
 
+        /* The FSloveCML (BBS-Cubed) merge never carried its Fabric entrypoint over, so its
+         * addon hooks were dead: the bbspp/* language files it used to load are unreachable
+         * through the main provider (their content now lives in the main strings file) and
+         * its dashboard hooks never fired. Put the addon on the bus before the event post so
+         * RegisterDashboardPanelsEvent (F5 visibility menu keybind) fires again. */
+        BBSMod.events.register(new gbeic.bbsplusplus.BBSFSloveCMLClientAddon());
+
         /* Addons add their own language files here, so the event goes out before the load and not
          * after it — otherwise every addon label would show its raw key until the next language
          * switch, or every addon would have to reload the whole thing a second time. */

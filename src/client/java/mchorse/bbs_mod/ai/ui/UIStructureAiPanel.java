@@ -4,6 +4,14 @@ import mchorse.bbs_mod.BBSSettings;
 import mchorse.bbs_mod.ai.AiChatRequest;
 import mchorse.bbs_mod.ai.AiClient;
 import mchorse.bbs_mod.ai.AiSettings;
+import mchorse.bbs_mod.ai.AiChatRequest;
+import mchorse.bbs_mod.ai.AiClient;
+import mchorse.bbs_mod.ai.AiSettings;
+import mchorse.bbs_mod.ai.AiArchitecture;
+import mchorse.bbs_mod.network.ClientNetwork;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import mchorse.bbs_mod.network.ServerNetwork;
+import mchorse.bbs_mod.ui.framework.elements.input.text.UITextbox;
 import mchorse.bbs_mod.ai.ui.components.AiUi;
 import mchorse.bbs_mod.forms.structure.StructureManager;
 import mchorse.bbs_mod.forms.structure.StructureRenderData;
@@ -46,8 +54,13 @@ public class UIStructureAiPanel extends UIDashboardPanel
     private final AiUi.Header descHeader;
     private final UIButton describe;
 
+    private final UITextbox buildTheme;
+    private final UIButton generateBuild;
+    private final UIButton placeBuild;
+
     private String selected;
     private boolean describing;
+    private boolean building;
     private int lastListWidth;
 
     public UIStructureAiPanel(UIDashboard dashboard)
@@ -80,7 +93,26 @@ public class UIStructureAiPanel extends UIDashboardPanel
 
         descHeader.relative(this).x(rightX).y(0).w(1F, -rightX).h(HEADER);
         this.description.relative(this).x(rightX).y(HEADER).w(1F, -rightX).h(1F, -(HEADER + UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN));
-        this.describe.relative(this).x(rightX).y(1F, -(UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN)).w(1F, -rightX).h(UIConstants.CONTROL_HEIGHT);
+
+        this.buildTheme = new UITextbox(96, (t) -> {});
+        this.buildTheme.placeholder(L10n.lang("bbs.ui.ai.structure.build_placeholder"));
+
+        this.generateBuild = new UIButton(L10n.lang("bbs.ui.ai.structure.build"), (b) -> this.generateBuilding());
+        this.generateBuild.tooltip(L10n.lang("bbs.ui.ai.structure.build_tooltip"));
+
+        this.placeBuild = new UIButton(L10n.lang("bbs.ui.ai.structure.place"), (b) -> this.placeBuilding());
+        this.placeBuild.tooltip(L10n.lang("bbs.ui.ai.structure.place_tooltip"));
+
+        AiUi.Header buildHeader = AiUi.header(L10n.lang("bbs.ui.ai.structure.build_header"));
+
+        int stack = UIConstants.CONTROL_HEIGHT * 2 + AiUi.HEADER + UIConstants.MARGIN * 3;
+
+        this.description.relative(this).x(rightX).y(HEADER).w(1F, -rightX).h(1F, -(HEADER + stack + UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN));
+        this.describe.relative(this).x(rightX).y(1F, -(stack + UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN)).w(1F, -rightX).h(UIConstants.CONTROL_HEIGHT);
+        buildHeader.relative(this).x(rightX).y(1F, -stack).w(1F, -rightX).h(AiUi.HEADER);
+        this.buildTheme.relative(this).x(rightX).y(1F, -(UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN)).w(1F, -rightX - 60 - UIConstants.MARGIN * 2).h(UIConstants.CONTROL_HEIGHT);
+        this.generateBuild.relative(this).x(1F, -(60 + UIConstants.MARGIN)).y(1F, -(UIConstants.CONTROL_HEIGHT + UIConstants.MARGIN)).w(60).h(UIConstants.CONTROL_HEIGHT);
+        this.placeBuild.relative(this).x(rightX).y(1F, -UIConstants.MARGIN).w(1F, -rightX).h(UIConstants.CONTROL_HEIGHT);
 
         this.onAppear(this::fillList);
 
@@ -89,6 +121,110 @@ public class UIStructureAiPanel extends UIDashboardPanel
         this.add(descHeader);
         this.add(this.description);
         this.add(this.describe);
+        this.add(buildHeader);
+        this.add(this.buildTheme);
+        this.add(this.generateBuild);
+        this.add(this.placeBuild);
+    }
+
+    /** 生成建筑: the theme becomes a strict build order, expanded into blueprints. */
+    private void generateBuilding()
+    {
+        if (this.building)
+        {
+            return;
+        }
+
+        String theme = this.buildTheme.getText().trim();
+
+        if (theme.isEmpty())
+        {
+            this.showLines(List.of(L10n.lang("bbs.ui.ai.structure.build_empty").get()));
+
+            return;
+        }
+
+        if (!AiSettings.isConfigured())
+        {
+            this.showLines(List.of(L10n.lang("bbs.ui.ai.chat.unconfigured").get()));
+
+            return;
+        }
+
+        net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
+        java.io.File generated = client.getServer() == null
+            ? null
+            : client.getServer().getSavePath(net.minecraft.util.WorldSavePath.GENERATED).resolve("bbs/structures").toFile();
+
+        if (generated == null)
+        {
+            this.showLines(List.of(L10n.lang("bbs.ui.ai.structure.build_no_world").get()));
+
+            return;
+        }
+
+        this.building = true;
+        this.generateBuild.setEnabled(false);
+        this.showLines(List.of(L10n.lang("bbs.ui.ai.chat.thinking").get()));
+
+        AiChatRequest request = new AiChatRequest(
+            L10n.lang("bbs.ui.ai.structure.build_system").get(),
+            L10n.lang("bbs.ui.ai.structure.build_prompt").format(theme).get());
+
+        request.temperature(0.6F);
+
+        AiClient.get().chat(request, (response) ->
+        {
+            this.building = false;
+            this.generateBuild.setEnabled(true);
+
+            try
+            {
+                java.io.File schematics = new java.io.File(client.runDirectory, "config/worldedit/schematics");
+                AiArchitecture.Result result = AiArchitecture.generate(response.content, generated, schematics);
+
+                AiArchitecture.lastGenerated = result.name;
+                this.fillList();
+                this.descHeader.caption(result.name);
+
+                this.showLines(List.of(
+                    L10n.lang("bbs.ui.ai.structure.build_done").format(result.title, result.blocks).get(),
+                    L10n.lang("bbs.ui.ai.structure.build_where").get()));
+            }
+            catch (Exception e)
+            {
+                this.showLines(List.of(L10n.lang("bbs.ui.ai.structure.build_fail").format(
+                    e.getMessage() == null ? "json" : e.getMessage()).get()));
+            }
+        }, (error) ->
+        {
+            this.building = false;
+            this.generateBuild.setEnabled(true);
+            this.showLines(List.of(L10n.lang("bbs.ui.ai.panel.failed").format(error.type.name()).get()));
+        });
+    }
+
+    /** 放置: the last generated structure, six blocks in front of the player. */
+    private void placeBuilding()
+    {
+        if (AiArchitecture.lastGenerated == null)
+        {
+            this.showLines(List.of(L10n.lang("bbs.ui.ai.structure.place_nothing").get()));
+
+            return;
+        }
+
+        AiArchitecture.onPlaced = (message) ->
+        {
+            this.showLines(List.of(message));
+            this.fillList();
+            AiArchitecture.onPlaced = null;
+        };
+
+        net.minecraft.network.PacketByteBuf buf = PacketByteBufs.create();
+
+        buf.writeString(AiArchitecture.lastGenerated);
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(ServerNetwork.SERVER_AI_PLACE_STRUCTURE, buf);
     }
 
 
@@ -124,7 +260,7 @@ public class UIStructureAiPanel extends UIDashboardPanel
 
         this.structures.removeAll();
         this.structures.add(UI.column(1, rows.toArray(new UIElement[0])));
-        this.listHeader.caption(L10n.lang("bbs.ui.ai.hub.board_count").format(ids.size()).get());
+        this.listHeader.caption(L10n.lang("bbs.ui.ai.structure.count").format(ids.size()).get());
 
         if (this.selected == null && !ids.isEmpty())
         {

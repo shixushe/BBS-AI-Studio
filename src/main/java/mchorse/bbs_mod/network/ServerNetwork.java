@@ -1,5 +1,8 @@
 package mchorse.bbs_mod.network;
 
+import net.minecraft.structure.StructureTemplate;
+import net.minecraft.structure.StructurePlacementData;
+import java.util.Optional;
 import mchorse.bbs_mod.BBSMod;
 import mchorse.bbs_mod.actions.ActionManager;
 import mchorse.bbs_mod.actions.ActionPlayer;
@@ -77,6 +80,7 @@ public class ServerNetwork
     public static final Identifier CLIENT_REQUEST_FILM_RESYNC = new Identifier(BBSMod.MOD_ID, "c18");
     public static final Identifier CLIENT_STRUCTURE_SAVED = new Identifier(BBSMod.MOD_ID, "c19");
     public static final Identifier CLIENT_STRUCTURE_CUT = new Identifier(BBSMod.MOD_ID, "c20");
+    public static final Identifier CLIENT_AI_STRUCTURE_PLACED = new Identifier(BBSMod.MOD_ID, "c21");
 
     public static final Identifier SERVER_MODEL_BLOCK_FORM_PACKET = new Identifier(BBSMod.MOD_ID, "s1");
     public static final Identifier SERVER_MODEL_BLOCK_TRANSFORMS_PACKET = new Identifier(BBSMod.MOD_ID, "s2");
@@ -94,6 +98,7 @@ public class ServerNetwork
     public static final Identifier SERVER_APPLY_FILM_PLAYER_SETTINGS = new Identifier(BBSMod.MOD_ID, "s14");
     public static final Identifier SERVER_SAVE_STRUCTURE = new Identifier(BBSMod.MOD_ID, "s15");
     public static final Identifier SERVER_CUT_STRUCTURE = new Identifier(BBSMod.MOD_ID, "s16");
+    public static final Identifier SERVER_AI_PLACE_STRUCTURE = new Identifier(BBSMod.MOD_ID, "s17");
 
     private static ServerPacketCrusher crusher = new ServerPacketCrusher();
 
@@ -120,6 +125,7 @@ public class ServerNetwork
         ServerPlayNetworking.registerGlobalReceiver(SERVER_APPLY_FILM_PLAYER_SETTINGS, (server, player, handler, buf, responder) -> handleApplyFilmPlayerSettings(server, player, buf));
         ServerPlayNetworking.registerGlobalReceiver(SERVER_SAVE_STRUCTURE, (server, player, handler, buf, responder) -> handleSaveStructure(server, player, buf));
         ServerPlayNetworking.registerGlobalReceiver(SERVER_CUT_STRUCTURE, (server, player, handler, buf, responder) -> handleCutStructure(server, player, buf));
+        ServerPlayNetworking.registerGlobalReceiver(SERVER_AI_PLACE_STRUCTURE, (server, player, handler, buf, responder) -> handleAIPlaceStructure(server, player, buf));
     }
 
     /* Handlers */
@@ -161,6 +167,50 @@ public class ServerNetwork
             reply.writeString(name);
 
             ServerPlayNetworking.send(player, CLIENT_STRUCTURE_CUT, reply);
+        });
+    }
+
+    /**
+     * AI 建筑：把客户端刚写好的 bbs 命名空间结构（存档 generated/bbs/structures）
+     * 放到玩家面前。建筑由 AI 生成、客户端确定性展开落盘，这里只负责摆放。
+     */
+    private static void handleAIPlaceStructure(MinecraftServer server, ServerPlayerEntity player, PacketByteBuf buf)
+    {
+        String name = buf.readString();
+
+        if (!PermissionUtils.arePanelsAllowed(server, player))
+        {
+            return;
+        }
+
+        server.execute(() ->
+        {
+            boolean placed = false;
+
+            try
+            {
+                Optional<StructureTemplate> template = server.getStructureTemplateManager().getTemplate(new Identifier("bbs", name));
+
+                if (template.isPresent())
+                {
+                    ServerWorld world = player.getServerWorld();
+                    BlockPos origin = player.getBlockPos().offset(player.getHorizontalFacing(), 6);
+                    StructurePlacementData data = new StructurePlacementData().setIgnoreEntities(false);
+
+                    placed = template.get().place(world, origin, origin, data, world.getRandom(), 0x12);
+                }
+            }
+            catch (Exception e)
+            {
+                placed = false;
+            }
+
+            PacketByteBuf reply = PacketByteBufs.create();
+
+            reply.writeBoolean(placed);
+            reply.writeString(name);
+
+            ServerPlayNetworking.send(player, CLIENT_AI_STRUCTURE_PLACED, reply);
         });
     }
 

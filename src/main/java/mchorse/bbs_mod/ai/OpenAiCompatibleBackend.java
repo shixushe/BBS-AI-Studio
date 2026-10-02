@@ -34,6 +34,11 @@ public class OpenAiCompatibleBackend implements AiTextBackend
         return "openai_compatible";
     }
 
+    private static int timeoutMsSeconds()
+    {
+        return Math.max(1, mchorse.bbs_mod.ai.AiSettings.timeoutMs.get() / 1000);
+    }
+
     @Override
     public AiChatResponse chat(AiChatRequest request) throws AiException
     {
@@ -43,7 +48,7 @@ public class OpenAiCompatibleBackend implements AiTextBackend
 
         if (baseUrl.isEmpty() || model.isEmpty() || apiKey.isEmpty())
         {
-            throw new AiException(Type.NOT_CONFIGURED, "AI backend is not configured (base URL, API key or model is missing)");
+            throw new AiException(Type.NOT_CONFIGURED, "AI 尚未配置：B 键打开设置 → AI → 供应商选 GLM/DeepSeek 等，填入 API 密钥后重试");
         }
 
         if (baseUrl.endsWith("/"))
@@ -105,8 +110,16 @@ public class OpenAiCompatibleBackend implements AiTextBackend
         catch (Exception e)
         {
             boolean timeout = e.getClass().getSimpleName().contains("Timeout");
+            String host = URI.create(baseUrl + "/chat/completions").getHost();
 
-            throw new AiException(timeout ? Type.TIMEOUT : Type.NETWORK, timeout ? "Request timed out" : "Network failure: " + e.getClass().getSimpleName());
+            if (timeout)
+            {
+                throw new AiException(Type.TIMEOUT, "请求超时：" + timeoutMsSeconds() + " 秒内没有收到 " + host
+                    + " 的响应——检查网络/代理，或在 设置→AI 里换供应商并延长超时");
+            }
+
+            throw new AiException(Type.NETWORK, "网络错误：" + host + " 连接失败（" + e.getClass().getSimpleName()
+                + "）——该地址可能不可直连，换国内供应商或填代理地址");
         }
 
         if (response.statusCode() != 200)

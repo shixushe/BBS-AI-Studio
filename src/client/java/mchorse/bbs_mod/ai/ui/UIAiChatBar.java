@@ -301,7 +301,9 @@ public class UIAiChatBar extends UIElement
         {
             this.busy = false;
             thinking.setRole(AiChatMessage.Role.ERROR);
-            thinking.setText(L10n.lang("bbs.ui.ai.panel.failed").format(error.type.name()).get());
+            String detail = error.getMessage() == null || error.getMessage().isEmpty() ? error.type.name() : error.getMessage();
+
+            thinking.setText(L10n.lang("bbs.ui.ai.panel.failed").format(error.type.name()).get() + " " + detail);
             this.history.refresh();
         });
     }

@@ -288,7 +288,8 @@ public class UIStructureAiPanel extends UIDashboardPanel
             L10n.lang("bbs.ui.ai.structure.build_prompt").format(theme).get());
 
         request.temperature(0.6F);
-        request.maxTokens(1200);
+        /* No maxTokens cap: 0 = the field is omitted, so providers that allow
+         * unlimited output (OpenAI-compatible / Gemini) use their maximum */
 
         AiClient.get().chat(request, (response) ->
         {

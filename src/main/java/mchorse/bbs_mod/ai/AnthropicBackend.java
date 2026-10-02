@@ -95,7 +95,7 @@ public class AnthropicBackend implements AiTextBackend
         {
             boolean timeout = e.getClass().getSimpleName().contains("Timeout");
 
-            throw new AiException(timeout ? Type.TIMEOUT : Type.NETWORK, timeout ? "Request timed out" : "Network failure: " + e.getClass().getSimpleName());
+            throw new AiException(timeout ? Type.TIMEOUT : Type.NETWORK, timeout ? "请求超时：服务在超时时间内没有响应——检查网络/代理或延长超时" : "Network failure: " + e.getClass().getSimpleName());
         }
 
         if (response.statusCode() != 200)

@@ -2985,5 +2985,20 @@
   "bbs.ui.model_editor.ai_bindings_unsaved": "Save/pick a model first, then set its AI bindings.",
   "bbs.ui.model_editor.ai_bindings_none": "(unbound)",
   "bbs.ui.ai.chat.bindings_missing": "Bones still unbound: %s - bind them in the model editor's AI bindings tab, or pick real bones for each entry in the confirmation dialog.",
-  "bbs.ui.ai.bar.solve_error": "Bone solve failed: %s"
+  "bbs.ui.ai.bar.solve_error": "Bone solve failed: %s",
+  "bbs.ui.ai.capture.duration": "Capture duration (ticks)",
+  "bbs.ui.ai.capture.none_hint": "No structures found.",
+  "bbs.ui.ai.structure.none_hint": "No structures found. Drop .nbt files into <game>/structures/ (or a datapack data/<ns>/structures/) and reopen this panel.",
+  "bbs.ui.ai.structure.ai_describe": "AI description",
+  "bbs.ui.ai.structure.ai_describe_tooltip": "Hand the structure's size and block stats to the AI for a readable summary (needs a backend)",
+  "bbs.ui.ai.structure.unreadable": "Could not read structure \"%s\" - the file may be damaged.",
+  "bbs.ui.ai.structure.facts_id": "Structure: %s",
+  "bbs.ui.ai.structure.facts_size": "Size: %s × %s × %s",
+  "bbs.ui.ai.structure.facts_blocks": "Blocks: %s",
+  "bbs.ui.ai.structure.facts_entities": "Block entities (chests, signs, ...): %s",
+  "bbs.ui.ai.structure.ai_prompt": "This is a Minecraft structure. In 2-3 sentences, explain what it probably is and how to use it.\nStructure id: %s\nSize: %sx%sx%s\nBlocks: %s\nBlock entities: %s",
+  "bbs.ui.ai.structure.ai_system": "You are a Minecraft building assistant. Given structure stats (id, size, block count, block entities), infer what the structure is for. Answer in 2-3 short sentences. Do not invent details.",
+  "bbs.ui.ai.creative.pick_hint": "Type a theme here (like \"a chase at sunset\") and hit 换一批 - every distinct direction stays on the board. Click one to select it, then 采纳所选 writes it into the film.",
+  "bbs.ui.ai.creative.pick_tooltip": "Click to select this candidate; 采纳所选 writes it into the film editor (one undo entry)",
+  "bbs.ui.ai.panel.ready_hint": "Write an action description and hit 生成 for a storyboard beat sheet; to land it in the film, use the AI chat in the film editor."
 }

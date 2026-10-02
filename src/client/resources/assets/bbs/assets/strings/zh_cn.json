@@ -3629,5 +3629,20 @@
   "bbs.ui.model_editor.ai_bindings_unsaved": "请先保存/选择模型后再设置 AI 绑定。",
   "bbs.ui.model_editor.ai_bindings_none": "（未绑定）",
   "bbs.ui.ai.chat.bindings_missing": "还有骨骼未绑定：%s —— 请到模型编辑器的「AI 绑定」页签完成绑定，或在确认对话框里为每一项选择真实骨骼。",
-  "bbs.ui.ai.bar.solve_error": "骨骼解析失败: %s"
+  "bbs.ui.ai.bar.solve_error": "骨骼解析失败: %s",
+  "bbs.ui.ai.capture.duration": "采集时长（tick）",
+  "bbs.ui.ai.capture.none_hint": "没有找到结构。把 .nbt 结构文件放进 游戏目录/structures 文件夹（或资源包的 data/<命名空间>/structures），然后重新打开本面板。",
+  "bbs.ui.ai.structure.none_hint": "没有找到结构。把 .nbt 文件放进 游戏目录/structures/（或资源包 data/<命名空间>/structures/），再切走再切回本面板即可刷新。",
+  "bbs.ui.ai.structure.ai_describe": "AI 描述",
+  "bbs.ui.ai.structure.ai_describe_tooltip": "把选中结构的尺寸与方块统计交给 AI，翻译成一段可读说明（需已配置后端）",
+  "bbs.ui.ai.structure.unreadable": "无法读取结构「%s」——文件可能损坏。",
+  "bbs.ui.ai.structure.facts_id": "结构：%s",
+  "bbs.ui.ai.structure.facts_size": "尺寸：%s × %s × %s（长×高×宽）",
+  "bbs.ui.ai.structure.facts_blocks": "方块数：%s",
+  "bbs.ui.ai.structure.facts_entities": "方块实体（箱子/告示牌等）：%s",
+  "bbs.ui.ai.structure.ai_prompt": "这是一个 Minecraft 结构。请根据以下统计用两三句中文说明它可能是什么、适合怎么用：\n结构 id：%s\n尺寸：%s×%s×%s\n方块数：%s\n方块实体数：%s",
+  "bbs.ui.ai.structure.ai_system": "你是 Minecraft 建筑助手。根据给定的结构统计（id、尺寸、方块数、方块实体数）推断结构的用途，用简体中文两三句话回答，不要编造不存在的细节。",
+  "bbs.ui.ai.creative.pick_hint": "在这里输入主题（例如「落日下的追逐」），点「换一批」——每个方向不同的候选都会留在黑板上，点一条选中它，再「采纳所选」写进影片。",
+  "bbs.ui.ai.creative.pick_tooltip": "点击选中该候选；「采纳所选」会把它写进影片编辑器（一个撤销条目）",
+  "bbs.ui.ai.panel.ready_hint": "写一段动作描述，点「生成」看分镜节拍表；要写进影片，请到影片编辑器的 AI 对话栏完成。"
 }

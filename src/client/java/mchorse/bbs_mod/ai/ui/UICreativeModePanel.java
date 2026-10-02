@@ -19,6 +19,7 @@ import mchorse.bbs_mod.ui.dashboard.UIDashboard;
 import mchorse.bbs_mod.ui.dashboard.panels.UIDashboardPanel;
 import mchorse.bbs_mod.ui.film.UIFilmPanel;
 import mchorse.bbs_mod.ui.framework.UIContext;
+import mchorse.bbs_mod.ui.framework.elements.UIScrollView;
 import mchorse.bbs_mod.ui.framework.elements.UIElement;
 import mchorse.bbs_mod.ui.framework.elements.buttons.UIButton;
 import mchorse.bbs_mod.ui.framework.elements.input.text.UITextarea;
@@ -58,7 +59,12 @@ public class UICreativeModePanel extends UIDashboardPanel
     private final UITextarea<?> theme;
 
     private final UILabel status;
-    private final UIElement candidates;
+    private final UIScrollView candidates;
+    private final UILabel candidatesHint;
+
+    /** The variant the user picked on the board (-1 = none, adopt falls to the latest). */
+    private int selectedVariant = -1;
+    private int variantCount;
 
     private final CreativeSession session = new CreativeSession();
 
@@ -85,13 +91,18 @@ public class UICreativeModePanel extends UIDashboardPanel
 
         UILabel candidatesHeader = this.header(L10n.lang("bbs.ui.ai.creative.candidates"));
 
-        this.candidates = UI.column(UIConstants.MARGIN);
+        this.candidates = new UIScrollView();
+        this.candidates.column(UIConstants.MARGIN).vertical().stretch().scroll().padding(UIConstants.MARGIN);
+
+        this.candidatesHint = UI.label(L10n.lang("bbs.ui.ai.creative.pick_hint"), UIConstants.CONTROL_HEIGHT * 2);
+        this.candidatesHint.color(Colors.LIGHTER_GRAY, false);
 
         UIElement middle = UI.column(UIConstants.MARGIN, candidatesHeader, this.candidates);
 
         middle.h(1F);
         candidatesHeader.h(HEADER).w(1F);
         this.candidates.h(1F, -HEADER);
+        this.candidates.add(this.candidatesHint);
 
         UIElement columns = UI.row(UIConstants.MARGIN, left, middle);
 
@@ -200,25 +211,72 @@ public class UICreativeModePanel extends UIDashboardPanel
         this.status.color(Colors.RED, false);
     }
 
-    /** The candidate board: every kept variant, oldest first. */
+    /** The candidate board: every kept variant, oldest first; click to pick the adoption target. */
     private void fillCandidates()
     {
         List<UIElement> rows = new ArrayList<>();
         int index = 1;
+        int accent = BBSSettings.primaryColor.get() | Colors.A100;
+
+        this.variantCount = 0;
 
         for (CreativeProposal proposal : this.session.proposals)
         {
             for (CreativeProposal.Variant variant : proposal.variants)
             {
                 int beats = variant.plan == null ? 0 : variant.plan.beats.size();
+                int captured = this.variantCount;
 
-                rows.add(UI.label(L10n.lang("bbs.ui.ai.creative.candidate_row")
-                    .format(index++, beats, variant.notes.isBlank() ? "-" : variant.notes), UIConstants.LIST_ITEM_HEIGHT + 2));
+                UIButton row = new UIButton(L10n.lang("bbs.ui.ai.creative.candidate_row")
+                    .format(index++, beats, variant.notes.isBlank() ? "-" : variant.notes), (b) -> this.selectVariant(captured));
+
+                row.color(captured == this.selectedVariant ? accent : -1);
+                row.tooltip(L10n.lang("bbs.ui.ai.creative.pick_tooltip"));
+                rows.add(row);
+
+                this.variantCount++;
             }
         }
 
         this.candidates.removeAll();
-        this.candidates.add(UI.column(1, rows.toArray(new UIElement[0])));
+
+        if (rows.isEmpty())
+        {
+            this.candidates.add(this.candidatesHint);
+        }
+        else
+        {
+            if (this.selectedVariant < 0 || this.selectedVariant >= this.variantCount)
+            {
+                this.selectedVariant = this.variantCount - 1;
+            }
+
+            this.candidates.add(UI.column(1, rows.toArray(new UIElement[0])));
+        }
+    }
+
+    private void selectVariant(int index)
+    {
+        this.selectedVariant = index;
+        this.fillCandidates();
+    }
+
+    /** The variant adoption takes: the user's pick, or the latest when untouched. */
+    private CreativeProposal.Variant selectedOrLatest()
+    {
+        List<CreativeProposal.Variant> variants = this.session.variants();
+
+        if (variants.isEmpty())
+        {
+            return null;
+        }
+
+        if (this.selectedVariant >= 0 && this.selectedVariant < variants.size())
+        {
+            return variants.get(this.selectedVariant);
+        }
+
+        return variants.get(variants.size() - 1);
     }
 
     /**
@@ -249,10 +307,9 @@ public class UICreativeModePanel extends UIDashboardPanel
         /* Switch to the film editor explicitly (spec 5.5 hard rule 2) */
         this.dashboard.setPanel(panel);
 
-        CreativeProposal.Variant latest = this.session.variants()
-            .get(this.session.variants().size() - 1);
+        CreativeProposal.Variant latest = this.selectedOrLatest();
 
-        if (latest.plan == null)
+        if (latest == null || latest.plan == null)
         {
             this.status.label = L10n.lang("bbs.ui.ai.creative.nothing");
 

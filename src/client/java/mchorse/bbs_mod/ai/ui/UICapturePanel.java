@@ -43,6 +43,7 @@ public class UICapturePanel extends UIDashboardPanel
     private final UILabel status;
     private final UILabel frames;
     private final UITextbox interval;
+    private final UITextbox duration;
     private final UITextbox path;
 
     private final UIButton recapture;
@@ -59,6 +60,9 @@ public class UICapturePanel extends UIDashboardPanel
         this.interval = new UITextbox(8, (t) -> {});
         this.interval.setText("4");
 
+        this.duration = new UITextbox(8, (t) -> {});
+        this.duration.setText("48");
+
         this.path = new UITextbox(256, (t) -> {});
         this.path.placeholder(L10n.lang("bbs.ui.ai.capture.path_hint"));
 
@@ -70,6 +74,8 @@ public class UICapturePanel extends UIDashboardPanel
             UI.label(L10n.lang("bbs.ui.ai.capture.source_scene"), UIConstants.CONTROL_HEIGHT),
             UI.label(L10n.lang("bbs.ui.ai.capture.interval"), UIConstants.CONTROL_HEIGHT),
             this.interval.h(UIConstants.CONTROL_HEIGHT),
+            UI.label(L10n.lang("bbs.ui.ai.capture.duration"), UIConstants.CONTROL_HEIGHT),
+            this.duration.h(UIConstants.CONTROL_HEIGHT),
             this.header(L10n.lang("bbs.ui.ai.capture.frames")),
             this.frames
         );
@@ -139,10 +145,22 @@ public class UICapturePanel extends UIDashboardPanel
             return;
         }
 
-        int to = source.panel.getCursor() + 48;
+        int to = source.panel.getCursor() + this.parseDuration();
 
         this.session = new SceneFrameCapture(source.panel.getCursor(), to, interval);
         this.status.label = L10n.lang("bbs.ui.ai.capture.capturing");
+    }
+
+    private int parseDuration()
+    {
+        try
+        {
+            return Math.max(1, Integer.parseInt(this.duration.getText().trim()));
+        }
+        catch (NumberFormatException e)
+        {
+            return 48;
+        }
     }
 
     private int parseInterval()
@@ -199,6 +217,7 @@ public class UICapturePanel extends UIDashboardPanel
             this.sequence = this.session.finish();
             this.session = null;
             this.status.label = L10n.lang("bbs.ui.ai.capture.done").format(this.sequence.size());
+            this.status.color(Colors.LIGHTEST_GRAY, false);
             this.frames.label = L10n.lang("bbs.ui.ai.capture.frames_count").format(this.sequence.size());
             this.persist();
         }

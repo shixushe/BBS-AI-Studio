@@ -222,7 +222,7 @@ public class UIAiPanel extends UIDashboardPanel
 
         this.lamp = new StatusLamp();
 
-        this.status = new UILabel(L10n.lang("bbs.ui.ai.panel.lamp.unconfigured"));
+        this.status = new UILabel(L10n.lang("bbs.ui.ai.panel.ready_hint"));
         this.status.color(Colors.LIGHTER_GRAY, false);
 
         UIElement bottom = UI.row(UIConstants.MARGIN, generate, this.status);

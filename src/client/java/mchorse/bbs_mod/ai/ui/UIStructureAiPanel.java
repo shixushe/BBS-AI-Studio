@@ -262,13 +262,25 @@ public class UIStructureAiPanel extends UIDashboardPanel
         this.structures.add(UI.column(1, rows.toArray(new UIElement[0])));
         AiUi.headerText(this.listHeader, L10n.lang("bbs.ui.ai.structure.list"), L10n.lang("bbs.ui.ai.structure.count").format(ids.size()).get());
 
-        if (this.selected == null && !ids.isEmpty())
-        {
-            this.select(ids.get(0));
-        }
-        else if (this.selected != null && !ids.contains(this.selected))
+        /* Auto-select the first structure that actually reads - an unreadable
+         * asset pack entry must not be the panel's first impression */
+        if (this.selected == null || !ids.contains(this.selected))
         {
             this.selected = null;
+
+            for (String id : ids)
+            {
+                if (StructureManager.get(id) != null)
+                {
+                    this.select(id);
+
+                    break;
+                }
+            }
+        }
+
+        if (this.selected == null)
+        {
             this.showLines(List.of(L10n.lang("bbs.ui.ai.structure.pick").get()));
         }
     }
@@ -303,7 +315,7 @@ public class UIStructureAiPanel extends UIDashboardPanel
 
         for (net.minecraft.block.BlockState state : data.getBlocks().values())
         {
-            String name = String.valueOf(state.getBlock());
+            String name = net.minecraft.registry.Registries.BLOCK.getId(state.getBlock()).toString();
             counts.merge(name, 1, Integer::sum);
         }
 
@@ -386,7 +398,7 @@ public class UIStructureAiPanel extends UIDashboardPanel
         {
             UILabel label = new UILabel(IKey.constant(line));
 
-            label.color(Colors.WHITE, false);
+            label.color(Colors.WHITE, false).h(mchorse.bbs_mod.ui.framework.elements.utils.FontRenderer.DEFAULT_LINE_HEIGHT + 2);
             this.description.add(label);
         }
 

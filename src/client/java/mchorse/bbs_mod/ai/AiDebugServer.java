@@ -212,10 +212,17 @@ public class AiDebugServer
 
                     f.setAccessible(true);
 
-                    Object menu = f.get(screen);
+                    mchorse.bbs_mod.ui.framework.UIBaseMenu menu = (mchorse.bbs_mod.ui.framework.UIBaseMenu) f.get(screen);
                     StringBuilder sb = new StringBuilder();
+                    int[] budget = {600};
 
-                    dumpTree(sb, menu, 0, new int[] {600});
+                    sb.append("== main ==\n");
+
+                    dumpTree(sb, menu.main, 0, budget);
+
+                    sb.append("== overlay ==\n");
+
+                    dumpTree(sb, menu.overlay, 0, budget);
 
                     return sb.toString();
                 }
@@ -284,16 +291,21 @@ public class AiDebugServer
             sb.append(" \"").append(label.label.get()).append("\"");
         }
 
-        if (element instanceof mchorse.bbs_mod.ui.framework.elements.input.keyframes.UIKeyframeDopeSheet dopeSheet)
+        if (element instanceof mchorse.bbs_mod.ui.framework.elements.input.keyframes.UIKeyframes keyframes)
         {
             try
             {
-                java.lang.reflect.Field cacheField =
-                    mchorse.bbs_mod.ui.framework.elements.input.keyframes.UIKeyframeDopeSheet.class.getDeclaredField("sheetYCache");
+                java.lang.reflect.Field dsField =
+                    mchorse.bbs_mod.ui.framework.elements.input.keyframes.UIKeyframes.class.getDeclaredField("dopeSheet");
+
+                dsField.setAccessible(true);
+
+                Object dopeSheetObj = dsField.get(keyframes);
+                java.lang.reflect.Field cacheField = dopeSheetObj.getClass().getDeclaredField("sheetYCache");
 
                 cacheField.setAccessible(true);
 
-                Object cache = cacheField.get(dopeSheet);
+                Object cache = cacheField.get(dopeSheetObj);
 
                 if (cache instanceof java.util.Map<?, ?> map)
                 {
@@ -303,7 +315,7 @@ public class AiDebugServer
                         {
                             sb.append("\n").append("  ".repeat(depth + 1))
                                 .append("track id=").append(sheet.id)
-                                .append(" y=").append(entry.getValue())
+                                .append(" relY=").append(entry.getValue())
                                 .append(" factory=").append(sheet.channel.getFactory().getClass().getSimpleName());
                         }
                     }

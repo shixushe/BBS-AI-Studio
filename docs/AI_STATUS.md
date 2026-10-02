@@ -165,3 +165,18 @@ E:\BBS FS AI\mc-mcp\mc_mcp_server.py        ← MCP 调试服务(config 指向 t
 - 构建+四套测试+apiCheck 全绿，jar 已部署，/aiui film 打开无异常（log 验证）。
   **目视复验未完成**：用户正在钉钉沟通（窗口最小化了游戏），为不打扰只做零干扰验证；
   待用户方便时自行核看：右栏上半=竖排属性+竖向滚动条、下半对话无 [AI] 徽标。
+
+## 九、第三轮（2026-10-02，R4'：设置界面全部键名→名称）
+
+用户截图：BBS++ 设置分类（bbspp.config.*）整组显示原始键名。全量对账后发现主模组
+15 个分类（transformation/camera/viewport/performance/timeline/workspace/misc 等
+约 180 键）在 zh_cn 同样缺名——之前 R4/R18 只补了 AI 标签。
+
+- 对账脚本（tools/fill_settings_l10n.py 内含审计逻辑）：解析 BBSSettings.java +
+  BBSPlusPlusSettings.java 的 category()/get*() 注册 → 与 zh_cn/en_us 比对。
+- 补齐 zh_cn 280 键（名称+注释，含 8 个缺失分类的 title/tooltip）、en_us 94 键；
+  删除 4 个与代码键名脱节的过时键（prevent_negative_keyframe / enable_ui_keyframes_layer /
+  locked_layout_prevents_rotation / item_spray），按现行键名重写。
+- 补 film_alt_wheel_timeline_mode 的三个模式标签（默认缩放/禁用/水平滚动）。
+- 剩余未补的只有 `.invisible()` 隐藏键（不在界面渲染，无需名称）。
+- 构建+测试全绿，jar 已部署重启。验证方式：重启后打开设置（0 → 设置）逐页核对。

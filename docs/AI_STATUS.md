@@ -414,3 +414,21 @@ hub 输入行+状态、采集的状态/输出栈）都落在被遮挡带内。�
 - **环境元凶记录**：Axiom 模组 ImGui 字体断言失败（imstb_truetype.h:1590）会卡死
   世界加载（class_433 循环）并数次中断实机验证——与我们代码无关；另将
   pauseOnLostFocus 改为 false（options.txt）以便后台调试。
+
+## 二十二、第十六轮（2026-10-02，AI 建筑双模式 + 调试 API + token/思维链优化）
+
+- **双模式**：结构面板 AI 建筑块增加模式切换——
+  [放到世界]：X/Y/Z 坐标输入（留空=面前 6 格），[放置] 走 s17 显坐标放置；
+  [导出蓝图]：显示 .blueprint/.schem 落盘路径。
+- **s17 扩展**：携带显式 BlockPos（原点=回退玩家相对位置）。
+- **Axiom 原生蓝图落地**：AiBlueprintWriter 构建 16³ PalettedContainer 分区
+  （键=BlockPos.asLong 分区坐标），反射调 BlueprintIo.writeRaw 写 .blueprint
+  → readRawBlueprint 读回自校验。运行时真实构造器是 5 参（与静态逆向 4 参不同）
+  ——自适应按类型填参解决。已实测落盘（185 字节 debug_*.blueprint）。
+- **调试 API**：/ai_build?theme=&x=&y=&z=&place= ——确定性演示建造单
+  （无 LLM 依赖）驱动整条管线，支持 curl 脚本化测试。实测：280 方块生成
+  + 坐标放置请求 ✓，三种蓝图文件落盘 ✓。
+- **token 优化**：建造单系统提示词瘦身（482→~250 字符）；maxTokens(1200) 上限。
+- **思维链显示**：描述区逐阶段反馈——分析主题→起草建造单→展开方块→写蓝图。
+- zh_cn.json 曾被误覆盖为英文（脚本变量复用错误），已从 git 恢复并重打补丁，
+  加入中文断言防再犯。

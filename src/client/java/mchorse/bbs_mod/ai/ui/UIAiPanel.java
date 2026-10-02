@@ -54,8 +54,8 @@ public class UIAiPanel extends UIDashboardPanel
     private final UITextbox input;
     private final UIScrollView board;
     private final UILabel boardHint;
-    private final AiUi.Header boardHeader;
-    private final AiUi.Header beatsHeader;
+    private final UILabel boardHeader;
+    private final UILabel beatsHeader;
     private final UILabel beatsHint;
     private final BeatTable beats;
     private final AiUi.StatusLine status;
@@ -75,7 +75,7 @@ public class UIAiPanel extends UIDashboardPanel
         /* Conversation half */
         this.transcript = new AiChatHistory();
 
-        AiUi.Header chatHeader = AiUi.header(L10n.lang("bbs.ui.ai.hub.transcript")).caption(L10n.lang("bbs.ui.ai.hub.transcript_caption").get());
+        UILabel chatHeader = AiUi.header(L10n.lang("bbs.ui.ai.hub.transcript"), L10n.lang("bbs.ui.ai.hub.transcript_caption").get());
 
         this.input = new UITextbox(256, (t) -> {})
         {
@@ -119,8 +119,8 @@ public class UIAiPanel extends UIDashboardPanel
 
         inputRow.row(UIConstants.MARGIN).preferred(0).height(UIConstants.CONTROL_HEIGHT + 4);
 
-        this.boardHeader = AiUi.header(L10n.lang("bbs.ui.ai.hub.board"));
-        this.beatsHeader = AiUi.header(L10n.lang("bbs.ui.ai.hub.beats"));
+        this.boardHeader = AiUi.header(L10n.lang("bbs.ui.ai.hub.board"), "");
+        this.beatsHeader = AiUi.header(L10n.lang("bbs.ui.ai.hub.beats"), "");
 
         inputRow.row(UIConstants.MARGIN).preferred(0).height(UIConstants.CONTROL_HEIGHT + 4);
 
@@ -352,8 +352,8 @@ public class UIAiPanel extends UIDashboardPanel
             }
         }
 
-        boardHeader.caption(L10n.lang("bbs.ui.ai.hub.board_count").format(this.variantCount).get());
-        beatsHeader.caption(this.selectedVariant >= 0 && !rows.isEmpty()
+        AiUi.headerText(this.boardHeader, L10n.lang("bbs.ui.ai.hub.board"), L10n.lang("bbs.ui.ai.hub.board_count").format(this.variantCount).get());
+        AiUi.headerText(this.beatsHeader, L10n.lang("bbs.ui.ai.hub.beats"), this.selectedVariant >= 0 && !rows.isEmpty()
             ? L10n.lang("bbs.ui.ai.hub.beats_no").format(this.selectedVariant + 1).get()
             : "");
 

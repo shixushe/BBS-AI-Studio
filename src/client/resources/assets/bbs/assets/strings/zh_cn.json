@@ -3693,5 +3693,6 @@
   "bbs.ui.ai.structure.build_fail": "建造单解析失败（%s）—— 再试一次通常能好。",
   "bbs.ui.ai.structure.place_nothing": "还没有生成过建筑——先用「生成建筑」。",
   "bbs.ui.ai.structure.build_system": "你是 Minecraft 建筑生成器。只输出一个 JSON 对象，不要任何其他文字。JSON 模式：{\"name\":\"英文短名\",\"title\":\"中文名\",\"size\":[宽,高,深]（各 5-30）,\"shell\":{\"from\":[0,0,0],\"to\":[宽-1,高-1,深-1],\"wall\":\"minecraft:xxx\",\"floor\":\"minecraft:xxx\",\"roof\":\"minecraft:xxx\",\"windows\":true,\"door\":\"north|south|east|west\"},\"boxes\":[{\"from\":[x,y,z],\"to\":[x,y,z],\"block\":\"minecraft:xxx\"}],\"towers\":[{\"from\":[x,y,z],\"to\":[x,y,z],\"block\":\"minecraft:xxx\",\"roof\":true}]}。shell 是唯一的外壳（内空带门窗）；boxes 做地基/平台等实心填充；towers 做空心柱塔。只用原版方块 id。坐标从 0 开始且 < size。",
-  "bbs.ui.ai.structure.build_prompt": "主题：%s。请按系统要求的 JSON 模式设计一座建筑（合理布局门窗与材料，size 比例协调）。"
+  "bbs.ui.ai.structure.build_prompt": "主题：%s。请按系统要求的 JSON 模式设计一座建筑（合理布局门窗与材料，size 比例协调）。",
+  "bbs.ui.ai.structure.build_header_hint": "主题 → 建造单 → 蓝图"
 }

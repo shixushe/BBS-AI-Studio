@@ -48,7 +48,7 @@ public class UICapturePanel extends UIDashboardPanel
     private final AiUi.StatusLine status;
     private final UITextbox path;
     private final AiUi.FrameStrip strip;
-    private final AiUi.Header framesHeader;
+    private final UILabel framesHeader;
     private final UIButton capture;
     private final UIButton pickVideo;
     private final UILabel pickedVideo;
@@ -92,7 +92,7 @@ public class UICapturePanel extends UIDashboardPanel
         int row = UIConstants.CONTROL_HEIGHT;
         int y = AiUi.HEADER + m;
 
-        AiUi.Header sourceHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.source"));
+        UILabel sourceHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.source"), "");
         sourceHeader.relative(this).x(0).y(0).w(1F).h(AiUi.HEADER);
 
         UIElement params = UI.row(m,
@@ -113,14 +113,14 @@ public class UICapturePanel extends UIDashboardPanel
         externalRow.relative(this).x(m).y(y).w(1F, -m * 2).h(row);
 
         y += row + m;
-        this.framesHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.frames")).caption(L10n.lang("bbs.ui.ai.capture.no_frames").get());
+        this.framesHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.frames"), L10n.lang("bbs.ui.ai.capture.no_frames").get());
         framesHeader.relative(this).x(0).y(y).w(1F).h(AiUi.HEADER);
 
         y += AiUi.HEADER + m;
         this.strip.relative(this).x(m).y(y).w(1F, -m * 2).h(1F, -(y + AiUi.HEADER + m * 5 + row * 4 + AiUi.BAR + AiUi.TASKBAR));
 
         y += 1F;
-        AiUi.Header outputHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.output"));
+        UILabel outputHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.output"), "");
         outputHeader.relative(this).x(0).y(1F, -(AiUi.HEADER + m * 4 + row * 3 + AiUi.BAR + AiUi.TASKBAR)).w(1F).h(AiUi.HEADER);
 
         y = 0;
@@ -277,7 +277,7 @@ public class UICapturePanel extends UIDashboardPanel
             this.sequence = this.session.finish();
             this.session = null;
             this.status.set(L10n.lang("bbs.ui.ai.capture.done").format(this.sequence.size()).get(), AiUi.StatusLine.State.OK);
-            framesHeader.caption(L10n.lang("bbs.ui.ai.capture.frames_count").format(this.sequence.size()).get());
+            AiUi.headerText(this.framesHeader, L10n.lang("bbs.ui.ai.capture.frames"), L10n.lang("bbs.ui.ai.capture.frames_count").format(this.sequence.size()).get());
             this.showFrames();
             this.persist();
         }

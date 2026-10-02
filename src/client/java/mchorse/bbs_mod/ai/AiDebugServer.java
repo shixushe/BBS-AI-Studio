@@ -195,6 +195,39 @@ public class AiDebugServer
             respond(exchange, jsonMap("result", result));
         });
 
+        server.createContext("/uistate", (exchange) ->
+        {
+            String result = onClient(() ->
+            {
+                MinecraftClient client = MinecraftClient.getInstance();
+
+                if (!(client.currentScreen instanceof mchorse.bbs_mod.ui.framework.UIScreen screen))
+                {
+                    return "no UIScreen open (current: " + (client.currentScreen == null ? "null" : client.currentScreen.getClass().getSimpleName()) + ")";
+                }
+
+                try
+                {
+                    java.lang.reflect.Field f = mchorse.bbs_mod.ui.framework.UIScreen.class.getDeclaredField("menu");
+
+                    f.setAccessible(true);
+
+                    Object menu = f.get(screen);
+                    StringBuilder sb = new StringBuilder();
+
+                    dumpTree(sb, menu, 0, new int[] {600});
+
+                    return sb.toString();
+                }
+                catch (Exception e)
+                {
+                    return "(dump failed: " + e + ")";
+                }
+            });
+
+            respond(exchange, jsonMap("tree", result));
+        });
+
         server.start();
 
         /* The dashboard builds its panels a few frames at a time after the
@@ -219,6 +252,75 @@ public class AiDebugServer
                 pendingPanel = null;
             }
         });
+    }
+
+    /**
+     * Depth-first dump of the UI tree: class, area and any readable text per
+     * element. Skips invisible subtrees; capped so a huge dashboard can't
+     * produce megabytes of JSON.
+     */
+    private static void dumpTree(StringBuilder sb, Object node, int depth, int[] budget)
+    {
+        if (budget[0] <= 0 || depth > 14 || !(node instanceof mchorse.bbs_mod.ui.framework.elements.UIElement element))
+        {
+            return;
+        }
+
+        budget[0]--;
+
+        if (!element.isVisible())
+        {
+            return;
+        }
+
+        mchorse.bbs_mod.ui.utils.Area a = element.area;
+
+        sb.append("  ".repeat(depth))
+            .append(element.getClass().getSimpleName())
+            .append(" (").append(a.x).append(",").append(a.y).append(" ").append(a.w).append("x").append(a.h).append(")");
+
+        if (element instanceof mchorse.bbs_mod.ui.framework.elements.utils.UILabel label)
+        {
+            sb.append(" \"").append(label.label.get()).append("\"");
+        }
+
+        if (element instanceof mchorse.bbs_mod.ui.framework.elements.input.keyframes.UIKeyframeDopeSheet dopeSheet)
+        {
+            try
+            {
+                java.lang.reflect.Field cacheField =
+                    mchorse.bbs_mod.ui.framework.elements.input.keyframes.UIKeyframeDopeSheet.class.getDeclaredField("sheetYCache");
+
+                cacheField.setAccessible(true);
+
+                Object cache = cacheField.get(dopeSheet);
+
+                if (cache instanceof java.util.Map<?, ?> map)
+                {
+                    for (java.util.Map.Entry<?, ?> entry : map.entrySet())
+                    {
+                        if (entry.getKey() instanceof mchorse.bbs_mod.ui.framework.elements.input.keyframes.UIKeyframeSheet sheet)
+                        {
+                            sb.append("\n").append("  ".repeat(depth + 1))
+                                .append("track id=").append(sheet.id)
+                                .append(" y=").append(entry.getValue())
+                                .append(" factory=").append(sheet.channel.getFactory().getClass().getSimpleName());
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                sb.append("\n").append("  ".repeat(depth + 1)).append("(tracks unavailable: ").append(e).append(")");
+            }
+        }
+
+        sb.append("\n");
+
+        for (Object child : new java.util.ArrayList<>(element.getChildren()))
+        {
+            dumpTree(sb, child, depth + 1, budget);
+        }
     }
 
     private static void respond(HttpExchange exchange, String body)

@@ -3049,5 +3049,6 @@
   "bbs.ui.ai.structure.build_fail": "Build order parse failed (%s) - retrying usually works.",
   "bbs.ui.ai.structure.place_nothing": "Nothing generated yet - use Generate first.",
   "bbs.ui.ai.structure.build_system": "You are a Minecraft building generator. Output ONLY one JSON object, nothing else. Schema: {\"name\":\"short_english_name\",\"title\":\"display name\",\"size\":[w,h,d] (each 5-30),\"shell\":{\"from\":[0,0,0],\"to\":[w-1,h-1,d-1],\"wall\":\"minecraft:x\",\"floor\":\"minecraft:x\",\"roof\":\"minecraft:x\",\"windows\":true,\"door\":\"north|south|east|west\"},\"boxes\":[{\"from\":[x,y,z],\"to\":[x,y,z],\"block\":\"minecraft:x\"}],\"towers\":[{\"from\":[x,y,z],\"to\":[x,y,z],\"block\":\"minecraft:x\",\"roof\":true}]}. The shell is the only outer shell (hollow, with windows and a door); boxes are solid fills for foundations/platforms; towers are hollow columns. Use vanilla block ids only. Coordinates start at 0 and stay below size.",
-  "bbs.ui.ai.structure.build_prompt": "Theme: %s. Design a building following the system JSON schema (sane layout, windows and materials, balanced proportions)."
+  "bbs.ui.ai.structure.build_prompt": "Theme: %s. Design a building following the system JSON schema (sane layout, windows and materials, balanced proportions).",
+  "bbs.ui.ai.structure.build_header_hint": "theme -> build order -> blueprints"
 }

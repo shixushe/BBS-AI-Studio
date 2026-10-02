@@ -39,12 +39,6 @@ public final class AiUi
     private AiUi()
     {}
 
-    /** Section header without a caption. */
-    public static Header header(IKey title)
-    {
-        return new Header(title);
-    }
-
     /** Muted teaching copy. */
     public static UILabel hint(IKey text)
     {
@@ -72,51 +66,34 @@ public final class AiUi
     }
 
     /**
-     * Section header, refined: dark strip, 3px accent edge on the left, the
-     * title on the left and an optional muted caption on the right (counts,
-     * state - call {@link #caption(String)} whenever it changes).
+     * Section header: a full-width label on the accent color, optional live
+     * caption appended after the title. Built on UILabel + background - the
+     * one text treatment this UI framework renders identically everywhere
+     * (custom-rendered strips turned out to be unreliable under the
+     * dashboard chrome).
      */
-    public static class Header extends UIElement
+    public static UILabel header(IKey title, String caption)
     {
-        private final IKey title;
-        private String caption = "";
+        String captionText = caption == null || caption.isEmpty() ? "" : "　　" + caption;
 
-        public Header(IKey title)
-        {
-            this.title = title;
+        UILabel label = UI.label(IKey.constant("  " + title.get() + captionText), HEADER);
 
-            this.h(HEADER);
-        }
+        label.color(Colors.WHITE, false).background(Colors.opaque(BBSSettings.primaryColor.get())).labelAnchor(0F, 0.5F);
 
-        public Header caption(String caption)
-        {
-            this.caption = caption == null ? "" : caption;
+        return label;
+    }
 
-            return this;
-        }
+    public static UILabel header(IKey title)
+    {
+        return header(title, "");
+    }
 
-        @Override
-        public void render(UIContext context)
-        {
-            int accent = Colors.opaque(BBSSettings.primaryColor.get());
+    /** Rewrite a header's text in place (title + fresh caption). */
+    public static void headerText(UILabel header, IKey title, String caption)
+    {
+        String captionText = caption == null || caption.isEmpty() ? "" : "　　" + caption;
 
-            context.batcher.box(this.area.x, this.area.y, this.area.ex(), this.area.ey(), BBSSettings.chromeSurface());
-            context.batcher.box(this.area.x, this.area.y, this.area.x + 3, this.area.ey(), accent);
-
-            mchorse.bbs_mod.ui.framework.elements.utils.FontRenderer font = context.batcher.getFont();
-            String title = this.title.get();
-
-            context.batcher.textCard(title, this.area.x(0F, 8), this.area.y(0.5F, -font.getHeight() / 2), Colors.WHITE, 0, 1, false);
-
-            if (!this.caption.isEmpty())
-            {
-                int captionWidth = font.getWidth(this.caption);
-
-                context.batcher.textCard(this.caption, this.area.ex() - 8 - captionWidth, this.area.y(0.5F, -font.getHeight() / 2), Colors.LIGHTER_GRAY, 0, 1, false);
-            }
-
-            super.render(context);
-        }
+        header.label = IKey.constant("  " + title.get() + captionText);
     }
 
     /**

@@ -50,8 +50,8 @@ public class UIStructureAiPanel extends UIDashboardPanel
 
     private final UIScrollView structures;
     private final UIScrollView description;
-    private final AiUi.Header listHeader;
-    private final AiUi.Header descHeader;
+    private final UILabel listHeader;
+    private final UILabel descHeader;
     private final UIButton describe;
 
     private final UITextbox buildTheme;
@@ -67,8 +67,8 @@ public class UIStructureAiPanel extends UIDashboardPanel
     {
         super(dashboard);
 
-        this.listHeader = AiUi.header(L10n.lang("bbs.ui.ai.structure.list"));
-        this.descHeader = AiUi.header(L10n.lang("bbs.ui.ai.structure.description"));
+        this.listHeader = AiUi.header(L10n.lang("bbs.ui.ai.structure.list"), "");
+        this.descHeader = AiUi.header(L10n.lang("bbs.ui.ai.structure.description"), "");
 
         this.structures = new UIScrollView();
         this.structures.column(UIConstants.MARGIN).vertical().stretch().padding(UIConstants.MARGIN);
@@ -103,7 +103,7 @@ public class UIStructureAiPanel extends UIDashboardPanel
         this.placeBuild = new UIButton(L10n.lang("bbs.ui.ai.structure.place"), (b) -> this.placeBuilding());
         this.placeBuild.tooltip(L10n.lang("bbs.ui.ai.structure.place_tooltip"));
 
-        AiUi.Header buildHeader = AiUi.header(L10n.lang("bbs.ui.ai.structure.build_header"));
+        UILabel buildHeader = AiUi.header(L10n.lang("bbs.ui.ai.structure.build_header"), L10n.lang("bbs.ui.ai.structure.build_header_hint").get());
 
         int stack = UIConstants.CONTROL_HEIGHT * 2 + AiUi.HEADER + UIConstants.MARGIN * 3;
 
@@ -185,7 +185,7 @@ public class UIStructureAiPanel extends UIDashboardPanel
 
                 AiArchitecture.lastGenerated = result.name;
                 this.fillList();
-                this.descHeader.caption(result.name);
+                AiUi.headerText(this.descHeader, L10n.lang("bbs.ui.ai.structure.description"), result.name);
 
                 this.showLines(List.of(
                     L10n.lang("bbs.ui.ai.structure.build_done").format(result.title, result.blocks).get(),
@@ -260,7 +260,7 @@ public class UIStructureAiPanel extends UIDashboardPanel
 
         this.structures.removeAll();
         this.structures.add(UI.column(1, rows.toArray(new UIElement[0])));
-        this.listHeader.caption(L10n.lang("bbs.ui.ai.structure.count").format(ids.size()).get());
+        AiUi.headerText(this.listHeader, L10n.lang("bbs.ui.ai.structure.list"), L10n.lang("bbs.ui.ai.structure.count").format(ids.size()).get());
 
         if (this.selected == null && !ids.isEmpty())
         {
@@ -277,7 +277,7 @@ public class UIStructureAiPanel extends UIDashboardPanel
     private void select(String id)
     {
         this.selected = id;
-        this.descHeader.caption(id);
+        AiUi.headerText(this.descHeader, L10n.lang("bbs.ui.ai.structure.description"), id);
         this.describe.setEnabled(true);
         this.fillList();
 

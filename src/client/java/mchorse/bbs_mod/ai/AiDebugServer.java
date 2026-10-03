@@ -370,6 +370,54 @@ public class AiDebugServer
                         return "editSheet(" + track + ") done, editing=" + view.isEditing() + ", graph=" + graphName;
                     }
 
+                    if (op.equals("generate"))
+                    {
+                        var dashboard = mchorse.bbs_mod.BBSModClient.getDashboard();
+                        var panel = dashboard.getPanels().panel;
+
+                        if (!(panel instanceof mchorse.bbs_mod.ui.film.UIFilmPanel filmPanel)
+                            || filmPanel.aiChatBar == null)
+                        {
+                            return "not the film panel";
+                        }
+
+                        String script = map == null || map.getString("script").isEmpty()
+                            ? "角色向前走" : map.getString("script");
+
+                        filmPanel.aiChatBar.executeGenerate(script);
+
+                        return "generate queued: " + script;
+                    }
+
+                    if (op.equals("aiReport"))
+                    {
+                        var state = mchorse.bbs_mod.ai.preview.AiPreviewState.get();
+
+                        if (!state.isActive())
+                        {
+                            return "preview inactive";
+                        }
+
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("diff entries=").append(state.getDiff().entries.size())
+                            .append(" changedKeys=").append(state.getDiff().changedKeyCount())
+                            .append(" skipped=").append(state.getDiff().skippedTracks)
+                            .append(" | ");
+
+                        for (mchorse.bbs_mod.ai.commit.FrameCommitter.ChannelWrite write : state.getPlan())
+                        {
+                            int keys = write.channel == null ? -1 : write.channel.getKeyframes().size();
+
+                            sb.append(" [").append(write.trackId)
+                                .append(" keys=").append(write.keys.size())
+                                .append(" channelNull=").append(write.channel == null)
+                                .append(" channelKeyCount=").append(keys)
+                                .append(" poseCh=").append(write.poseChannel).append("]");
+                        }
+
+                        return sb.toString();
+                    }
+
                     return "unknown op " + op;
                 }
                 catch (Exception e)

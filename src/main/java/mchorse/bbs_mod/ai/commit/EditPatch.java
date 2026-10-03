@@ -42,6 +42,9 @@ public class EditPatch
 
         /** 到达缓动意图（生成路径用），映射成插值后即弃 */
         public transient String intent;
+
+        /** 工厂原生的完整键值（如 Pose）——优先于 poseValue/value */
+        public transient Object fullValue;
         /** Interpolation registry key ({@code Interpolations.MAP}); null/unknown keeps the existing one. */
         public String interpolation;
         public float lx;

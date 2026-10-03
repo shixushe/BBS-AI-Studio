@@ -1,6 +1,8 @@
 package mchorse.bbs_mod.ai.pose;
 
 import mchorse.bbs_mod.ai.commit.EditPatch;
+import mchorse.bbs_mod.forms.forms.Form;
+import mchorse.bbs_mod.utils.keyframes.KeyframeChannel;
 import mchorse.bbs_mod.ai.commit.FrameCommitter;
 import mchorse.bbs_mod.ai.plan.AnimationPlan;
 import mchorse.bbs_mod.film.replays.FormProperties;
@@ -146,6 +148,99 @@ public class PoseSolver
     public static List<FrameCommitter.ChannelWrite> toChannelWrites(List<KeyPose> poses, FormProperties properties)
     {
         return toChannelWrites(poses, Map.of(), properties);
+    }
+
+    /**
+     * Whole-pose solve: one keyframe per beat on the form's {@code pose}
+     * property track — the track the user actually sees and edits (the
+     * per-bone {@code pose.bones.*} channels don't even show up as rows for
+     * many models). The key value is a full Pose: every solved bone's
+     * rotate (+ scale for blink), keyed with the beat's arrival interpolation.
+     *
+     * <p>Ends: the union of the bone-end paths — root "" and/or body-part
+     * ends — each end gets its own pose track keys for the bones it owns.</p>
+     */
+    public static List<FrameCommitter.ChannelWrite> toPoseTrackWrites(List<KeyPose> poses, Map<String, List<String>> boneEnds, FormProperties properties, Form root)
+    {
+        /* 哪些端需要写：所有已解析骨骼的归属端并集 */
+        java.util.Set<String> ends = new java.util.LinkedHashSet<>();
+
+        for (KeyPose pose : poses)
+        {
+            for (BoneChannel channel : pose.channels)
+            {
+                List<String> paths = boneEnds.getOrDefault(channel.bone, List.of(""));
+
+                ends.addAll(paths.isEmpty() ? List.of("") : paths);
+            }
+        }
+
+        if (ends.isEmpty())
+        {
+            ends.add("");
+        }
+
+        List<FrameCommitter.ChannelWrite> writes = new ArrayList<>();
+
+        for (String end : ends)
+        {
+            mchorse.bbs_mod.film.replays.tracks.TrackId trackId =
+                mchorse.bbs_mod.film.replays.tracks.TrackId.property(end, mchorse.bbs_mod.film.replays.FormProperties.POSE_PROPERTY);
+            KeyframeChannel channel = properties.getOrCreate(root, trackId);
+
+            FrameCommitter.ChannelWrite write = new FrameCommitter.ChannelWrite(trackId.toKey(), channel, 0F);
+
+            write.poseChannel = true;
+
+            for (KeyPose pose : poses)
+            {
+                mchorse.bbs_mod.utils.pose.Pose value = new mchorse.bbs_mod.utils.pose.Pose();
+
+                for (BoneChannel channelData : pose.channels)
+                {
+                    List<String> paths = boneEnds.getOrDefault(channelData.bone, List.of(""));
+
+                    if (!paths.isEmpty() && !paths.contains(end))
+                    {
+                        continue;
+                    }
+
+                    mchorse.bbs_mod.utils.pose.PoseTransform transform = value.getOrCreate(channelData.bone);
+
+                    transform.rotate.set(channelData.x, channelData.y, channelData.z);
+
+                    if (channelData.values.length >= 6)
+                    {
+                        transform.scale.set(channelData.values[3], channelData.values[4], channelData.values[5]);
+                    }
+                }
+
+                EditPatch.KeyWrite key = new EditPatch.KeyWrite();
+
+                key.tick = pose.tick;
+                key.interpolation = Interpolations.LINEAR.getKey();
+                key.intent = pose.intent;
+                key.fullValue = value;
+                write.keys.add(key);
+            }
+
+            /* 到达意图落前一个键（与逐骨骼路径同一语义） */
+            List<EditPatch.KeyWrite> keys = write.keys;
+
+            for (int j = 1; j < keys.size(); j++)
+            {
+                String arrival = keys.get(j).intent;
+
+                if (arrival != null)
+                {
+                    keys.get(j - 1).interpolation = interpFor(arrival).getKey();
+                }
+            }
+
+            writes.add(write);
+        }
+
+        return writes;
     }
 
     /**

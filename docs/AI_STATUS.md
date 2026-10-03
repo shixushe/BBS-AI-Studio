@@ -732,3 +732,23 @@ AiClient 的后台线程直接改聊天气泡的过程/换行列表，渲染线�
 - UIStructureAiPanel 建筑生成 + AI 描述回调。
 全项目仅此一条后台线程（AiClient 单线程执行器），封送后线程面闭环；
 打磨路径本就渲染线程内，无需处理。
+
+## 三十九、第三十三轮（2026-10-03，「生成的动画不在时间轴也不可预览」——架构级错配修复）
+
+用户指出生成结果既不上时间轴也无法预览。MCP 实机诊断（新增 /debug op=generate
+直触流程、op=aiReport 导出预览真值）拿到铁证：键全部写进了
+pose.bones.* 根端通道（27 键无一跳过），但时间轴 POSE 分类下**根本没有
+pose.bones 行**——该模型的骨骼动画架构是**单一 pose 属性轨道**（一键=整只
+Pose），逐骨骼通道在这个表单上不生成行、用户一辈子不会看到。
+
+**修复：求解输出改写整只 Pose 到 pose 属性轨道**（用户日常编辑的那条）：
+- KeyWrite.fullValue（工厂原生完整键值，transient）；applyWrites 优先采用；
+- PoseSolver.toPoseTrackWrites：每拍一个键 = Pose{每根已解析骨骼的
+  PoseTransform(rotate+scale)}；端=骨骼归属端并集（根+部位，同一两端语义）；
+  到达意图仍落前一键（cubic/elastic/exp...）；
+- 聊天栏生成路径切换到该写入器，过程区改为「姿态轨道写入：N 条通道...→
+  0/pose×9」；预览期即切 POSE 分类，键立即可见。
+
+**实机端到端验证**（MCP 全程驱动）：generate("walk forward") → aiReport:
+pose 通道 9 键 skipped=[]；截图证实视口角色摆出姿态、时间轴姿势行出现关键
+帧列、预览行「预览中·9 处改动」。

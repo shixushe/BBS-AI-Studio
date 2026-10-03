@@ -259,7 +259,7 @@ public class FrameCommitter
             float tick = key.tick + write.tickOffset;
             Keyframe existing = findAt(channel, tick);
 
-            Object value = key.poseValue != null ? key.poseValue : toFactoryValue(factory, key.value);
+            Object value = key.fullValue != null ? key.fullValue : key.poseValue != null ? key.poseValue : toFactoryValue(factory, key.value);
 
             if (existing == null)
             {

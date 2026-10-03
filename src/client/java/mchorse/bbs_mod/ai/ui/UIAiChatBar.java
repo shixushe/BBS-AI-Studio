@@ -213,7 +213,7 @@ public class UIAiChatBar extends UIElement
      * replay's model bones -> the same preview/commit pipeline polish uses.
      * The end-to-end loop of the copilot spec's delivery goal.
      */
-    private void executeGenerate(String script)
+    public void executeGenerate(String script)
     {
         this.history.log(AiChatMessage.Role.USER, script);
         this.input.setText("");
@@ -379,26 +379,18 @@ public class UIAiChatBar extends UIElement
 
             thinking.addProcess("姿态求解：" + poses.size() + " 个关键姿态；插值映射 " + String.join("，", mappings));
 
-            writes = mchorse.bbs_mod.ai.pose.PoseSolver.toChannelWrites(poses, boneEnds, replay.properties);
+            /* 整只 Pose 写进 pose 属性轨道——用户看得见、可编辑的那条 */
+            writes = mchorse.bbs_mod.ai.pose.PoseSolver.toPoseTrackWrites(poses, boneEnds, replay.properties, replay.form.get());
 
-            int rootEnds = 0;
-            int partEnds = 0;
+            StringBuilder ends = new StringBuilder();
 
             for (FrameCommitter.ChannelWrite write : writes)
             {
-                if (write.trackId.startsWith("pose.bones."))
-                {
-                    rootEnds++;
-                }
-                else
-                {
-                    partEnds++;
-                }
+                ends.append(write.trackId).append("×").append(write.keys.size()).append(" ");
             }
 
-            thinking.addProcess("通道写入：" + writes.size() + " 条（根端 " + rootEnds
-                + " / 部位端 " + partEnds + "），共 "
-                + writes.stream().mapToInt(w -> w.keys.size()).sum() + " 个关键帧");
+            thinking.addProcess("姿态轨道写入：" + writes.size() + " 条通道，共 "
+                + writes.stream().mapToInt(w -> w.keys.size()).sum() + " 个关键帧 → " + ends.toString().trim());
         }
         catch (Exception e)
         {
@@ -414,6 +406,19 @@ public class UIAiChatBar extends UIElement
         AiPreviewState.get().begin(replay, writes, new FrameDiff());
         /* 预览键已真实落通道：只刷新时间轴，绝不路由跳面板 */
         AiFilmBridge.notifyTimeline(AiPreviewState.get().getDiff());
+
+        /* 键在姿态分组下——预览期就切过去，立即可见可改 */
+        try
+        {
+            if (this.panel.replayEditor != null)
+            {
+                this.panel.replayEditor.setCategory(mchorse.bbs_mod.api.client.editor.TrackCategory.POSE);
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
 
         int lastTick = generated.beats.isEmpty() ? 0 : generated.beats.get(generated.beats.size() - 1).tick;
 

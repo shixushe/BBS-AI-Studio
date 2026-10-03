@@ -559,3 +559,37 @@ md5 校验一致部署，游戏已重启。
   逐条映射通道写入——AI 生成的 pose 只覆盖内置六个通用骨骼的姿态；自定义
   骨骼（尾巴/翅膀等）作为额外自由度保留绑定，后续可接 posecurve 曲线编辑
   或扩展姿态库。
+
+## 三十一、第二十五轮（2026-10-02，两端求解 + 眼睛支持 + Star 3.6 适配）
+
+用户需求：body 部分模型支持两端求解；支持眼睛；为 Star 3.6 系列做适配。
+
+**两端求解**：探明结构——身体部位端有自己的 pose/pose.bones 通道
+（TrackId 带 formPath：根 "" 与部位 "0"/"0/1"）。此前 toChannelWrites 只写
+根端，部位骨架（Star 3.6）根本不会动。
+- 新增 client 侧 AiFormWalker：遍历根+身体部位树（ModelFormRenderer.getModel
+  → IBoneHierarchy；MobForm 走 MobFormRenderer.getRig），产出
+  骨骼→归属端列表 与 全树骨骼清单。
+- toChannelWrites 重载：每根骨骼写到**所有拥有它的端**（根+部位，"两端求解"）；
+  未知归属回退根端（旧行为）。聊天栏清单改用全树遍历（旧 bones.getAll() 作
+  空清单兜底），绑定与求解因此天然覆盖部位骨骼。
+
+**眼睛支持**：
+- PoseLibrary.OPTIONAL_BONES = [left_eye, right_eye]——可选通用骨骼：绑定了
+  就参与求解，没绑定绝不阻塞（resolve 默认不把可选缺失计入 unresolved，
+  确认对话框也不会问眼睛）。
+- 新 pose「blink」：眼骨 Y 缩放 0.12（通道值支持 6 浮点：旋转+缩放，
+  BoneChannel.values 透传 PoseTransform.scale）。AnimationPlan.POSES 与中英
+  提示词同步加入 blink。
+
+**Star 3.6 适配**：
+- BoneNameResolver 别名全面中文化：头/身体/左臂(左胳膊/左手)/右臂/左腿(左脚)/
+  右腿 + 左眼(左眼球/左眼瞳/瞳左)/右眼——normalize 保留中文字符，包含式匹配
+  直接命中「左眼瞳」「头部」这类命名。
+- 绑定页签渲染修复（上一轮回归）：内置六行+可选两行+自定义行一起去重渲染；
+  眼睛现在可直接在页签绑定。
+- 下拉清单(绑定页签/确认框)现在来自全树骨骼——Star 3.6 的部位骨骼可选可绑。
+
+**测试**：PoseSolverTest 新增 starAdaptation() 9 项（中文解析/可选不阻塞/
+眨眼缩放/两端写入 0 与 0/pose.bones.head 双通道），注册 gradle poseSolverTest
+任务并入 check；ALL PASS (50 checks)。

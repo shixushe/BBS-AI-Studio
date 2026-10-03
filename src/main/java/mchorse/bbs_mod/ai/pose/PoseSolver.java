@@ -42,6 +42,9 @@ public class PoseSolver
         public float x;
         public float y;
         public float z;
+
+        /** Values straight from the library entry: rotation [0..2], optional scale [3..5]. */
+        public float[] values = new float[] {0F, 0F, 0F};
     }
 
     /**
@@ -79,12 +82,21 @@ public class PoseSolver
             for (Map.Entry<String, float[]> entry : PoseLibrary.get(beat.pose).entrySet())
             {
                 BoneNameResolver.Resolution resolution = bones.resolved.get(entry.getKey());
+
+                /* Optional bones (eyes) simply don't participate when unbound;
+                 * core bones are guaranteed complete by the caller's check */
+                if (resolution == null)
+                {
+                    continue;
+                }
+
                 BoneChannel channel = new BoneChannel();
 
                 channel.bone = resolution.actual;
                 channel.x = entry.getValue()[0];
                 channel.y = entry.getValue()[1];
                 channel.z = entry.getValue()[2];
+                channel.values = entry.getValue();
                 pose.channels.add(channel);
             }
 
@@ -102,34 +114,60 @@ public class PoseSolver
      */
     public static List<FrameCommitter.ChannelWrite> toChannelWrites(List<KeyPose> poses, FormProperties properties)
     {
+        return toChannelWrites(poses, Map.of(), properties);
+    }
+
+    /**
+     * Two-ended solve: write each bone's keys to every form path that owns a
+     * rig with that bone - the replay root ("") and/or body-part ends - so
+     * models nesting their rig under a part (Star 3.6) animate too. Bones with
+     * no discovered end fall back to the root, the historical behavior.
+     */
+    public static List<FrameCommitter.ChannelWrite> toChannelWrites(List<KeyPose> poses, Map<String, List<String>> boneEnds, FormProperties properties)
+    {
         Map<String, FrameCommitter.ChannelWrite> writes = new java.util.LinkedHashMap<>();
 
         for (KeyPose pose : poses)
         {
             for (BoneChannel channel : pose.channels)
             {
-                String trackId = TrackId.BONE_PREFIX + channel.bone;
+                List<String> ends = boneEnds.getOrDefault(channel.bone, List.of(""));
+                List<String> paths = ends.isEmpty() ? List.of("") : ends;
 
-                FrameCommitter.ChannelWrite write = writes.get(trackId);
-
-                if (write == null)
+                for (String path : paths)
                 {
-                    write = new FrameCommitter.ChannelWrite(trackId, properties.getOrCreate(null, TrackId.parse(trackId)), 0F);
+                    TrackId id = TrackId.bone(path, channel.bone);
+                    String trackId = id.toKey();
 
-                    write.poseChannel = true;
-                    writes.put(trackId, write);
+                    FrameCommitter.ChannelWrite write = writes.get(trackId);
+
+                    if (write == null)
+                    {
+                        write = new FrameCommitter.ChannelWrite(trackId, properties.getOrCreate(null, id), 0F);
+
+                        write.poseChannel = true;
+                        writes.put(trackId, write);
+                    }
+
+                    EditPatch.KeyWrite key = new EditPatch.KeyWrite();
+
+                    key.tick = pose.tick;
+                    key.interpolation = Interpolations.LINEAR.getKey();
+
+                    PoseTransform transform = new PoseTransform();
+
+                    transform.rotate.set(channel.x, channel.y, channel.z);
+
+                    /* Six-float channels carry scale after rotation - the blink
+                     * pose squashes eye bones on Y */
+                    if (channel.values.length >= 6)
+                    {
+                        transform.scale.set(channel.values[3], channel.values[4], channel.values[5]);
+                    }
+
+                    key.poseValue = transform;
+                    write.keys.add(key);
                 }
-
-                EditPatch.KeyWrite key = new EditPatch.KeyWrite();
-
-                key.tick = pose.tick;
-                key.interpolation = Interpolations.LINEAR.getKey();
-
-                PoseTransform transform = new PoseTransform();
-
-                transform.rotate.set(channel.x, channel.y, channel.z);
-                key.poseValue = transform;
-                write.keys.add(key);
             }
         }
 

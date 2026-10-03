@@ -18,6 +18,12 @@ public class PoseLibrary
     /** Generic humanoid bones the library speaks. */
     public static final List<String> GENERIC_BONES = List.of("head", "body", "left_arm", "right_arm", "left_leg", "right_leg");
 
+    /**
+     * Optional generic bones: resolved and driven when the model has them
+     * (Star 3.6 ships eyes), silently skipped otherwise - never blocking.
+     */
+    public static final List<String> OPTIONAL_BONES = List.of("left_eye", "right_eye");
+
     private static final Map<String, Map<String, float[]>> POSES = Map.ofEntries(
         Map.entry("idle", Map.of()),
         Map.entry("crouch", Map.of(
@@ -82,6 +88,11 @@ public class PoseLibrary
             "right_arm", new float[] {-88F, 0F, -14F},
             "head", new float[] {0F, -16F, 0F},
             "left_arm", new float[] {0F, 0F, 6F}
+        )),
+        /* 眨眼：眼骨 Y 压缩到 0.12（rotation 三位 + scale 三位），仅当眼睛已绑定时参与 */
+        Map.entry("blink", Map.of(
+            "left_eye", new float[] {0F, 0F, 0F, 1F, 0.12F, 1F},
+            "right_eye", new float[] {0F, 0F, 0F, 1F, 0.12F, 1F}
         ))
     );
 

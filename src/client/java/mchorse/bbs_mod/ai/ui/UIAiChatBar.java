@@ -33,6 +33,7 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The film editor's AI chat surface (copilot spec section 5.1) - the lower half
@@ -269,12 +270,19 @@ public class UIAiChatBar extends UIElement
             thinking.addProcess("动画方案已解析：" + generated.beats.size() + " 个节拍");
             this.history.refresh();
 
-            java.util.List<String> inventory = new ArrayList<>();
+            /* 全树骨骼清单：根端 + 身体部位端（Star 3.6 的骨架在部位下） */
+            java.util.List<String> inventory = mchorse.bbs_mod.ai.AiFormWalker.collectBones(modelForm);
 
-            for (mchorse.bbs_mod.settings.values.base.BaseValue child : modelForm.bones.getAll())
+            if (inventory.isEmpty())
             {
-                inventory.add(child.getId());
+                for (mchorse.bbs_mod.settings.values.base.BaseValue child : modelForm.bones.getAll())
+                {
+                    inventory.add(child.getId());
+                }
             }
+
+            /* 骨骼归属端：谁拥有这根骨骼（根 ""、部位 "0"、或两端都有） */
+            Map<String, List<String>> boneEnds = mchorse.bbs_mod.ai.AiFormWalker.collectBoneEnds(modelForm);
 
             mchorse.bbs_mod.ai.pose.BoneNameResolver.Result bones = mchorse.bbs_mod.ai.pose.BoneNameResolver.resolve(inventory);
 
@@ -303,7 +311,7 @@ public class UIAiChatBar extends UIElement
                         return;
                     }
 
-                    this.previewGenerated(generated, confirmed, replay, thinking);
+                    this.previewGenerated(generated, confirmed, replay, boneEnds, thinking);
                 });
 
                 mchorse.bbs_mod.ui.framework.elements.overlay.UIOverlay.addOverlay(context, ask, 280, 0.7F);
@@ -311,7 +319,7 @@ public class UIAiChatBar extends UIElement
                 return;
             }
 
-            this.previewGenerated(generated, bones, replay, thinking);
+            this.previewGenerated(generated, bones, replay, boneEnds, thinking);
         }, (error) ->
         {
             this.busy = false;
@@ -323,7 +331,7 @@ public class UIAiChatBar extends UIElement
         });
     }
 
-    private void previewGenerated(AnimationPlan generated, mchorse.bbs_mod.ai.pose.BoneNameResolver.Result bones, Replay replay, AiChatMessage thinking)
+    private void previewGenerated(AnimationPlan generated, mchorse.bbs_mod.ai.pose.BoneNameResolver.Result bones, Replay replay, Map<String, List<String>> boneEnds, AiChatMessage thinking)
     {
         List<mchorse.bbs_mod.ai.pose.PoseSolver.KeyPose> poses;
         List<FrameCommitter.ChannelWrite> writes;
@@ -331,7 +339,7 @@ public class UIAiChatBar extends UIElement
         try
         {
             poses = mchorse.bbs_mod.ai.pose.PoseSolver.solve(generated, bones);
-            writes = mchorse.bbs_mod.ai.pose.PoseSolver.toChannelWrites(poses, replay.properties);
+            writes = mchorse.bbs_mod.ai.pose.PoseSolver.toChannelWrites(poses, boneEnds, replay.properties);
 
             thinking.addProcess("姿态求解完成：" + poses.size() + " 个关键姿态，" + writes.size() + " 条通道写入待预览");
         }

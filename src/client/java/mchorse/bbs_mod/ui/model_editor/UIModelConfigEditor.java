@@ -694,10 +694,15 @@ public class UIModelConfigEditor extends UIElement
         Map<String, String> saved = mchorse.bbs_mod.ai.pose.AiBoneBindings.get(modelKey);
         String none = L10n.lang("bbs.ui.model_editor.ai_bindings_none").get();
 
-        for (Map.Entry<String, String> entry : new LinkedHashMap<>(saved).entrySet())
+        /* 内置必绑 + 可选（眼睛）+ 用户自定义，一起去重后逐行渲染 */
+        java.util.LinkedHashSet<String> rows = new java.util.LinkedHashSet<>(mchorse.bbs_mod.ai.pose.PoseLibrary.GENERIC_BONES);
+
+        rows.addAll(mchorse.bbs_mod.ai.pose.PoseLibrary.OPTIONAL_BONES);
+        rows.addAll(saved.keySet());
+
+        for (String generic : rows)
         {
-            String generic = entry.getKey();
-            String current = entry.getValue();
+            String current = saved.get(generic);
 
             java.util.List<String> options = new java.util.ArrayList<>();
 
@@ -735,8 +740,9 @@ public class UIModelConfigEditor extends UIElement
 
             UIElement row = UI.labelRow(L10n.lang("bbs.ui.ai.ask.bone").format(generic), pick);
 
-            /* 内置六骨骼之外的通用骨骼可删除；内置的选「未绑定」即等于删除 */
-            if (!mchorse.bbs_mod.ai.pose.PoseLibrary.GENERIC_BONES.contains(generic))
+            /* 用户自定义的通用骨骼可删除；内置/可选的选「未绑定」即等于删除 */
+            if (!mchorse.bbs_mod.ai.pose.PoseLibrary.GENERIC_BONES.contains(generic)
+                && !mchorse.bbs_mod.ai.pose.PoseLibrary.OPTIONAL_BONES.contains(generic))
             {
                 UIIcon remove = new UIIcon(Icons.REMOVE, (b) ->
                 {

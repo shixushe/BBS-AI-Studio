@@ -110,6 +110,14 @@ tasks.register('migrationTest', JavaExec) {
 	mainClass = 'mchorse.bbs_mod.data.migration.StableIdsMigrationTest'
 }
 
+tasks.register('poseSolverTest', JavaExec) {
+	group = 'verification'
+	description = 'Checks the M5 pose pipeline incl. Star 3.6 adaptation without starting Minecraft.'
+	dependsOn tasks.named('testClasses')
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'mchorse.bbs_mod.ai.PoseSolverTest'
+}
+
 tasks.register('anchorInterpolationTest', JavaExec) {
 	group = 'verification'
 	description = 'Checks anchor keyframes and resolved transitions without starting Minecraft.'
@@ -120,7 +128,7 @@ tasks.register('anchorInterpolationTest', JavaExec) {
 }
 
 tasks.named('check') {
-	dependsOn tasks.named('migrationTest'), tasks.named('anchorInterpolationTest')
+	dependsOn tasks.named('migrationTest'), tasks.named('anchorInterpolationTest'), tasks.named('poseSolverTest')
 }
 
 java {

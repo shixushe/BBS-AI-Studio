@@ -38,6 +38,7 @@ public class PoseSolverTest
         solverContract();
         poseWritesThroughCommit();
         libraryCoversContract();
+        starAdaptation();
 
         System.out.println("\n" + (failures == 0 ? "ALL PASS" : failures + " FAILURES") + " (" + checks + " checks)");
 
@@ -45,6 +46,86 @@ public class PoseSolverTest
         {
             System.exit(1);
         }
+    }
+
+    /**
+     * Star 3.6 adaptation bar: Chinese rig names auto-resolve, optional eye
+     * bones never block, blink carries eye squash, and bone writes fan out to
+     * every end (root + body part) that owns the bone.
+     */
+    private static void starAdaptation()
+    {
+        BoneNameResolver.Result zh = BoneNameResolver.resolve(List.of(
+            "头部", "身体", "左胳膊", "右胳膊", "左腿", "右腿", "左眼瞳", "右眼瞳"));
+
+        check(zh.isComplete(), "Chinese core bones resolve complete");
+        check(zh.unresolved.isEmpty(), "Chinese eyes resolve when present (optional)");
+        check(zh.resolved.get("head").actual.equals("头部"), "head <- 头部 exact alias");
+        check(zh.resolved.get("left_eye").actual.equals("左眼瞳"), "left_eye <- 左眼瞳");
+
+        BoneNameResolver.Result noEyes = BoneNameResolver.resolve(List.of(
+            "head", "body", "left_arm", "right_arm", "left_leg", "right_leg"));
+
+        check(noEyes.isComplete(), "core-only inventory stays complete");
+        check(noEyes.unresolved.isEmpty(), "absent optional eyes leave nothing unresolved");
+        check(noEyes.resolved.get("left_eye") == null, "left_eye simply unbound when absent");
+
+        java.util.Map<String, float[]> blink = PoseLibrary.get("blink");
+
+        check(blink != null && blink.size() == 2, "blink pose covers both eyes");
+        check(blink.get("left_eye").length >= 6 && blink.get("left_eye")[4] < 0.5F, "blink squashes eye Y via scale");
+        check(mchorse.bbs_mod.ai.plan.AnimationPlan.POSES.contains("blink"), "blink is a valid plan pose");
+
+        /* Optional-unbound solve: blink beats skip eye channels instead of crashing */
+        BoneNameResolver.Result bones = BoneNameResolver.resolve(STAR_BONES);
+        AnimationPlan blinkPlan;
+
+        try
+        {
+            blinkPlan = AnimationPlan.parse("""
+                {
+                  "version": 1, "fps": 20, "total_ticks": 4,
+                  "beats": [
+                    { "index": 0, "tick": 0, "phase": "hold", "pose": "blink", "spacing": 0, "intents": ["hold"] }
+                  ]
+                }
+                """);
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        List<PoseSolver.KeyPose> blinkPoses = PoseSolver.solve(blinkPlan, bones);
+
+        equal(0, blinkPoses.get(0).channels.size(), "blink with unbound eyes writes no channels");
+
+        BoneNameResolver.Result withEyes = BoneNameResolver.resolve(STAR_BONES);
+
+        withEyes.resolved.put("left_eye", BoneNameResolver.confirmed("left_eye", "左眼瞳"));
+        withEyes.resolved.put("right_eye", BoneNameResolver.confirmed("right_eye", "右眼瞳"));
+
+        List<PoseSolver.KeyPose> eyePoses = PoseSolver.solve(blinkPlan, withEyes);
+
+        equal(2, eyePoses.get(0).channels.size(), "blink with bound eyes writes both eye channels");
+
+        /* Two-ended writes: same bone on root and part end fans out to both */
+        FormProperties properties = new FormProperties("properties");
+        PoseSolver.KeyPose pose = new PoseSolver.KeyPose();
+        PoseSolver.BoneChannel channel = new PoseSolver.BoneChannel();
+
+        pose.tick = 0;
+        channel.bone = "head";
+        channel.values = new float[] {12F, 0F, 0F};
+        channel.x = 12F;
+        pose.channels.add(channel);
+
+        java.util.Map<String, List<String>> ends = java.util.Map.of("head", List.of("", "0"));
+        List<FrameCommitter.ChannelWrite> writes = PoseSolver.toChannelWrites(List.of(pose), ends, properties);
+
+        equal(2, writes.size(), "two-ended bone writes both form paths");
+        check(properties.get(TrackId.parse("pose.bones.head")) != null, "root end channel created");
+        check(properties.get(TrackId.parse("0/pose.bones.head")) != null, "body-part end channel created");
     }
 
     /** Star-model-shaped inventory: real names, plus decoys that must not win. */

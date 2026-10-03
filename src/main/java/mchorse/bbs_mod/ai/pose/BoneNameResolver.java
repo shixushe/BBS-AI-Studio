@@ -21,12 +21,14 @@ public class BoneNameResolver
 {
     /** Alias tables per generic bone, checked in order, first hit wins. */
     private static final Map<String, List<String>> ALIASES = Map.of(
-        "head", List.of("head", "neck", "headtop"),
-        "body", List.of("body", "torso", "chest", "spine", "bodylower", "torsolower", "bodyupper"),
-        "left_arm", List.of("leftarm", "armleft", "larm", "arml"),
-        "right_arm", List.of("rightarm", "armright", "rarm", "armr"),
-        "left_leg", List.of("leftleg", "legleft", "lleg", "legl"),
-        "right_leg", List.of("rightleg", "legright", "rleg", "legr")
+        "head", List.of("head", "neck", "headtop", "头", "头部", "脑袋"),
+        "body", List.of("body", "torso", "chest", "spine", "bodylower", "torsolower", "bodyupper", "身体", "躯干", "上身"),
+        "left_arm", List.of("leftarm", "armleft", "larm", "arml", "左臂", "左手", "左胳膊", "左上臂"),
+        "right_arm", List.of("rightarm", "armright", "rarm", "armr", "右臂", "右手", "右胳膊", "右上臂"),
+        "left_leg", List.of("leftleg", "legleft", "lleg", "legl", "左腿", "左脚", "左足", "左大腿"),
+        "right_leg", List.of("rightleg", "legright", "rleg", "legr", "右腿", "右脚", "右足", "右大腿"),
+        "left_eye", List.of("lefteye", "eyeleft", "leye", "左眼", "左眼球", "左眼瞳", "瞳左", "左瞳"),
+        "right_eye", List.of("righteye", "eyeright", "reye", "右眼", "右眼球", "右眼瞳", "瞳右", "右瞳")
     );
 
     public static class Resolution
@@ -66,6 +68,17 @@ public class BoneNameResolver
      */
     public static Result resolve(Collection<String> actualBones)
     {
+        /* Optional bones (eyes) are best effort and must never block: they sit
+         * out of the unresolved list unless a caller explicitly asks for them */
+        return resolve(actualBones, false);
+    }
+
+    /**
+     * @param askForOptional true lists missing optional bones (eyes) in
+     *                       unresolved; the default flow leaves them out
+     */
+    public static Result resolve(Collection<String> actualBones, boolean askForOptional)
+    {
         Result result = new Result();
 
         List<String> normalized = new ArrayList<>();
@@ -75,7 +88,10 @@ public class BoneNameResolver
             normalized.add(bone);
         }
 
-        for (String generic : PoseLibrary.GENERIC_BONES)
+        List<String> generics = new ArrayList<>(PoseLibrary.GENERIC_BONES);
+        generics.addAll(PoseLibrary.OPTIONAL_BONES);
+
+        for (String generic : generics)
         {
             Resolution best = null;
 
@@ -96,7 +112,12 @@ public class BoneNameResolver
 
             if (best == null)
             {
-                result.unresolved.add(generic);
+                boolean optional = PoseLibrary.OPTIONAL_BONES.contains(generic);
+
+                if (!optional || askForOptional)
+                {
+                    result.unresolved.add(generic);
+                }
             }
             else
             {

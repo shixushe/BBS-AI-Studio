@@ -264,6 +264,14 @@ public class AiDebugServer
                         return "not in a world";
                     }
 
+                    /* spec= 参数：完整 JSON 直测（不依赖 LLM） */
+                    String spec = query(exchange, "spec", "");
+
+                    if (!spec.isEmpty())
+                    {
+                        json = new String(java.util.Base64.getDecoder().decode(spec), java.nio.charset.StandardCharsets.UTF_8);
+                    }
+
                     AiArchitecture.Result result1 = AiArchitecture.generate(json, generated,
                         new java.io.File(client.runDirectory, "config/worldedit/schematics"));
 

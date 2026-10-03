@@ -853,3 +853,29 @@ filmInfo: **replays=3（ModelForm + ParticleForm×2）**——两轮验证粒子
   AiSettings.max_tokens（修掉两轮里 python 批量补丁静默丢失的问题——本轮
   改用 Edit 逐一落地并以 grep 复核）。
 - 过程区 max_tokens 显示 ∞（0 时）。
+
+## 四十五、第四十轮（2026-10-03，建筑生成参考开源方案升级）
+
+调研 GitHub 开源实现（BuilderGPT/CubeGPT、Minecraft-Agent、VoyagerVision、
+BlockArchitect 等），采纳可移植技术升级 AiArchitecture：
+
+- **语法大扩容**（向后兼容，旧 debug 单不变）：
+  - shell.pillars 四角通高原木立柱；
+  - shell.roof_style = flat | stepped（四向阶梯实心）| gable（脊沿 X 人字）；
+  - shell.windows_grid 对称窗阵（spacing×floors，玻璃板）；
+  - shell.floors 多层楼板（层间板+层高均分）；
+- **BuilderGPT 式 commands[] 直写**：LLM 直接给 fill/setblock 细节命令
+  （灯笼/家具/道路），坐标 clamp、非法方块 resolve 静默剔除——语法保底，
+  细节自由；
+- **第三种导出格式 .mcfunction**（BuilderGPT 同款）：逐格 setblock 相对
+  坐标，可直接丢数据包 /function 调用（.nbt + .schem + .mcfunction 三路）；
+- **/ai_build?spec=<base64>**：完整 JSON 直测参数（不依赖 LLM）；
+- **建筑提示词重写**：新 schema 全文档 + 规则约束（只用主流行方块/
+  commands 只做细节/对称窗/同色系屋顶/多层用 floors）——中文条目经
+  json 模块整树改值（regex 改 JSON 的教训：转义引号截断正则，写坏过一次，
+  git 恢复后换路子）。
+
+**实机验证**：/ai_build spec=13×12×11 庄园（gable 顶+立柱+窗阵+楼层板+
+灯笼命令）→ 784 块生成+放置成功；.nbt/.schem/.mcfunction 三件齐全
+（mcfunction 785 行，材质分布符合设计：白陶土 309、屋顶板 308、云杉原木
+24、玻璃 17、灯笼 1）。

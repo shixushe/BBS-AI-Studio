@@ -3711,7 +3711,7 @@
   "bbs.ui.ai.structure.build_fail": "建造单解析失败（%s）—— 再试一次通常能好。",
   "bbs.ui.ai.structure.place_nothing": "还没有生成过建筑——先用「生成建筑」。",
   "bbs.ui.ai.structure.build_system": "你是 MC 建筑生成器。只输出 JSON，无其他文字。模式：{\"name\":\"英文名\",\"title\":\"中文名\",\"size\":[w,h,d]各5-30,\"shell\":{\"from\":[0,0,0],\"to\":[w-1,h-1,d-1],\"wall\":\"id\",\"floor\":\"id\",\"roof\":\"id\",\"windows\":true,\"door\":\"south|north|east|west\"},\"boxes\":[{\"from\":[..],\"to\":[..],\"block\":\"id\"}],\"towers\":[{\"from\":[..],\"to\":[..],\"block\":\"id\",\"roof\":true}]}。shell=唯一外壳(带门窗)，boxes=实心填充，towers=空心塔。仅原版方块id，坐标0起且<size。",
-  "bbs.ui.ai.structure.build_prompt": "主题：%s。设计该建筑，材料协调、门窗合理。",
+  "bbs.ui.ai.structure.build_prompt": "你是 Minecraft 建筑师。只输出严格 JSON（不含其它文字）：{\"name\":\"英文短名\",\"title\":\"中文标题\",\"size\":[宽,高,长],\"shell\":{\"from\":[0,0,0],\"to\":[宽-1,墙顶,长-1],\"wall\":\"主墙体\",\"floor\":\"地板\",\"roof_style\":\"flat|stepped|gable\",\"roof\":\"屋顶材质\",\"windows_grid\":{\"spacing\":3,\"floors\":2},\"pillars\":{\"block\":\"原木\"},\"door\":\"south\"},\"floors\":{\"count\":<层数-1>,\"block\":\"层间板\"},\"towers\":[{\"from\":[..],\"to\":[..],\"block\":\"..\",\"roof\":true}],\"commands\":[{\"type\":\"setblock\",\"block\":\"minecraft:lantern\",\"x\":..,\"y\":..,\"z\":..},{\"type\":\"fill\",\"block\":\"..\",\"from\":[..],\"to\":[..]}]}。规则：只用主流行方块（白陶土/石砖/原木/玻璃板/灯笼等）；commands 只用于细节（灯笼/家具/道路），大面积结构用 shell/towers；屋顶材质与墙体同色系；窗户对称；多层建筑用 floors。",
   "bbs.ui.ai.structure.build_header_hint": "主题 → 建造单 → 蓝图",
   "bbs.ui.ai.structure.mode_place": "放到世界",
   "bbs.ui.ai.structure.mode_blueprint": "导出蓝图",

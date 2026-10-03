@@ -97,13 +97,68 @@ public class AiArchitecture
             JsonObject shell = root.getAsJsonObject("shell");
             int[] from = point(shell, "from");
             int[] to = point(shell, "to");
-
             boolean windows = boolOr(shell, "windows", true);
             String door = stringOr(shell, "door", "south");
+            String wallBlock = stringOr(shell, "wall", wall);
+            String roofBlock = stringOr(shell, "roof", roof);
+            String roofStyle = stringOr(shell, "roof_style", "flat");
 
-            hollow(grid, from, to, stringOr(shell, "wall", wall), stringOr(shell, "floor", floor), stringOr(shell, "roof", roof));
+            hollow(grid, from, to, wallBlock, stringOr(shell, "floor", floor), roofStyle.equals("flat") ? roofBlock : null);
             carveWindows(grid, from, to, windows);
             carveDoor(grid, from, to, door);
+
+            /* 立柱：四角通高（原木类，视觉骨架） */
+            if (root.has("pillars") || shell.has("pillars"))
+            {
+                JsonObject pillars = root.has("pillars") ? root.getAsJsonObject("pillars") : shell.getAsJsonObject("pillars");
+                String pillarBlock = stringOr(pillars, "block", "minecraft:oak_log");
+
+                for (int[] corner : new int[][] { {from[0], from[2]}, {to[0], from[2]}, {from[0], to[2]}, {to[0], to[2]} })
+                {
+                    fill(grid, new int[] {corner[0], from[1] + 1, corner[1]}, new int[] {corner[0], to[1] - 1, corner[1]}, pillarBlock);
+                }
+            }
+
+            /* 屋顶风格：stepped 阶梯实心 / gable 人字（脊沿 X）/ flat 平顶（默认在 hollow 内） */
+            if (roofStyle.equals("stepped"))
+            {
+                steppedRoof(grid, from, to, roofBlock, false);
+            }
+            else if (roofStyle.equals("gable"))
+            {
+                gableRoof(grid, from, to, roofBlock);
+            }
+
+            /* 窗阵：每层每 spacing 开一对玻璃窗（对称） */
+            if (shell.has("windows_grid"))
+            {
+                JsonObject gridSpec = shell.getAsJsonObject("windows_grid");
+                int spacing = Math.max(2, gridSpec.get("spacing") == null ? 3 : gridSpec.get("spacing").getAsInt());
+                String pane = stringOr(gridSpec, "pane", "minecraft:glass_pane");
+                int floors = Math.max(1, gridSpec.get("floors") == null ? 1 : gridSpec.get("floors").getAsInt());
+
+                windowGrid(grid, from, to, spacing, pane, floors);
+            }
+
+            /* 楼层板：多层中空楼的层间地板 */
+            if (shell.has("floors"))
+            {
+                JsonObject floorsSpec = shell.getAsJsonObject("floors");
+                int count = Math.max(1, floorsSpec.get("count") == null ? 1 : floorsSpec.get("count").getAsInt());
+                String slab = stringOr(floorsSpec, "block", stringOr(shell, "floor", floor));
+                int span = (to[1] - from[1] - 1) / (count + 1);
+
+                if (span > 0)
+                {
+                    for (int f = 1; f <= count; f++)
+                    {
+                        int y = from[1] + span * f;
+
+                        fill(grid, new int[] {from[0], y, from[2]}, new int[] {to[0], y, to[2]}, slab);
+                        carveDoor(grid, from, to, door);
+                    }
+                }
+            }
         }
 
         /* Solid fills: floors, platforms, terrain pads */
@@ -128,6 +183,38 @@ public class AiArchitecture
             hollow(grid, from, to, block, block, boolOr(tower, "roof", true) ? block : null);
         }
 
+        /* 自由细节命令（BuilderGPT 风格）：LLM 直接给 fill/setblock，坐标全部
+         * clamp 在尺寸内、非法方块由 resolve 静默剔除 */
+        for (JsonElement e : list(root, "commands"))
+        {
+            if (!e.isJsonObject())
+            {
+                continue;
+            }
+
+            JsonObject cmd = e.getAsJsonObject();
+            String op = stringOr(cmd, "type", "setblock");
+            String block = stringOr(cmd, "block", "");
+
+            if (block.isEmpty())
+            {
+                continue;
+            }
+
+            if (op.equals("fill") && cmd.has("from") && cmd.has("to"))
+            {
+                fill(grid, point(cmd, "from"), point(cmd, "to"), block);
+            }
+            else
+            {
+                int x = cmd.has("x") ? cmd.get("x").getAsInt() : 0;
+                int y = cmd.has("y") ? cmd.get("y").getAsInt() : 0;
+                int z = cmd.has("z") ? cmd.get("z").getAsInt() : 0;
+
+                grid.put(x, y, z, block);
+            }
+        }
+
         int placed = grid.resolve();
 
         String rawName = stringOr(root, "name", "ai_build");
@@ -140,6 +227,7 @@ public class AiArchitecture
         {
             schematicsDir.mkdirs();
             writeSchem(grid, new File(schematicsDir, name + ".schem"));
+            writeMcfunction(grid, new File(schematicsDir, name + ".mcfunction"));
         }
 
         Result result = new Result(name, title, placed, size, new LinkedHashMap<>(grid.cells()));
@@ -150,6 +238,77 @@ public class AiArchitecture
     }
 
     /* ---- ops ---- */
+
+    /** 阶梯实心屋顶：逐层向内收缩（四向），roof 材质铺面。 */
+    private static void steppedRoof(Grid grid, int[] from, int[] to, String roof, boolean pyramidOnly)
+    {
+        int layers = Math.min((to[0] - from[0]) / 2, (to[2] - from[2]) / 2);
+
+        for (int i = 1; i <= layers; i++)
+        {
+            int[] f = {from[0] + i, to[1] + i, from[2] + i};
+            int[] t = {to[0] - i, to[1] + i, to[2] - i};
+
+            if (f[0] > t[0] || f[2] > t[2])
+            {
+                break;
+            }
+
+            fill(grid, f, t, roof);
+        }
+    }
+
+    /** 人字屋顶：脊沿 X，两侧逐层向内（Z 向收缩），roof 材质。 */
+    private static void gableRoof(Grid grid, int[] from, int[] to, String roof)
+    {
+        int layers = (to[2] - from[2]) / 2;
+
+        for (int i = 1; i <= layers; i++)
+        {
+            int[] f = {from[0], to[1] + i, from[2] + i};
+            int[] t = {to[0], to[1] + i, to[2] - i};
+
+            if (f[2] > t[2])
+            {
+                break;
+            }
+
+            fill(grid, f, t, roof);
+        }
+    }
+
+    /** 对称窗阵：每层沿四墙每 spacing 开窗（跳过门位那一格由 carveDoor 之后覆盖）。 */
+    private static void windowGrid(Grid grid, int[] from, int[] to, int spacing, String pane, int floors)
+    {
+        int wallTop = to[1] - 1;
+        int span = to[2] - from[2];
+        int spanX = to[0] - from[0];
+        int floorH = Math.max(2, (span - 2) / Math.max(1, floors));
+        int midZ = from[2] + span / 2;
+        int midX = from[0] + spanX / 2;
+
+        for (int f = 0; f < floors; f++)
+        {
+            int y = from[1] + 2 + f * floorH;
+
+            if (y > wallTop - 1)
+            {
+                break;
+            }
+
+            for (int x = from[0] + 2; x < to[0] - 1; x += spacing)
+            {
+                grid.put(x, y, from[2], pane);
+                grid.put(x, y, to[2], pane);
+            }
+
+            for (int z = from[2] + 2; z < to[2] - 1; z += spacing)
+            {
+                grid.put(from[0], y, z, pane);
+                grid.put(to[0], y, z, pane);
+            }
+        }
+    }
 
     private static void fill(Grid grid, int[] from, int[] to, String block)
     {
@@ -316,6 +475,33 @@ public class AiArchitecture
     }
 
     /* ---- writers ---- */
+
+    /**
+     * BuilderGPT 式 mcfunction 导出：每格一条 setblock（相对原点），可直接丢进
+     * 数据包函数或用 /function 调用——WorldEdit 之外的第二条导入路径。
+     */
+    private static void writeMcfunction(Grid grid, File file) throws Exception
+    {
+        file.getParentFile().mkdirs();
+
+        StringBuilder out = new StringBuilder("# generated by BBS AI Studio\n");
+
+        for (Map.Entry<Long, String> entry : grid.cells().entrySet())
+        {
+            long packed = entry.getKey();
+            int x = (int) (packed >> 24);
+            int z = (int) ((packed >> 12) & 0xFFF);
+            int y = (int) (packed & 0xFFF);
+
+            out.append("setblock ~").append(x >= 0 ? "" + x : "~" + x)
+                .append(" ~").append(y >= 0 ? "" + y : "~" + y)
+                .append(" ~").append(z >= 0 ? "" + z : "~" + z)
+                .append(" ").append(entry.getValue())
+                .append("\n");
+        }
+
+        java.nio.file.Files.writeString(file.toPath(), out.toString(), java.nio.charset.StandardCharsets.UTF_8);
+    }
 
     /** Vanilla structure NBT, into the save's generated/bbs/structures. */
     private static void writeNbt(Grid grid, File file) throws Exception

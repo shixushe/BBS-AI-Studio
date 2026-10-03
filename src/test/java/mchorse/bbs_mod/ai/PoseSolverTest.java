@@ -185,6 +185,16 @@ public class PoseSolverTest
                 && result.resolved.get("right_knee").actual.equals("right_knee"), variant + ": right_knee exact");
             check(result.resolved.get("headwear") != null
                 && result.resolved.get("headwear").actual.equals("headwear"), variant + ": headwear exact");
+            check(result.resolved.get("left_elbow") != null
+                && result.resolved.get("left_elbow").actual.equals("left_elbow"), variant + ": left_elbow exact");
+            check(result.resolved.get("right_knee") != null
+                && result.resolved.get("right_knee").actual.equals("right_knee"), variant + ": right_knee exact");
+            check(result.resolved.get("headwear") != null
+                && result.resolved.get("headwear").actual.equals("headwear"), variant + ": headwear exact");
+            for (String poseName : new String[] {"wave", "cheer", "bow", "sit", "run"})
+            {
+                check(mchorse.bbs_mod.ai.pose.PoseLibrary.get(poseName) != null, variant + ": pose " + poseName + " in library");
+            }
             check(result.isComplete(), variant + ": core six complete (optional eyes excluded)");
 
             if (hasEyes)

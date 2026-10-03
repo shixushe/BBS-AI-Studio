@@ -734,38 +734,71 @@ public class UIAiChatBar extends UIElement
 
         AiFilmBridge.broadcast(diff);
 
-        /* 粒子 fx：结构性的，预览不动场景，入框时创建粒子回放 */
+        /* 结构性 fx：预览不动场景，入框时创建特效回放（粒子/原版粒子/拖尾） */
         for (AnimationPlan.Fx fx : pendingFx)
         {
-            if (!fx.kind.equals("particle") || fx.id.isEmpty())
+            if (fx.id.isEmpty())
             {
                 continue;
             }
 
             try
             {
-                mchorse.bbs_mod.forms.forms.ParticleForm particle = new mchorse.bbs_mod.forms.forms.ParticleForm();
+                mchorse.bbs_mod.forms.forms.Form form;
 
-                particle.effect.set(fx.id);
+                switch (fx.kind)
+                {
+                    case "trail" ->
+                    {
+                        var trail = new mchorse.bbs_mod.forms.forms.TrailForm();
 
-                Replay particleReplay = this.panel.getData().replays.addReplay();
+                        trail.length.set(Math.max(2F, fx.value * 10F));
+                        form = trail;
+                    }
+                    case "vanilla_particle" ->
+                    {
+                        var vanilla = new mchorse.bbs_mod.forms.forms.VanillaParticleForm();
+                        var settings = new mchorse.bbs_mod.forms.forms.utils.ParticleSettings();
 
-                particleReplay.form.set(particle);
-                particleReplay.category.set("ai");
+                        settings.particle = mchorse.bbs_mod.resources.Link.assets(fx.id.contains(":") ? fx.id : "minecraft:" + fx.id).path == null
+                            ? settings.particle
+                            : new net.minecraft.util.Identifier(fx.id.contains(":") ? fx.id : "minecraft:" + fx.id);
+                        vanilla.count.set(Math.max(1, (int) fx.value));
+                        vanilla.frequency.set(3);
+                        vanilla.settings.set(settings);
+                        form = vanilla;
+                    }
+                    case "particle" ->
+                    {
+                        var particle = new mchorse.bbs_mod.forms.forms.ParticleForm();
 
-                /* 出生点沿用演员在该 tick 的位置 */
+                        particle.effect.set(fx.id);
+                        form = particle;
+                    }
+                    default ->
+                    {
+                        continue;
+                    }
+                }
+
+                Replay fxReplay = this.panel.getData().replays.addReplay();
+
+                fxReplay.form.set(form);
+                fxReplay.category.set("ai");
+
+                /* 出生点沿用演员在该 tick 的位置（抬高 1 格防入地） */
                 float at = Math.max(0F, fx.tick);
 
-                particleReplay.keyframes.x.insert(0, this.replayActorX(at));
-                particleReplay.keyframes.y.insert(0, this.replayActorY(at));
-                particleReplay.keyframes.z.insert(0, this.replayActorZ(at));
+                fxReplay.keyframes.x.insert(0, this.replayActorX(at));
+                fxReplay.keyframes.y.insert(0, this.replayActorY(at) + 1.0);
+                fxReplay.keyframes.z.insert(0, this.replayActorZ(at));
 
                 this.history.log(AiChatMessage.Role.SYSTEM,
-                    "粒子回放已创建：" + fx.id + " @tick " + fx.tick + "（可在回放列表调位置/裁剪时长）");
+                    "特效回放已创建：" + fx.kind + " / " + fx.id + " @tick " + fx.tick + "（可在回放列表调位置/裁剪时长）");
             }
             catch (Exception e)
             {
-                this.history.log(AiChatMessage.Role.ERROR, "粒子回放创建失败：" + e.getMessage());
+                this.history.log(AiChatMessage.Role.ERROR, "特效回放创建失败：" + e.getMessage());
             }
         }
 

@@ -999,3 +999,26 @@ StructureManager.get 真实读取路径）——**实机 8 项全 PASS**。
 
 **经验**：渲染线程绝不 sleep（第 40 轮冻结教训）；aiSelfTest 的 oak_tree
 检查并入后无需 UI 点击即可验证资产可读。
+
+## 五十一、第四十五轮（2026-10-03，深度优化：块状态/地基/室内灯/新姿态/fx 扩展）
+
+QA 视角深度优化生成表现，借鉴开源思路（BSP 立面/楼梯屋面/地基）全部原创实现：
+
+**建筑（AiArchitecture）**：
+- **方块状态支持**：Grid.resolve 校验 id[状态] 形态的基础 id；.nbt 调色板
+  拆 Name + Properties 子标签（楼梯 facing/half 正确落盘）；
+- **人字屋顶用楼梯方块**：南/北斜面 facing=south/north 逐层铺（非楼梯材质
+  退化为整层板）；**阶梯屋顶环铺四向楼梯**；
+- **地基** foundation{block,depth}：周圈向下填层，坡地不悬空；
+- **室内照明** interior_lighting：每层天花板中心挂灯笼。
+
+**动作（姿态库 v4）**：新增 wave（挥手）/cheer（双臂高举）/bow（鞠躬）/
+sit（坐，膝 +85° 反向屈）/run（奔跑，躯干前倾 + 屈肘摆臂）——全部带
+肘膝弯曲；POSES 枚举与中英提示词同步；aiSelfTest 断言覆盖新姿态。
+
+**fx 扩展（BBS 原生表单直驱）**：fx.kind = trail（TrailForm，length=
+value×10）/ vanilla_particle（VanillaParticleForm + ParticleSettings，
+id 如 minecraft:flame，count=value，frequency=3）→ 入框时创建特效回放
+（出生点 = 演员插值位置 +1 格防入地）。
+
+测试：poseSolverTest 增至 148 项全 PASS（含 5 个新姿态库覆盖断言）。

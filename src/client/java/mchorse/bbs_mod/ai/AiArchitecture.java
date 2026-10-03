@@ -218,6 +218,48 @@ public class AiArchitecture
         carveWindows(grid, from, to, windows);
         carveDoor(grid, from, to, door);
 
+        /* 地基：沿周圈向下填 depth 层，坡地不悬空 */
+        if (shell.has("foundation"))
+        {
+            JsonObject foundation = shell.getAsJsonObject("foundation");
+            String foundationBlock = stringOr(foundation, "block", "minecraft:cobblestone");
+            int depth = Math.max(1, foundation.has("depth") ? foundation.get("depth").getAsInt() : 3);
+
+            for (int d = 1; d <= depth; d++)
+            {
+                for (int x = from[0]; x <= to[0]; x++)
+                {
+                    for (int z = from[2]; z <= to[2]; z++)
+                    {
+                        boolean edge = x == from[0] || x == to[0] || z == from[2] || z == to[2];
+
+                        if (edge)
+                        {
+                            grid.put(x, from[1] - d, z, foundationBlock);
+                        }
+                    }
+                }
+            }
+        }
+
+        /* 室内照明：每层天花板中心挂灯（无聊时不至于漆黑） */
+        if (shell.has("interior_lighting") && shell.get("interior_lighting").getAsBoolean())
+        {
+            String lamp = "minecraft:lantern";
+            int midX = (from[0] + to[0]) / 2;
+            int midZ = (from[2] + to[2]) / 2;
+            int floorCount = shell.has("floors") && shell.getAsJsonObject("floors").has("count")
+                ? shell.getAsJsonObject("floors").get("count").getAsInt() : 0;
+            int span = (to[1] - from[1] - 1) / (floorCount + 1);
+
+            for (int f = 0; f <= floorCount; f++)
+            {
+                int y = to[1] - (span > 0 ? span * f : 0) - 1;
+
+                grid.put(midX, y, midZ, lamp);
+            }
+        }
+
         /* 材质混贴：墙面上按确定性哈希把 ratio 比例换成 accent（裂纹石/苔石等），
          * 大面墙立刻有岁月感——同参数同结果，可复现 */
         if (shell.has("texture_mix"))
@@ -366,10 +408,11 @@ public class AiArchitecture
 
     /* ---- ops ---- */
 
-    /** 阶梯实心屋顶：逐层向内收缩（四向），roof 材质铺面。 */
+    /** 阶梯屋顶：逐层向内收缩（四向），楼梯方块带 facing 环铺，非楼梯材质整层填充。 */
     private static void steppedRoof(Grid grid, int[] from, int[] to, String roof, boolean pyramidOnly)
     {
         int layers = Math.min((to[0] - from[0]) / 2, (to[2] - from[2]) / 2);
+        boolean stairs = roof.contains("stairs");
 
         for (int i = 1; i <= layers; i++)
         {
@@ -381,26 +424,66 @@ public class AiArchitecture
                 break;
             }
 
-            fill(grid, f, t, roof);
+            if (!stairs)
+            {
+                fill(grid, f, t, roof);
+
+                continue;
+            }
+
+            /* 环铺：四边楼梯各朝向中心 */
+            String[][] sides = {
+                {roof + "[facing=south,half=bottom]", null},
+                {roof + "[facing=north,half=bottom]", null},
+                {roof + "[facing=east,half=bottom]", null},
+                {roof + "[facing=west,half=bottom]", null}};
+
+            for (int x = f[0]; x <= t[0]; x++)
+            {
+                grid.put(x, f[1], f[2], sides[0][0]);
+                grid.put(x, f[1], t[2], sides[1][0]);
+            }
+
+            for (int z = f[2] + 1; z <= t[2] - 1; z++)
+            {
+                grid.put(f[0], f[1], z, sides[2][0]);
+                grid.put(t[0], f[1], z, sides[3][0]);
+            }
         }
     }
 
-    /** 人字屋顶：脊沿 X，两侧逐层向内（Z 向收缩），roof 材质。 */
+    /** 人字屋顶：脊沿 X，两侧斜面用楼梯方块(朝向相对)逐层向内；非楼梯材质退化为整层板。 */
     private static void gableRoof(Grid grid, int[] from, int[] to, String roof)
     {
         int layers = (to[2] - from[2]) / 2;
+        boolean stairs = roof.contains("stairs");
 
         for (int i = 1; i <= layers; i++)
         {
-            int[] f = {from[0], to[1] + i, from[2] + i};
-            int[] t = {to[0], to[1] + i, to[2] - i};
+            int z1 = from[2] + i;
+            int z2 = to[2] - i;
+            int y = to[1] + i;
 
-            if (f[2] > t[2])
+            if (z1 > z2)
             {
                 break;
             }
 
-            fill(grid, f, t, roof);
+            if (stairs)
+            {
+                String south = roof + "[facing=south,half=bottom]";
+                String north = roof + "[facing=north,half=bottom]";
+
+                for (int x = from[0]; x <= to[0]; x++)
+                {
+                    grid.put(x, y, z1, south);
+                    grid.put(x, y, z2, north);
+                }
+            }
+            else
+            {
+                fill(grid, new int[] {from[0], y, z1}, new int[] {to[0], y, z2}, roof);
+            }
         }
     }
 
@@ -563,13 +646,17 @@ public class AiArchitecture
 
                 try
                 {
-                    Block block = Registries.BLOCK.get(new Identifier(id));
+                    /* id[state] 形态：基础 id 过注册表校验，状态串原样保留——
+                     * .nbt/.schem/mcfunction 三路写入都按完整状态串落盘 */
+                    String base = id.contains("[") ? id.substring(0, id.indexOf('[')) : id;
 
-                    if (block != null && block.getDefaultState() != null && !id.endsWith("air"))
+                    Block block = Registries.BLOCK.get(new Identifier(base));
+
+                    if (block != null && block.getDefaultState() != null && !base.endsWith("air"))
                     {
                         resolved.put(entry.getKey(), id);
                     }
-                    else if (id.endsWith(":air"))
+                    else if (base.endsWith("air"))
                     {
                         resolved.put(entry.getKey(), "minecraft:air");
                     }
@@ -667,8 +754,32 @@ public class AiArchitecture
         for (String id : palette.keySet())
         {
             NbtCompound entry = new NbtCompound();
+            String base = id.contains("[") ? id.substring(0, id.indexOf('[')) : id;
 
-            entry.putString("Name", id);
+            entry.putString("Name", base);
+
+            /* 状态属性：id[facing=north,half=bottom] → Properties 子标签 */
+            if (id.contains("["))
+            {
+                String stateStr = id.substring(id.indexOf('[') + 1, id.length() - 1);
+                NbtCompound properties = new NbtCompound();
+
+                for (String kv : stateStr.split(","))
+                {
+                    int eq = kv.indexOf('=');
+
+                    if (eq > 0)
+                    {
+                        properties.putString(kv.substring(0, eq), kv.substring(eq + 1));
+                    }
+                }
+
+                if (!properties.getKeys().isEmpty())
+                {
+                    entry.put("Properties", properties);
+                }
+            }
+
             paletteList.add(entry);
         }
 

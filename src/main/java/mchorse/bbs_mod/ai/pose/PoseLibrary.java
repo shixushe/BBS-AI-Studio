@@ -38,7 +38,9 @@ public class PoseLibrary
     public static final Map<String, Float> ROOT_Y = Map.of(
         "crouch", -0.45F,
         "compress", -0.18F,
-        "land", -0.22F
+        "land", -0.22F,
+        "walk_step", -0.07F,
+        "walk_step_b", -0.07F
     );
 
     private static final Map<String, Map<String, float[]>> POSES = Map.ofEntries(
@@ -123,6 +125,43 @@ public class PoseLibrary
             "right_arm", new float[] {-62F, 0F, -10F},
             "head", new float[] {0F, -10F, 0F},
             "left_arm", new float[] {0F, 0F, 4F}
+        )),
+        Map.entry("wave", Map.of(
+            "right_arm", new float[] {-150F, 0F, -20F},
+            "right_elbow", new float[] {-35F, 0F, 0F},
+            "head", new float[] {0F, 6F, 0F},
+            "left_arm", new float[] {0F, 0F, 5F}
+        )),
+        Map.entry("cheer", Map.of(
+            "right_arm", new float[] {-160F, 0F, -15F},
+            "left_arm", new float[] {-160F, 0F, 15F},
+            "right_elbow", new float[] {-20F, 0F, 0F},
+            "left_elbow", new float[] {-20F, 0F, 0F},
+            "head", new float[] {-8F, 0F, 0F}
+        )),
+        Map.entry("bow", Map.of(
+            "body", new float[] {42F, 0F, 0F},
+            "head", new float[] {-30F, 0F, 0F},
+            "left_arm", new float[] {0F, 0F, 8F},
+            "right_arm", new float[] {0F, 0F, -8F},
+            "left_elbow", new float[] {0F, 0F, 0F}
+        )),
+        Map.entry("sit", Map.of(
+            "left_leg", new float[] {-88F, 0F, 0F},
+            "right_leg", new float[] {-88F, 0F, 0F},
+            "left_knee", new float[] {85F, 0F, 0F},
+            "right_knee", new float[] {85F, 0F, 0F},
+            "body", new float[] {4F, 0F, 0F}
+        )),
+        Map.entry("run", Map.of(
+            "body", new float[] {16F, 0F, 0F},
+            "left_leg", new float[] {46F, 0F, 0F},
+            "right_leg", new float[] {-34F, 0F, 0F},
+            "left_knee", new float[] {-52F, 0F, 0F},
+            "left_arm", new float[] {-62F, 0F, 5F},
+            "left_elbow", new float[] {-60F, 0F, 0F},
+            "right_arm", new float[] {38F, 0F, -5F},
+            "right_elbow", new float[] {-60F, 0F, 0F}
         )),
         /* 眨眼：眼骨 Y 压缩到 0.12（rotation 三位 + scale 三位），仅当眼睛已绑定时参与 */
         Map.entry("blink", Map.of(

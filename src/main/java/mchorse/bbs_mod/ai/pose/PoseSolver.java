@@ -165,6 +165,107 @@ public class PoseSolver
         return toChannelWrites(poses, Map.of(), properties);
     }
 
+    /** 骨骼组的到达延迟（占段长比例）：腿/躯干先行，头与手臂跟随。 */
+    private static float delayOf(String bone)
+    {
+        String n = bone.toLowerCase();
+
+        if (n.contains("head") || n.contains("headwear")) return 0.12F;
+        if (n.contains("arm") || n.contains("elbow")) return 0.18F;
+        if (n.contains("eye") || n.contains("brow")) return 0F;
+        return 0F; /* 腿/躯干/锚点先行 */
+    }
+
+    private static float smoothstep(float t)
+    {
+        return t * t * (3F - 2F * t);
+    }
+
+    /**
+     * 段间中点键烘焙：对每对相邻拍键，在段中点插入一帧——各骨骼的插值进度
+     * = smoothstep(0.5 - delayOf(bone))，clamp 后 lerp 旋转与缩放。某个骨骼
+     * 只在一侧存在时保持原值（出现/消失不补间）。中点键继承后拍的到达意图。
+     */
+    private static void bakeStagger(List<EditPatch.KeyWrite> keys)
+    {
+        if (keys.size() < 2)
+        {
+            return;
+        }
+
+        List<EditPatch.KeyWrite> baked = new ArrayList<>();
+        baked.add(keys.get(0));
+
+        for (int i = 1; i < keys.size(); i++)
+        {
+            EditPatch.KeyWrite prev = keys.get(i - 1);
+            EditPatch.KeyWrite next = keys.get(i);
+
+            mchorse.bbs_mod.utils.pose.Pose a = prev.fullValue instanceof mchorse.bbs_mod.utils.pose.Pose pa ? pa : null;
+            mchorse.bbs_mod.utils.pose.Pose b = next.fullValue instanceof mchorse.bbs_mod.utils.pose.Pose pb ? pb : null;
+
+            if (a != null && b != null && next.tick > prev.tick)
+            {
+                float d = next.tick - prev.tick;
+                mchorse.bbs_mod.utils.pose.Pose mid = new mchorse.bbs_mod.utils.pose.Pose();
+
+                for (String name : union(a.transforms.keySet(), b.transforms.keySet()))
+                {
+                    mchorse.bbs_mod.utils.pose.PoseTransform ta = a.transforms.get(name);
+                    mchorse.bbs_mod.utils.pose.PoseTransform tb = b.transforms.get(name);
+
+                    if (ta == null || tb == null)
+                    {
+                        mchorse.bbs_mod.utils.pose.PoseTransform kept = mid.getOrCreate(name);
+
+                        kept.copy(ta != null ? ta : tb);
+
+                        continue;
+                    }
+
+                    float progress = smoothstep(clamp01(0.5F - delayOf(name)));
+                    mchorse.bbs_mod.utils.pose.PoseTransform t = mid.getOrCreate(name);
+
+                    t.rotate.set(
+                        ta.rotate.x + (tb.rotate.x - ta.rotate.x) * progress,
+                        ta.rotate.y + (tb.rotate.y - ta.rotate.y) * progress,
+                        ta.rotate.z + (tb.rotate.z - ta.rotate.z) * progress);
+                    t.scale.set(
+                        ta.scale.x + (tb.scale.x - ta.scale.x) * progress,
+                        ta.scale.y + (tb.scale.y - ta.scale.y) * progress,
+                        ta.scale.z + (tb.scale.z - ta.scale.z) * progress);
+                }
+
+                EditPatch.KeyWrite midKey = new EditPatch.KeyWrite();
+
+                midKey.tick = prev.tick + d * 0.5F;
+                midKey.interpolation = "sine_inout";
+                midKey.intent = next.intent;
+                midKey.fullValue = mid;
+                baked.add(midKey);
+            }
+
+            baked.add(next);
+        }
+
+        keys.clear();
+        keys.addAll(baked);
+    }
+
+    private static float clamp01(float v)
+    {
+        return v < 0F ? 0F : v > 1F ? 1F : v;
+    }
+
+    private static java.util.Set<String> union(java.util.Set<String> a, java.util.Set<String> b)
+    {
+        java.util.Set<String> out = new java.util.LinkedHashSet<>(a);
+
+        out.addAll(b);
+
+        return out;
+    }
+
     /**
      * Whole-pose solve: one keyframe per beat on the form's {@code pose}
      * property track — the track the user actually sees and edits (the
@@ -238,6 +339,11 @@ public class PoseSolver
                 key.fullValue = value;
                 write.keys.add(key);
             }
+
+            /* 跟随/错帧烘焙（12 原则的 Overlapping Action）：每个拍间段插入一个
+             * 中点键，各骨骼的到达进度按组别延迟（腿/躯干先行，手臂跟随，
+             * 头再滞后）——L4 写出的就是带跟随感的成品，而非同拍同速的僵硬插值 */
+            bakeStagger(write.keys);
 
             /* 到达意图落前一个键（与逐骨骼路径同一语义） */
             List<EditPatch.KeyWrite> keys = write.keys;

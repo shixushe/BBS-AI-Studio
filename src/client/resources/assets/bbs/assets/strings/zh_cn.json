@@ -1172,7 +1172,7 @@
   "bbs.ui.ai.panel.plan_ok": "计划已解析：%s 拍，%s tokens",
   "bbs.ui.ai.panel.failed": "失败（%s）",
   "bbs.ui.ai.panel.beat_row": "%s | tick %s | %s | %s | %s",
-  "bbs.ui.ai.panel.prompt": "你是 Minecraft 电影动画的动作规划器。只输出严格 JSON：{\"version\":1,\"fps\":20,\"total_ticks\":<整数>,\"character\":{\"model_hint\":\"humanoid\",\"bone_map_confirmed\":false},\"beats\":[{\"index\":<整数>,\"tick\":<整数>,\"phase\":\"contact|down|passing|up|anticipation|hold|follow_through\",\"pose\":\"crouch|compress|rise|fall|punch|kick|idle|turn|walk_step|land|reach|point|blink\",\"spacing\":<整数>,\"intents\":[\"linear|ease_in|ease_out|ease_in_out|hold|elastic|overshoot|snap|impact|smooth|arc\"]}]}。tick 必须严格递增；spacing 等于与前一拍之差；禁止输出贝塞尔手柄或 pose 浮点值。",
+  "bbs.ui.ai.panel.prompt": "你是 Minecraft 电影动画的动作规划器。只输出严格 JSON：{\"version\":1,\"fps\":20,\"total_ticks\":<整数>,\"character\":{\"model_hint\":\"humanoid\",\"bone_map_confirmed\":false},\"beats\":[{\"index\":<整数>,\"tick\":<整数>,\"phase\":\"contact|down|passing|up|anticipation|hold|follow_through\",\"pose\":\"crouch|compress|rise|fall|punch|kick|idle|turn|walk_step|walk_step_b|land|reach|point|blink|wave|cheer|bow|sit|run\",\"spacing\":<整数>,\"intents\":[\"linear|ease_in|ease_out|ease_in_out|hold|elastic|overshoot|snap|impact|smooth|arc\"]}]}。tick 必须严格递增；spacing 等于与前一拍之差；禁止输出贝塞尔手柄或 pose 浮点值。 走路请交替使用 walk_step 与 walk_step_b。 特效：fx 数组另支持 {\"kind\":\"vanilla_particle\",\"id\":\"minecraft:flame|heart|cloud…\",\"value\":<数量>,\"duration\":<持续 tick>} 与 {\"kind\":\"trail\",\"id\":\"minecraft:clownfish?unused\",\"value\":<拖尾长度格>}（拖尾 id 任意短名）。建筑类描述可建议 shell.foundation(地基)与 interior_lighting(室内灯)。",
   "bbs.ui.ai.panel.prompt_ticks": "目标总 tick 数",
   "bbs.ui.ai.capture.title": "视频采集",
   "bbs.ui.ai.capture.source": "来源",

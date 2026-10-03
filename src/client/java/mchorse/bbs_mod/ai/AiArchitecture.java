@@ -369,7 +369,9 @@ public class AiArchitecture
         root.putInt("DataVersion", SharedConstants.getGameVersion().getSaveVersion().getId());
 
         file.getParentFile().mkdirs();
-        NbtIo.write(root, file);
+        /* 原版结构块与 StructureManager 都按 gzip 压缩读写——裸 NBT 会被读取端
+         * 当作损坏文件拒收 */
+        NbtIo.writeCompressed(root, file);
     }
 
     /** Sponge schematic v2, into WorldEdit's schematics folder. */
@@ -432,7 +434,9 @@ public class AiArchitecture
         root.put("Metadata", metadata);
 
         file.getParentFile().mkdirs();
-        NbtIo.write(root, file);
+        /* 原版结构块与 StructureManager 都按 gzip 压缩读写——裸 NBT 会被读取端
+         * 当作损坏文件拒收 */
+        NbtIo.writeCompressed(root, file);
     }
 
     /** Remember the result and, when Axiom is loaded, write its native blueprint. */

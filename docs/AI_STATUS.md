@@ -611,3 +611,20 @@ UIChoiceMenu.build:149 `option.equals(current)` —— 选项列表里混进了 
 顺带修一个自伤：上一轮的空值过滤会把「添加自定义骨骼」的占位空串值立即
 删除，导致 [添加] 无效——放宽为仅过滤空键与 null 值（占位空串在 apply 时
 因 inventory 不含空串天然不生效）。
+
+## 三十三、第二十七轮（2026-10-03，结构面板「文件可能损坏」修复）
+
+用户截图：结构面板读取 bbs:debug_13373_13376 报「文件可能损坏」。
+
+根因：**写入端与读取端压缩格式不一致**。AiArchitecture 保存结构用
+NbtIo.write（裸 NBT），而 StructureManager.readGenerated 按原版结构块格式
+NbtIo.readCompressed（gzip）读取——裸文件被当损坏拒收并进 FAILED 集。
+
+修复：
+- 写入端改 NbtIo.writeCompressed（对齐原版结构块/BBS 读取端格式）；
+- 存量 5 个 debug_*.nbt（裸 NBT，各 10KB）原位转 gzip（→959B，魔数校验通过）；
+- 实机端到端验证：/ai_build 重新生成（gzip ✓）→ 放置流程读回无异常；
+  面板自动选中 assets:portal 并完整渲染结构事实（尺寸/方块数/主要构成）。
+
+发现但未动的旧账：assets:oak_tree 也报损坏——该文件本身是 gzip，失败原因
+另在别处（第 15 轮已记录的既有问题，面板已有优雅兜底），后续单独排查。

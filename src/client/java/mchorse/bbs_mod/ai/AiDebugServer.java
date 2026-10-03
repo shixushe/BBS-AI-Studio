@@ -652,6 +652,12 @@ public class AiDebugServer
 
             step.accept("lighting fx key", writes.get(writes.size() - 1).keys.size() == 1);
 
+            /* 7 内置资产读取：oak_tree（曾因 tag-soup 根损坏而不可读） */
+            var oakData = mchorse.bbs_mod.forms.structure.StructureManager.get("assets:oak_tree");
+
+            step.accept("builtin oak_tree readable",
+                oakData != null && oakData.getBlocks() != null && !oakData.getBlocks().isEmpty());
+
             report.insert(0, "AI SELF TEST: " + tally[0] + " passed, " + tally[1] + " failed | ");
 
             return report.toString();

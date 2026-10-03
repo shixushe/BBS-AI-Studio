@@ -984,3 +984,18 @@ R1 遗留的「3D 幽灵剪影」按 renderer 级自研风险高；发现 BBS FS
 后日志静止），强杀重启后全部正常——资源重载的触发源是启动时内置模型
 解包写入被监视的 config/bbs/assets（一次性，已完成，后续启动不再触发）。
 若再遇「游戏无响应且日志静止在 Reloaded 字样」，等待重载完成即可。
+
+## 五十、第四十四轮（2026-10-03，oak_tree 破案修复 + 自测 8/8）
+
+**oak_tree「文件可能损坏」破案**：该文件是合并 commit 217061475 带进来的
+**tag-soup NBT**——根不是 compound，而是 DataVersion/size/palette/blocks
+多个顶层裸标签拼接（nbtlib 亦拒绝：Non-Compound root tags）。原版读取器
+按单根 compound 解析必然炸「Loading NBT data」。
+
+修复：python 全套 NBT 读写器按树规格**重新生成**（5×8×5 橡木树，树干
+原木 + 三层叶片去角，DataVersion 3465，标准单根 compound gzip），nbtlib
+回读校验 ✓。并入 aiSelfTest 第 8 项「builtin oak_tree readable」（走
+StructureManager.get 真实读取路径）——**实机 8 项全 PASS**。
+
+**经验**：渲染线程绝不 sleep（第 40 轮冻结教训）；aiSelfTest 的 oak_tree
+检查并入后无需 UI 点击即可验证资产可读。

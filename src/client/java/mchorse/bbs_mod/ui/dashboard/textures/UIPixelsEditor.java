@@ -173,6 +173,107 @@ public class UIPixelsEditor extends UICanvasEditor
     /* Macros */
 
     /** A macro over the selection's part of the frame on show, or the whole frame without one. */
+    /* ---- AI 局部重绘（spec §10.7）---- */
+
+    /** 选区边界（无选区=整帧），{x, y, w, h}；无文档返回 null。 */
+    public int[] aiRegionBounds()
+    {
+        if (this.document == null)
+        {
+            return null;
+        }
+
+        if (this.hasSelection())
+        {
+            int[] bounds = this.selectionBounds(this.frameX, this.frameY, this.frameX + this.w, this.frameY + this.h);
+
+            return bounds == null ? null
+                : new int[] {bounds[0], bounds[1], bounds[2] - bounds[0], bounds[3] - bounds[1]};
+        }
+
+        return new int[] {this.frameX, this.frameY, this.w, this.h};
+    }
+
+    /** 读当前活动层上 (x, y, w, h) 的像素（层外=透明），供图像后端作参考图。 */
+    public mchorse.bbs_mod.utils.resources.Pixels aiCapture(int x, int y, int w, int h)
+    {
+        mchorse.bbs_mod.utils.resources.Pixels crop = mchorse.bbs_mod.utils.resources.Pixels.fromSize(w, h);
+        TextureLayer layer = this.document == null ? null : this.document.getActiveLayer();
+
+        if (layer == null || layer.pixels == null)
+        {
+            return crop;
+        }
+
+        mchorse.bbs_mod.utils.colors.Color color = new mchorse.bbs_mod.utils.colors.Color();
+
+        for (int py = 0; py < h; py++)
+        {
+            for (int px = 0; px < w; px++)
+            {
+                int sx = x + px - layer.offsetX;
+                int sy = y + py - layer.offsetY;
+
+                if (sx >= 0 && sy >= 0 && sx < layer.pixels.width && sy < layer.pixels.height)
+                {
+                    crop.setColor(px, py, layer.pixels.getColor(sx, sy));
+                }
+            }
+        }
+
+        return crop;
+    }
+
+    /** 把生成的像素写回当前活动层（一个 PixelsUndo，Ctrl+Z 可撤；选区约束在内）。 */
+    public void aiApplyRegion(int x, int y, int w, int h, mchorse.bbs_mod.utils.resources.Pixels replacement)
+    {
+        TextureLayer layer = this.document == null ? null : this.document.getActiveLayer();
+
+        if (layer == null || layer.pixels == null || replacement == null || this.undoManager == null)
+        {
+            return;
+        }
+
+        PixelsUndo undo = new PixelsUndo();
+
+        undo.layerIndex = this.document.activeLayerIndex;
+
+        mchorse.bbs_mod.utils.colors.Color color = new mchorse.bbs_mod.utils.colors.Color();
+
+        for (int py = 0; py < h; py++)
+        {
+            for (int px = 0; px < w; px++)
+            {
+                int sx = x + px;
+                int sy = y + py;
+
+                if ((this.hasSelection() && !this.isInsideSelection(sx, sy)) || px >= replacement.width || py >= replacement.height)
+                {
+                    continue;
+                }
+
+                int lx = sx - layer.offsetX;
+                int ly = sy - layer.offsetY;
+
+                if (lx < 0 || ly < 0 || lx >= layer.pixels.width || ly >= layer.pixels.height)
+                {
+                    continue;
+                }
+
+                undo.setColor(layer.pixels, lx, ly, replacement.getColor(px, py));
+            }
+        }
+
+        if (undo.pixels.isEmpty())
+        {
+            return;
+        }
+
+        this.undoManager.pushUndo(undo);
+        this.updateTexture();
+        this.wasChanged();
+    }
+
     public void applyMacroToWindow(PixelMacro macro)
     {
         this.applyMacro(macro, Collections.singletonList(new int[] {this.frameX, this.frameY, this.w, this.h}), true);

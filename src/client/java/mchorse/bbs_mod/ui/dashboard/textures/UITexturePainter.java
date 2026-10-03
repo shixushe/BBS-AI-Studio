@@ -251,7 +251,122 @@ public class UITexturePainter extends UIElement
             menu.action(Icons.ERASER, UIKeys.TEXTURES_MACROS_CLEAR, () -> this.withEditor((editor) -> editor.applyMacroToWindow(PixelMacro.CLEAR)));
             menu.action(Icons.FLIP_HORIZONTAL, UIKeys.TEXTURES_MACROS_FLIP_H, () -> this.withEditor((editor) -> editor.applyMacroToWindow(PixelMacro.FLIP_HORIZONTAL)));
             menu.action(Icons.FLIP_VERTICAL, UIKeys.TEXTURES_MACROS_FLIP_V, () -> this.withEditor((editor) -> editor.applyMacroToWindow(PixelMacro.FLIP_VERTICAL)));
+
+            if (mchorse.bbs_mod.ai.AiSettings.isConfigured()
+                && !mchorse.bbs_mod.ai.AiSettings.imageModel.get().trim().isEmpty())
+            {
+                menu.action(mchorse.bbs_mod.ui.utils.icons.Icons.CURVES,
+                    mchorse.bbs_mod.l10n.keys.IKey.constant("AI 局部重绘选区…"),
+                    () -> this.aiInpaintAsk());
+            }
         });
+    }
+
+    /* ---- AI 局部重绘（spec §10.7）：选区→描述→生成→像素回写（一个撤销条目）---- */
+
+    private boolean aiInpainting;
+
+    private void aiInpaintAsk()
+    {
+        if (this.aiInpainting || this.editor == null)
+        {
+            return;
+        }
+
+        int[] region = this.editor.aiRegionBounds();
+
+        if (region == null || region[2] <= 0 || region[3] <= 0)
+        {
+            return;
+        }
+
+        var overlay = new mchorse.bbs_mod.ui.framework.elements.overlay.UIPromptOverlayPanel(
+            mchorse.bbs_mod.l10n.keys.IKey.constant("AI 局部重绘（"
+                + region[2] + "×" + region[3] + " 选区）"),
+            mchorse.bbs_mod.l10n.keys.IKey.constant("描述这块区域要画成什么（选区外像素不动，Ctrl+Z 可撤销）"),
+            (value) -> this.aiInpaintRun(region[0], region[1], region[2], region[3], value));
+
+        mchorse.bbs_mod.ui.framework.elements.overlay.UIOverlay.addOverlay(this.getContext(), overlay, 240, 0.6F);
+    }
+
+    private void aiInpaintRun(int x, int y, int w, int h, String prompt)
+    {
+        if (prompt == null || prompt.trim().isEmpty() || this.aiInpainting || this.editor == null)
+        {
+            return;
+        }
+
+        this.aiInpainting = true;
+
+        mchorse.bbs_mod.utils.resources.Pixels crop = this.editor.aiCapture(x, y, w, h);
+        String full = prompt.trim() + "。Minecraft 像素画纹理，硬边缘，无抗锯齿，与周围配色一致。";
+
+        Thread worker = new Thread(() ->
+        {
+            String error = null;
+            mchorse.bbs_mod.utils.resources.Pixels replacement = null;
+
+            try
+            {
+                var backend = new mchorse.bbs_mod.ai.OpenAiCompatibleImageBackend();
+
+                /* 图像模型普遍只认大尺寸——放大生成，再最近邻缩回精确像素 */
+                int gw = Math.max(256, (w + 63) / 64 * 64);
+                int gh = Math.max(256, (h + 63) / 64 * 64);
+                mchorse.bbs_mod.utils.resources.Pixels big = backend.generate(full, crop, gw, gh);
+                replacement = nearestDownscale(big, w, h);
+            }
+            catch (Exception e)
+            {
+                error = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+            }
+
+            mchorse.bbs_mod.utils.resources.Pixels finalPixels = replacement;
+            String finalError = error;
+
+            net.minecraft.client.MinecraftClient.getInstance().execute(() ->
+            {
+                this.aiInpainting = false;
+
+                if (this.editor == null)
+                {
+                    return;
+                }
+
+                if (finalError != null)
+                {
+                    net.minecraft.client.MinecraftClient.getInstance().inGameHud.getChatHud()
+                        .addMessage(net.minecraft.text.Text.literal("§cAI 局部重绘失败：" + finalError));
+
+                    return;
+                }
+
+                this.editor.aiApplyRegion(x, y, w, h, finalPixels);
+            });
+        }, "BBS AI Inpaint");
+
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    /** 最近邻缩放：保住像素硬边缘，不引入中间色。 */
+    private static mchorse.bbs_mod.utils.resources.Pixels nearestDownscale(
+        mchorse.bbs_mod.utils.resources.Pixels source, int w, int h)
+    {
+        mchorse.bbs_mod.utils.resources.Pixels out = mchorse.bbs_mod.utils.resources.Pixels.fromSize(w, h);
+
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                int sx = Math.min(source.width - 1, x * source.width / w);
+                int sy = Math.min(source.height - 1, y * source.height / h);
+
+                out.setColor(x, y, source.getColor(sx, sy));
+            }
+        }
+
+        return out;
     }
 
     /**

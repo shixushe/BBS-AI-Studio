@@ -942,3 +942,18 @@ jar 扫描回滚原样。
 **实测**：装饰庄园（gable 顶+线脚+混贴+翼楼）868 块——dark_oak_slab 416
 （含修复前丢失的屋顶：y 抬升量双算导致全部被尺寸钳制，回滚预加后恢复）、
 材质混贴 33、线脚/立柱/翼楼 108 云杉原木、窗阵玻璃 17、灯笼命令 1。
+
+## 四十七、第四十二轮（2026-10-03，R12 落地：AI 皮肤局部重绘 inpainting）
+
+企划书原文找回（BBSFS-AI-Copilot-Package/）。R12 §10.7 局部重绘落地：
+
+- **UIPixelsEditor AI 三件套**：aiRegionBounds（选区边界或整帧）、
+  aiCapture（活动层区域像素，层外透明）、aiApplyRegion（写回 + 一个
+  PixelsUndo，选区约束、层外裁剪、updateTexture+wasChanged）。
+- **UITexturePainter 宏菜单新增「AI 局部重绘选区…」**（图像模型已配置才
+  显示）→ 提示词浮窗 → 后台线程跑 InpaintPipeline：裁剪选区作参考图 →
+  图像后端生成（放大到 64 倍数尺寸）→ 最近邻缩回精确像素（硬边缘）→
+  封送回渲染线程 aiApplyRegion。**选区外像素逐位不动**，Ctrl+Z 可撤销。
+- 错误走聊天栏红字；生成中防重入。
+- 未做（§10.7 后段）：写回磁盘三件套（预览/备份/确认）由既有 TextureFiles
+  流程承接；参考立绘模式标注"概念稿"。

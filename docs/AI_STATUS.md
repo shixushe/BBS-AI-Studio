@@ -700,3 +700,20 @@ GLM thinking 按代次、finish_reason 映射、对话框合并、遍历器 null
 **记录不动**：预览期间 Ctrl+Z 再丢弃会覆盖该通道的用户手工撤销（极端
 顺序，快照恢复语义如此）；GLM-5.x thinking 开关下仍发 reasoning_effort=low
 （代次限制，只能调强度）。
+
+## 三十七、第三十一轮（2026-10-03，生成即跳转→闪退：预览广播误触路由）
+
+用户点击生成后游戏窗口死亡（无崩溃报告，进程成无窗口僵尸）。
+
+根因链：①bbs.json 里 ai_follow=true 是存量设置——改默认值救不了已保存的
+true；②上一轮给「预览应用」加的 broadcast 走了完整广播→AiTargetRouter
+按骨骼通道懒加载模型编辑器（日志 10:15:39 模型批量加载即证据）→setPanel
+跳转→过渡中窗口死亡。
+
+修复（四层）：
+1. **数据修复**：bbs.json ai_follow → false；
+2. **AiFilmBridge.notifyTimeline(diff)**：只做 FilmEditEvents 刷新、绝不路由；
+   预览应用/回滚全部改用它——**预览永远不导航**；
+3. 聊天栏生成/打磨/丢弃三处 begin/discard 改用 notifyTimeline；
+4. AiTargetRouter.follow 增加防线：预览激活期间一律拒绝跟随（双重保险）。
+入框（confirm）的 broadcast 保留路由能力（受 ai_follow=false 门控，现在为关）。

@@ -54,16 +54,29 @@ public class AiFilmBridge
     /** One broadcast + one interface follow per commit (spec 5.9: jump once). */
     public static void broadcast(FrameDiff diff)
     {
+        notifyTimeline(diff);
+
         if (diff.affectedChannels.isEmpty())
         {
             return;
         }
 
-        FilmEditEvents.notifyChanges(new java.util.ArrayList<mchorse.bbs_mod.settings.values.base.BaseValue>(diff.affectedChannels), FilmEditEvents.Cause.EDIT);
-
         if (mchorse.bbs_mod.ui.framework.UIScreen.getCurrentMenu() instanceof mchorse.bbs_mod.ui.dashboard.UIDashboard dashboard)
         {
             mchorse.bbs_mod.ai.route.AiTargetRouter.follow(dashboard, diff);
+        }
+    }
+
+    /**
+     * Timeline refresh WITHOUT navigation: preview application is not a
+     * commit - the user stays exactly where they are (the 入框 jump already
+     * burned us once: generating yanked the user into the model editor).
+     */
+    public static void notifyTimeline(FrameDiff diff)
+    {
+        if (diff != null && !diff.affectedChannels.isEmpty())
+        {
+            FilmEditEvents.notifyChanges(new java.util.ArrayList<mchorse.bbs_mod.settings.values.base.BaseValue>(diff.affectedChannels), FilmEditEvents.Cause.EDIT);
         }
     }
 }

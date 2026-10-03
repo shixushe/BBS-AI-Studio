@@ -412,8 +412,8 @@ public class UIAiChatBar extends UIElement
 
         /* 空 diff 由 applyPreview 在真实应用时填充——预填会双倍计数 */
         AiPreviewState.get().begin(replay, writes, new FrameDiff());
-        /* 预览键已真实落通道：广播让时间轴立即显示它们 */
-        AiFilmBridge.broadcast(AiPreviewState.get().getDiff());
+        /* 预览键已真实落通道：只刷新时间轴，绝不路由跳面板 */
+        AiFilmBridge.notifyTimeline(AiPreviewState.get().getDiff());
 
         int lastTick = generated.beats.isEmpty() ? 0 : generated.beats.get(generated.beats.size() - 1).tick;
 
@@ -473,7 +473,7 @@ public class UIAiChatBar extends UIElement
          * current keys - the preview state only holds what WOULD change */
         /* 空 diff 由 applyPreview 真实应用时填充（打磨路径同样真实预览） */
         AiPreviewState.get().begin(replay, plan, new FrameDiff());
-        AiFilmBridge.broadcast(AiPreviewState.get().getDiff());
+        AiFilmBridge.notifyTimeline(AiPreviewState.get().getDiff());
         this.refreshPreviewRow();
     }
 
@@ -521,11 +521,8 @@ public class UIAiChatBar extends UIElement
 
         state.discard();
 
-        /* 回滚后广播，时间轴与视口立即回到预览前 */
-        if (diff != null && !diff.affectedChannels.isEmpty())
-        {
-            AiFilmBridge.broadcast(diff);
-        }
+        /* 回滚后刷新时间轴与视口（不路由） */
+        AiFilmBridge.notifyTimeline(diff);
 
         this.refreshPreviewRow();
     }

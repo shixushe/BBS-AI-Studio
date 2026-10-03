@@ -69,6 +69,12 @@ public class AiTargetRouter
             return false;
         }
 
+        /* 预览不是提交：预览期间的路由请求一律拒绝（双重保险） */
+        if (mchorse.bbs_mod.ai.preview.AiPreviewState.get().isActive())
+        {
+            return false;
+        }
+
         /* One operation, one jump: the FIRST target picks the panel */
         Target target = Target.of(diff.entries.get(0).trackId);
 

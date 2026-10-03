@@ -1,6 +1,7 @@
 package mchorse.bbs_mod.ai.ui;
 
 import mchorse.bbs_mod.BBSMod;
+import net.minecraft.client.MinecraftClient;
 import mchorse.bbs_mod.BBSSettings;
 import mchorse.bbs_mod.ai.AiChatRequest;
 import mchorse.bbs_mod.ai.AiClient;
@@ -293,7 +294,7 @@ public class UIAiPanel extends UIDashboardPanel
 
         request.temperature(1F);
 
-        AiClient.get().chat(request, (response) ->
+        AiClient.get().chat(request, (response) -> MinecraftClient.getInstance().execute(() ->
         {
             this.busy = false;
 
@@ -313,11 +314,11 @@ public class UIAiPanel extends UIDashboardPanel
             {
                 this.onError(e);
             }
-        }, (error) ->
+        }), (error) -> MinecraftClient.getInstance().execute(() ->
         {
             this.busy = false;
             this.onError(error);
-        });
+        }));
     }
 
     private void onError(AiException error)

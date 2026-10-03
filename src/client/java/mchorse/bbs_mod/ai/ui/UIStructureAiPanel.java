@@ -1,6 +1,7 @@
 package mchorse.bbs_mod.ai.ui;
 
 import mchorse.bbs_mod.BBSSettings;
+import net.minecraft.client.MinecraftClient;
 import mchorse.bbs_mod.ai.AiChatRequest;
 import mchorse.bbs_mod.ai.AiClient;
 import mchorse.bbs_mod.ai.AiSettings;
@@ -291,7 +292,7 @@ public class UIStructureAiPanel extends UIDashboardPanel
         /* No maxTokens cap: 0 = the field is omitted, so providers that allow
          * unlimited output (OpenAI-compatible / Gemini) use their maximum */
 
-        AiClient.get().chat(request, (response) ->
+        AiClient.get().chat(request, (response) -> MinecraftClient.getInstance().execute(() ->
         {
             this.building = false;
             this.generateBuild.setEnabled(true);
@@ -324,12 +325,12 @@ public class UIStructureAiPanel extends UIDashboardPanel
                 this.showLines(List.of(L10n.lang("bbs.ui.ai.structure.build_fail").format(
                     e.getMessage() == null ? "json" : e.getMessage()).get()));
             }
-        }, (error) ->
+        }), (error) -> MinecraftClient.getInstance().execute(() ->
         {
             this.building = false;
             this.generateBuild.setEnabled(true);
             this.showLines(List.of(L10n.lang("bbs.ui.ai.panel.failed").format(error.type.name()).get()));
-        });
+        }));
     }
 
     /** 放置: the last generated structure, six blocks in front of the player. */
@@ -507,15 +508,15 @@ public class UIStructureAiPanel extends UIDashboardPanel
 
         request.temperature(0.4F);
 
-        AiClient.get().chat(request, (response) ->
+        AiClient.get().chat(request, (response) -> MinecraftClient.getInstance().execute(() ->
         {
             this.describing = false;
             this.showLines(FontLines.split(response.content, this.lastListWidth));
-        }, (error) ->
+        }), (error) -> MinecraftClient.getInstance().execute(() ->
         {
             this.describing = false;
             this.showLines(List.of(L10n.lang("bbs.ui.ai.panel.failed").format(error.type.name()).get()));
-        });
+        }));
     }
 
     /** Show pre-wrapped lines in the description scroll. */

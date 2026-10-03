@@ -717,3 +717,18 @@ true；②上一轮给「预览应用」加的 broadcast 走了完整广播→Ai
 3. 聊天栏生成/打磨/丢弃三处 begin/discard 改用 notifyTimeline；
 4. AiTargetRouter.follow 增加防线：预览激活期间一律拒绝跟随（双重保险）。
 入框（confirm）的 broadcast 保留路由能力（受 ai_follow=false 门控，现在为关）。
+
+## 三十八、第三十二轮（2026-10-03，生成闪退真凶：后台线程改 UI → CME）
+
+拿到真崩溃报告：Rendering screen 时
+ConcurrentModificationException @ AiChatMessage.render:159——AI 回调在
+AiClient 的后台线程直接改聊天气泡的过程/换行列表，渲染线程同时在遍历。
+上一轮的「面板跳转」修的是表象，这竞态才是反复闪退/僵尸的元凶
+（过程行越多，撞窗口越大，全链埋点后必炸）。
+
+修复：**四个 UI 边界统一封送渲染线程**（MinecraftClient.execute）：
+- AiPlans.attempt 成功/失败回调（重试链随之搬到渲染线程 accept 方法）；
+- UIAiPanel 创意生成回调；
+- UIStructureAiPanel 建筑生成 + AI 描述回调。
+全项目仅此一条后台线程（AiClient 单线程执行器），封送后线程面闭环；
+打磨路径本就渲染线程内，无需处理。

@@ -1043,3 +1043,27 @@ id 如 minecraft:flame，count=value，frequency=3）→ 入框时创建特效�
   映射到拍→姿态对齐）——采集面板底部常驻灰字展示。
 
 **测试**：三套全绿（92/29/148）。
+
+## 五十三、第四十六轮（2026-10-03，原版群系调色板技能 + 视频技能 + 少样本示例）
+
+用户要求：找高质量无版权问题的开源 skill 优化建筑/视频识别。
+
+**调研结论**：Mojang 原版客户端 jar 内含 **221 栋村庄房屋 NBT**（5 群系），
+数据已在用户本地（原版自带，不额外分发）；TelepathicGrunt 公共领域 Gist、
+Misode 生成器、BSP 房间细分论文均可参考。
+
+**落地**：
+- **原版群系调色板库**（vanilla_palettes.json）：离线提炼 5 群系 221 栋的
+  建材分布（desert=砂岩墙/cut_sandstone、plains=橡木栅栏/橡木原木、
+  savanna=金合欢栅栏、snowy=云杉栅栏/雪、taiga=云杉活板门/云杉木）——
+  每群系 top10 方块 + 出现次数。
+- **AiBiomeSkills**：加载调色板库 → match(theme) 按群系名匹配 → summary()
+  格式化为「原版村庄风格参考」注入建筑提示词。
+- **视频识别技能**（video_skills.json）：3 种采样模式（动作捕捉 2fps/
+  场景巡览 0.5fps/节奏分析 4fps）+ 4 步姿态提取流程——采集面板底部常驻。
+- **少样本示例**：matchExample(theme) 按主题词命中内置铁匠铺 spec，
+  附入提示词让 LLM 照葫芦画瓢。
+- AiBuildSkills 类：加载 ai_skills/building_styles.json（8 风格+示例），
+  提供 styles() 与 matchExample(theme)。
+
+**测试**：三套全绿（92/29/116）。

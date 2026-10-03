@@ -324,9 +324,11 @@ public class UIStructureAiPanel extends UIDashboardPanel
                     + "\n以上仅为结构参考，尺寸/材料按用户描述调整。";
             }
 
+            String biomeRef = mchorse.bbs_mod.ai.AiBiomeSkills.summary();
+
             AiChatRequest request = new AiChatRequest(
                 L10n.lang("bbs.ui.ai.structure.build_system").get(),
-                L10n.lang("bbs.ui.ai.structure.build_prompt").format(theme).get() + styleHint + fewShot);
+                L10n.lang("bbs.ui.ai.structure.build_prompt").format(theme).get() + styleHint + fewShot + biomeRef);
 
         request.temperature(0.6F);
         /* 0 = the field is omitted, so the provider's own output cap applies */

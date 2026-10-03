@@ -1,0 +1,82 @@
+{
+ "biome_styles": {
+  "desert": {
+   "houses_analyzed": 38,
+   "wall_materials": [
+    "minecraft:sandstone_wall",
+    "minecraft:wall_torch",
+    "minecraft:cut_sandstone",
+    "minecraft:smooth_sandstone_slab",
+    "minecraft:smooth_sandstone"
+   ],
+   "sample_ratio": {
+    "minecraft:sandstone_wall": 22,
+    "minecraft:building_entrance": 16,
+    "minecraft:jungle_door": 12,
+    "minecraft:barrel": 11,
+    "minecraft:bottom": 10
+   }
+  },
+  "plains": {
+   "houses_analyzed": 54,
+   "wall_materials": [
+    "minecraft:oak_fence",
+    "minecraft:oak_log",
+    "minecraft:wall_torch"
+   ],
+   "sample_ratio": {
+    "minecraft:bottom": 44,
+    "minecraft:oak_fence": 27,
+    "minecraft:village": 25,
+    "minecraft:grass_block": 19,
+    "minecraft:building_entrance": 16
+   }
+  },
+  "savanna": {
+   "houses_analyzed": 44,
+   "wall_materials": [
+    "minecraft:acacia_fence",
+    "minecraft:acacia_log",
+    "minecraft:acacia_slab",
+    "minecraft:wall_torch"
+   ],
+   "sample_ratio": {
+    "minecraft:acacia_fence": 47,
+    "minecraft:bottom": 28,
+    "minecraft:grass_block": 19,
+    "minecraft:building_entrance": 16,
+    "minecraft:village": 14
+   }
+  },
+  "snowy": {
+   "houses_analyzed": 41,
+   "wall_materials": [
+    "minecraft:spruce_fence",
+    "minecraft:spruce_slab",
+    "minecraft:stripped_spruce_log"
+   ],
+   "sample_ratio": {
+    "minecraft:spruce_fence": 39,
+    "minecraft:building_entrance": 16,
+    "minecraft:snow": 14,
+    "minecraft:spruce_door": 14,
+    "minecraft:bottom": 10
+   }
+  },
+  "taiga": {
+   "houses_analyzed": 44,
+   "wall_materials": [
+    "minecraft:spruce_fence",
+    "minecraft:wall_torch",
+    "minecraft:spruce_log"
+   ],
+   "sample_ratio": {
+    "minecraft:spruce_trapdoor": 29,
+    "minecraft:bottom": 22,
+    "minecraft:grass_block": 19,
+    "minecraft:spruce_fence": 19,
+    "minecraft:building_entrance": 16
+   }
+  }
+ }
+}

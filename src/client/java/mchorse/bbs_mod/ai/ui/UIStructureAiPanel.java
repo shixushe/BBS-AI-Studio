@@ -284,9 +284,49 @@ public class UIStructureAiPanel extends UIDashboardPanel
             L10n.lang("bbs.ui.ai.structure.cot_analyze").format(theme).get(),
             L10n.lang("bbs.ui.ai.structure.cot_draft").get()));
 
-        AiChatRequest request = new AiChatRequest(
-            L10n.lang("bbs.ui.ai.structure.build_system").get(),
-            L10n.lang("bbs.ui.ai.structure.build_prompt").format(theme).get());
+        /* 建筑风格技能：按主题关键词匹配风格，注入调色板与结构提示 */
+        String styleHint = "";
+        String lowered = theme == null ? "" : theme.toLowerCase();
+        var styles = mchorse.bbs_mod.ai.AiBuildSkills.styles();
+
+        for (var style : styles)
+        {
+            boolean hit = false;
+
+            for (String alias : style.aliases)
+            {
+                if (!alias.isBlank() && lowered.contains(alias.toLowerCase()))
+                {
+                    hit = true;
+
+                    break;
+                }
+            }
+
+            if (hit)
+            {
+                styleHint = "\n\n风格参考（" + style.id + "）: wall=" + style.walls
+                    + ", accent(混贴)=" + style.accent + ", trim(线脚/立柱)=" + style.trim
+                    + ", roof=" + style.roof + ", roof_style=" + style.roofStyle
+                    + ", floor=" + style.floor + "。提示: " + style.paletteHint + ";" + style.hints;
+
+                break;
+            }
+        }
+
+            /* 少样本：主题命中示例时附带完整 spec 让模型照葫芦画瓢 */
+            var example = mchorse.bbs_mod.ai.AiBuildSkills.matchExample(theme);
+            String fewShot = "";
+
+            if (example != null)
+            {
+                fewShot = "\n\n参考示例（主题「" + example.theme + "」→ spec）:\n" + example.spec
+                    + "\n以上仅为结构参考，尺寸/材料按用户描述调整。";
+            }
+
+            AiChatRequest request = new AiChatRequest(
+                L10n.lang("bbs.ui.ai.structure.build_system").get(),
+                L10n.lang("bbs.ui.ai.structure.build_prompt").format(theme).get() + styleHint + fewShot);
 
         request.temperature(0.6F);
         /* 0 = the field is omitted, so the provider's own output cap applies */

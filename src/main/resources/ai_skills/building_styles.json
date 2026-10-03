@@ -1,0 +1,225 @@
+{
+ "styles": [
+  {
+   "id": "medieval",
+   "aliases": [
+    "中世纪",
+    "城堡",
+    "村庄",
+    "木屋",
+    "酒馆"
+   ],
+   "walls": "minecraft:stone_bricks",
+   "accent": "minecraft:mossy_stone_bricks",
+   "trim": "minecraft:spruce_log",
+   "roof": "minecraft:dark_oak_stairs",
+   "roof_style": "gable",
+   "floor": "minecraft:cobblestone",
+   "palette_hint": "石砖+苔石混贴(0.2)、深橡木骨架、灯笼暖光",
+   "hints": "人字顶出檐;窗小而深(2×2);地基圆石下沉3;烟囱"
+  },
+  {
+   "id": "modern",
+   "aliases": [
+    "现代",
+    "简约",
+    "公寓",
+    "办公楼"
+   ],
+   "walls": "minecraft:white_concrete",
+   "accent": "minecraft:light_gray_concrete",
+   "trim": "minecraft:smooth_quartz",
+   "roof": "minecraft:gray_concrete",
+   "roof_style": "flat",
+   "floor": "minecraft:light_gray_concrete",
+   "palette_hint": "白混凝土+浅灰分色、石英窗带、平顶灯带",
+   "hints": "大面积横窗;直角轮廓;屋顶设备围挡"
+  },
+  {
+   "id": "asian",
+   "aliases": [
+    "亚洲",
+    "中式",
+    "寺庙",
+    "宝塔",
+    "和风",
+    "神社"
+   ],
+   "walls": "minecraft:smooth_stone",
+   "accent": "minecraft:stone_brick_slab",
+   "trim": "minecraft:dark_oak_log",
+   "roof": "minecraft:dark_prismarine_slab",
+   "roof_style": "stepped",
+   "floor": "minecraft:polished_andesite",
+   "palette_hint": "平滑石墙+深色木框架、深prismarine飞檐",
+   "hints": "飞檐逐层外扩比主楼宽2格;立柱深色木;红灯笼"
+  },
+  {
+   "id": "watchtower",
+   "aliases": [
+    "瞭望塔",
+    "塔楼",
+    "警塔",
+    "灯塔"
+   ],
+   "walls": "minecraft:cobblestone",
+   "accent": "minecraft:mossy_cobblestone",
+   "trim": "minecraft:spruce_log",
+   "roof": "minecraft:dark_oak_stairs",
+   "roof_style": "stepped",
+   "floor": "minecraft:oak_planks",
+   "palette_hint": "圆石+苔石斑驳、深橡木雉堞",
+   "hints": "高瘦比例(高≥宽×1.5);顶部雉堞环窗;可加旗帜"
+  },
+  {
+   "id": "villa",
+   "aliases": [
+    "别墅",
+    "庄园",
+    "住宅"
+   ],
+   "walls": "minecraft:white_terracotta",
+   "accent": "minecraft:cracked_stone_bricks",
+   "trim": "minecraft:spruce_log",
+   "roof": "minecraft:dark_oak_slab",
+   "roof_style": "gable",
+   "floor": "minecraft:polished_andesite",
+   "palette_hint": "白陶土墙+裂纹石混贴(0.18)、云杉线脚",
+   "hints": "L形翼楼;落地窗朝南;门前石板小径"
+  },
+  {
+   "id": "farm",
+   "aliases": [
+    "农场",
+    "谷仓",
+    "畜棚",
+    "农田"
+   ],
+   "walls": "minecraft:spruce_planks",
+   "accent": "minecraft:stripped_spruce_log",
+   "trim": "minecraft:spruce_log",
+   "roof": "minecraft:red_terracotta",
+   "roof_style": "gable",
+   "floor": "minecraft:dirt_path",
+   "palette_hint": "云杉木板+去皮原木骨架、红陶土坡顶",
+   "hints": "大谷仓门(2×3);围栏圈地;干草垛点缀"
+  },
+  {
+   "id": "shop",
+   "aliases": [
+    "商店",
+    "铺子",
+    "市场",
+    "摊位"
+   ],
+   "walls": "minecraft:oak_planks",
+   "accent": "minecraft:stripped_oak_log",
+   "trim": "minecraft:dark_oak_log",
+   "roof": "minecraft:bricks",
+   "roof_style": "flat",
+   "floor": "minecraft:stone_bricks",
+   "palette_hint": "橡木板+深橡木框架、红砖遮阳棚",
+   "hints": "门面开阔;招牌悬挂;橱窗玻璃大"
+  },
+  {
+   "id": "wizard",
+   "aliases": [
+    "法师",
+    "魔法",
+    "巫师",
+    "奥术"
+   ],
+   "walls": "minecraft:purple_terracotta",
+   "accent": "minecraft:amethyst_block",
+   "trim": "minecraft:dark_prismarine",
+   "roof": "minecraft:crying_obsidian",
+   "roof_style": "stepped",
+   "floor": "minecraft:polished_deepslate",
+   "palette_hint": "紫陶土+紫水晶点缀、黑曜石底座",
+   "hints": "尖塔不对称;悬浮书架/附魔台;紫光照明"
+  }
+ ],
+ "examples": [
+  {
+   "theme": "中世纪铁匠铺",
+   "spec_note": "8×6×7 石砖壳+云杉骨架;南门;西墙炉+烟囱;灯笼×2",
+   "spec": {
+    "name": "smithy",
+    "title": "铁匠铺",
+    "size": [
+     8,
+     6,
+     7
+    ],
+    "shell": {
+     "from": [
+      0,
+      0,
+      0
+     ],
+     "to": [
+      7,
+      4,
+      6
+     ],
+     "wall": "minecraft:stone_bricks",
+     "floor": "minecraft:cobblestone",
+     "roof_style": "gable",
+     "roof": "minecraft:dark_oak_stairs",
+     "trim": {
+      "block": "minecraft:spruce_log"
+     },
+     "pillars": {
+      "block": "minecraft:spruce_log"
+     },
+     "foundation": {
+      "block": "minecraft:cobblestone",
+      "depth": 2
+     },
+     "windows_grid": {
+      "spacing": 3,
+      "floors": 1
+     },
+     "door": "south"
+    },
+    "commands": [
+     {
+      "type": "setblock",
+      "block": "minecraft:lantern",
+      "x": 2,
+      "y": 4,
+      "z": 2
+     },
+     {
+      "type": "setblock",
+      "block": "minecraft:lantern",
+      "x": 5,
+      "y": 4,
+      "z": 2
+     },
+     {
+      "type": "fill",
+      "block": "minecraft:blast_furnace",
+      "from": [
+       1,
+       1,
+       6
+      ],
+      "to": [
+       1,
+       2,
+       6
+      ]
+     },
+     {
+      "type": "setblock",
+      "block": "minecraft:anvil",
+      "x": 5,
+      "y": 1,
+      "z": 5
+     }
+    ]
+   }
+  }
+ ]
+}

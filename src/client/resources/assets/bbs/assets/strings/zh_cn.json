@@ -3727,5 +3727,7 @@
   "bbs.ui.ai.structure.cot_draft": "▸ 起草建造单（外壳/门窗/塔楼）……",
   "bbs.ui.ai.structure.cot_expand": "▸ 展开为方块并写出蓝图……",
   "bbs.config.ai.usage_prompt_tokens": "Token 用量（输入）",
-  "bbs.config.ai.usage_completion_tokens": "Token 用量（输出）"
+  "bbs.config.ai.usage_completion_tokens": "Token 用量（输出）",
+  "bbs.ui.ai.capture.skill_tip": "技能:动作捕捉 2帧/s(关UI);场景巡览 0.5帧/s(慢横移);节奏分析 4帧/s。流程:采帧→选关键帧(差异>阈值)→映射到拍→姿态求解。",
+  "bbs.ui.ai.capture.skill_tip-comment": "视频采集采样建议(来自 AI 技能库)"
 }

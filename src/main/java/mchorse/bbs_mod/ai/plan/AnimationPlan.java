@@ -162,7 +162,7 @@ public class AnimationPlan
                 throw new AiException(AiException.Type.PARSE, "Beat " + i + " has unknown phase: " + beat.phase);
             }
 
-            if (!POSES.contains(beat.pose))
+            if (!beat.pose.startsWith("@") && !POSES.contains(beat.pose))
             {
                 throw new AiException(AiException.Type.PARSE, "Beat " + i + " has unknown pose: " + beat.pose);
             }

@@ -271,6 +271,16 @@ public class UIAiChatBar extends UIElement
         /* L0 能力扫描：让模型只请求本安装真实存在的能力 */
         mchorse.bbs_mod.ai.AiCapabilities caps = mchorse.bbs_mod.ai.AiCapabilities.scan(this.panel.getData());
 
+        var skillPoses = mchorse.bbs_mod.ai.AiSkillLibrary.posesForModel(modelForm.model.get());
+
+        if (!skillPoses.isEmpty())
+        {
+            List<String> names = new ArrayList<>(skillPoses.keySet());
+
+            system += "\n\n该模型自带的预设姿势（beat.pose 可用 \"@名字\" 直接引用，作者调好的成品姿势）: @"
+                + String.join("、@", names) + "。如 \"pose\":\"@摊手\"。适合表达情绪与标志性动作；走跑跳等位移仍用姿态库。";
+        }
+
         if (!caps.modBlocks.isEmpty())
         {
             StringBuilder palette = new StringBuilder();
@@ -435,8 +445,22 @@ public class UIAiChatBar extends UIElement
 
         try
         {
+            java.util.Map<String, mchorse.bbs_mod.utils.pose.Pose> skillPoses = java.util.Collections.emptyMap();
+            var modelFormHere = replay.form.get();
+
+            if (modelFormHere instanceof mchorse.bbs_mod.forms.forms.ModelForm mf)
+            {
+                skillPoses = mchorse.bbs_mod.ai.AiSkillLibrary.posesForModel(mf.model.get());
+            }
+
+            if (!skillPoses.isEmpty())
+            {
+                thinking.addProcess("技能姿势：" + skillPoses.size() + " 个（@名字 可在计划中直接引用）");
+            }
+
             poses = mchorse.bbs_mod.ai.pose.PoseSolver.solve(generated, bones,
-                mchorse.bbs_mod.ai.ui.UIAiGenerateAskPanel.AMPLITUDES[Math.max(0, Math.min(2, this.lastAmplitude))]);
+                mchorse.bbs_mod.ai.ui.UIAiGenerateAskPanel.AMPLITUDES[Math.max(0, Math.min(2, this.lastAmplitude))],
+                skillPoses);
 
             /* 插值映射摘要：拍.pose ← 意图 → BBS 插值（去重） */
             java.util.LinkedHashSet<String> mappings = new java.util.LinkedHashSet<>();

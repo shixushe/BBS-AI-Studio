@@ -1,0 +1,40 @@
+{
+ "sampling": [
+  {
+   "mode": "动作捕捉",
+   "fps_hint": "2 帧/秒",
+   "use": "人物动作学习(走路/打斗/手势)",
+   "hints": "帧间距大才能看到位移;关掉 UI 叠层再采"
+  },
+  {
+   "mode": "场景巡览",
+   "fps_hint": "0.5 帧/秒",
+   "use": "建筑/环境还原",
+   "hints": "低频采样足够;镜头缓慢横移效果最好"
+  },
+  {
+   "mode": "节奏分析",
+   "fps_hint": "4 帧/秒",
+   "use": "打击感/转场节奏",
+   "hints": "高密度采样捕捉瞬间;配合姿态求解提取关键帧"
+  }
+ ],
+ "pose_extraction": [
+  {
+   "step": "采帧",
+   "detail": "ExternalVideoCapture 按帧率抽帧存 ai_captures/"
+  },
+  {
+   "step": "选关键帧",
+   "detail": "相邻帧差异 > 阈值视为动作变化点"
+  },
+  {
+   "step": "映射到拍",
+   "detail": "变化点 → AnimationPlan.beats(tick 按帧序×比例)"
+  },
+  {
+   "step": "姿态对齐",
+   "detail": "用 BoneNameResolver 匹配模型骨骼,绑定后直接求解"
+  }
+ ]
+}

@@ -3083,5 +3083,7 @@
   "bbs.ui.ai.structure.cot_draft": "▸ Drafting the build order (shell/openings/towers)...",
   "bbs.ui.ai.structure.cot_expand": "▸ Expanding to blocks and writing blueprints...",
   "bbs.config.ai.usage_prompt_tokens": "Token usage (prompt)",
-  "bbs.config.ai.usage_completion_tokens": "Token usage (completion)"
+  "bbs.config.ai.usage_completion_tokens": "Token usage (completion)",
+  "bbs.ui.ai.capture.skill_tip": "Skills: motion capture 2fps (hide UI); scene sweep 0.5fps (slow pan); rhythm analysis 4fps. Flow: capture -> keyframes (delta>threshold) -> map to beats -> solve.",
+  "bbs.ui.ai.capture.skill_tip-comment": "Video capture sampling advice (from AI skill library)"
 }

@@ -1022,3 +1022,24 @@ id 如 minecraft:flame，count=value，frequency=3）→ 入框时创建特效�
 （出生点 = 演员插值位置 +1 格防入地）。
 
 测试：poseSolverTest 增至 148 项全 PASS（含 5 个新姿态库覆盖断言）。
+
+## 五十二、第四十三轮（2026-10-03，技能库：Voyager 式技能检索 + 少样本 + 视频识别技能）
+
+用户要求：建筑/动画/视频识别都加 skill 优化表现；调研开源方案。
+
+**方法论借鉴**（Voyager 的技能库模式，MIT 开源，只借思路）：技能=可复用
+结构化经验；按任务检索相关技能注入提示词；运行时反馈迭代扩充。
+
+**落地三项**：
+- **建筑风格技能库扩至 8 种**（medieval/modern/asian/watchtower/villa/
+  farm/shop/wizard）——每种带 walls/accent/trim/roof/roof_style/floor
+  调色板 + palette_hint 设计口诀 + hints 结构要点；按主题关键词匹配注入
+  （中文+英文别名）。
+- **少样本示例**：examples 数组内置「中世纪铁匠铺」完整 spec（含地基/
+  线脚/灯/砧/高炉），主题命中时整份 spec 附入提示词——模型照葫芦画瓢，
+  输出结构合理性大幅提升。
+- **视频识别技能**（ai_skills/video_skills.json）：采样模式建议（动作捕捉
+  2fps/场景巡览 0.5fps/节奏分析 4fps）+ 姿态提取四步流程（采帧→选关键帧→
+  映射到拍→姿态对齐）——采集面板底部常驻灰字展示。
+
+**测试**：三套全绿（92/29/148）。

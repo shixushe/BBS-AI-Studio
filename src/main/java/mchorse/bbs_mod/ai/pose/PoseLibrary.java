@@ -179,6 +179,6 @@ public class PoseLibrary
     /** Whether every pose label of the plan has library coverage. */
     public static List<String> missing(List<String> poses)
     {
-        return poses.stream().filter(p -> !POSES.containsKey(p)).toList();
+        return poses.stream().filter(p -> !p.startsWith("@") && !POSES.containsKey(p)).toList();
     }
 }

@@ -129,8 +129,15 @@ public class UICapturePanel extends UIDashboardPanel
         this.status.relative(this).x(m).y(1F, -(AiUi.HEADER + m * 2 + row + AiUi.BAR + AiUi.TASKBAR)).w(1F, -m * 2).h(row);
 
         UILabel tips = UI.label(L10n.lang("bbs.ui.ai.capture.tips"), UIConstants.CONTROL_HEIGHT * 2);
+
         tips.color(Colors.LIGHTER_GRAY, false);
         tips.relative(this).x(m).y(1F, -(row + AiUi.BAR + AiUi.TASKBAR)).w(1F, -m * 2).h(UIConstants.CONTROL_HEIGHT * 2);
+
+        UILabel skillTips = UI.label(L10n.lang("bbs.ui.ai.capture.skill_tip"), UIConstants.CONTROL_HEIGHT * 3);
+
+        skillTips.color(mchorse.bbs_mod.utils.colors.Colors.LIGHTER_GRAY, false);
+        skillTips.relative(this).x(m).y(1F, -(row + AiUi.BAR + AiUi.TASKBAR + UIConstants.CONTROL_HEIGHT * 2))
+            .w(1F, -m * 2).h(UIConstants.CONTROL_HEIGHT * 3);
 
         UIElement bottom = UI.row(m, send, new UILabel(IKey.EMPTY));
 
@@ -147,6 +154,7 @@ public class UICapturePanel extends UIDashboardPanel
         this.add(this.path);
         this.add(this.status);
         this.add(tips);
+        this.add(skillTips);
         this.add(bottom);
 
         mchorse.bbs_mod.ui.onboarding.TourAnchors.register("capture.frames", () -> this.strip);

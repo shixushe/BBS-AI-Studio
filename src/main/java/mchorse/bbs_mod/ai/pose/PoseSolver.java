@@ -92,14 +92,22 @@ public class PoseSolver
      */
     public static List<KeyPose> solve(AnimationPlan plan, BoneNameResolver.Result bones)
     {
-        return solve(plan, bones, 1F);
+        return solve(plan, bones, 1F, Map.of());
+    }
+
+    public static List<KeyPose> solve(AnimationPlan plan, BoneNameResolver.Result bones, float amplitude)
+    {
+        return solve(plan, bones, amplitude, Map.of());
     }
 
     /**
-     * @param amplitude 动作幅度系数（0.6 含蓄 / 1 自然 / 1.35 夸张），只缩放旋转，
-     *                  眨眼的眼皮压缩不放大
+     * @param amplitude  动作幅度系数（0.6 含蓄 / 1 自然 / 1.35 夸张），只缩放旋转，
+     *                   眨眼的眼皮压缩不放大
+     * @param skillPoses 技能姿势（AiSkillLibrary 加载的作者姿态，名字含 @）。
+     *                   命中的拍直接采用作者姿势数据（逐骨骼转角度 + 缩放），
+     *                   幅度系数不适用于作者调好的姿势。
      */
-    public static List<KeyPose> solve(AnimationPlan plan, BoneNameResolver.Result bones, float amplitude)
+    public static List<KeyPose> solve(AnimationPlan plan, BoneNameResolver.Result bones, float amplitude, Map<String, mchorse.bbs_mod.utils.pose.Pose> skillPoses)
     {
         if (!bones.isComplete())
         {
@@ -124,6 +132,32 @@ public class PoseSolver
             pose.pose = beat.pose;
             pose.intent = beat.intents == null || beat.intents.isEmpty() ? "linear" : beat.intents.get(0).name().toLowerCase();
             pose.rootY = PoseLibrary.ROOT_Y.getOrDefault(beat.pose, 0F);
+
+            /* @ 技能姿势：作者姿态整只替换，不吃幅度 */
+            if (beat.pose.startsWith("@"))
+            {
+                mchorse.bbs_mod.utils.pose.Pose skill = skillPoses.get(beat.pose);
+
+                if (skill != null)
+                {
+                    for (Map.Entry<String, mchorse.bbs_mod.utils.pose.PoseTransform> entry : skill.transforms.entrySet())
+                    {
+                        BoneChannel channel = new BoneChannel();
+
+                        channel.bone = entry.getKey();
+                        channel.x = entry.getValue().rotate.x;
+                        channel.y = entry.getValue().rotate.y;
+                        channel.z = entry.getValue().rotate.z;
+                        channel.values = new float[] {channel.x, channel.y, channel.z,
+                            entry.getValue().scale.x, entry.getValue().scale.y, entry.getValue().scale.z};
+                        pose.channels.add(channel);
+                    }
+
+                    poses.add(pose);
+
+                    continue;
+                }
+            }
 
             for (Map.Entry<String, float[]> entry : PoseLibrary.get(beat.pose).entrySet())
             {
@@ -324,11 +358,9 @@ public class PoseSolver
                     mchorse.bbs_mod.utils.pose.PoseTransform transform = value.getOrCreate(channelData.bone);
 
                     transform.rotate.set(channelData.x, channelData.y, channelData.z);
-
-                    if (channelData.values.length >= 6)
-                    {
-                        transform.scale.set(channelData.values[3], channelData.values[4], channelData.values[5]);
-                    }
+                    transform.scale.set(channelData.values.length >= 6 ? channelData.values[3] : 1F,
+                        channelData.values.length >= 6 ? channelData.values[4] : 1F,
+                        channelData.values.length >= 6 ? channelData.values[5] : 1F);
                 }
 
                 EditPatch.KeyWrite key = new EditPatch.KeyWrite();

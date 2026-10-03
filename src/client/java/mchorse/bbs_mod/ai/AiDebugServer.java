@@ -598,7 +598,7 @@ public class AiDebugServer
 
             /* 2 读取内置 Star 3.6 模型（打包资源，非实时加载） */
             java.io.InputStream stream = AiDebugServer.class.getResourceAsStream(
-                "/assets/bbs/models/star36/slim_eyes/model.bbs.json");
+                "/ai_models/star36/slim_eyes/model.bbs.json");
 
             if (stream == null)
             {

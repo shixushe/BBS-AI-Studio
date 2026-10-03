@@ -100,73 +100,18 @@ public class AiArchitecture
         String floor = stringOr(root, "floor", "minecraft:stone");
         String roof = stringOr(root, "roof", "minecraft:dark_oak_slab");
 
-        /* The shell: a hollow building with floor/walls/roof, windows and a door */
+        /* The shell + any wings: full grammar per volume (hollow/roof/pillars/
+         * windows/floors/trim/texture mix) */
         if (root.has("shell"))
         {
-            JsonObject shell = root.getAsJsonObject("shell");
-            int[] from = point(shell, "from");
-            int[] to = point(shell, "to");
-            boolean windows = boolOr(shell, "windows", true);
-            String door = stringOr(shell, "door", "south");
-            String wallBlock = stringOr(shell, "wall", wall);
-            String roofBlock = stringOr(shell, "roof", roof);
-            String roofStyle = stringOr(shell, "roof_style", "flat");
+            buildShell(grid, root, root.getAsJsonObject("shell"), wall, floor, roof);
+        }
 
-            hollow(grid, from, to, wallBlock, stringOr(shell, "floor", floor), roofStyle.equals("flat") ? roofBlock : null);
-            carveWindows(grid, from, to, windows);
-            carveDoor(grid, from, to, door);
-
-            /* 立柱：四角通高（原木类，视觉骨架） */
-            if (root.has("pillars") || shell.has("pillars"))
+        for (JsonElement wing : list(root, "wings"))
+        {
+            if (wing.isJsonObject())
             {
-                JsonObject pillars = root.has("pillars") ? root.getAsJsonObject("pillars") : shell.getAsJsonObject("pillars");
-                String pillarBlock = stringOr(pillars, "block", "minecraft:oak_log");
-
-                for (int[] corner : new int[][] { {from[0], from[2]}, {to[0], from[2]}, {from[0], to[2]}, {to[0], to[2]} })
-                {
-                    fill(grid, new int[] {corner[0], from[1] + 1, corner[1]}, new int[] {corner[0], to[1] - 1, corner[1]}, pillarBlock);
-                }
-            }
-
-            /* 屋顶风格：stepped 阶梯实心 / gable 人字（脊沿 X）/ flat 平顶（默认在 hollow 内） */
-            if (roofStyle.equals("stepped"))
-            {
-                steppedRoof(grid, from, to, roofBlock, false);
-            }
-            else if (roofStyle.equals("gable"))
-            {
-                gableRoof(grid, from, to, roofBlock);
-            }
-
-            /* 窗阵：每层每 spacing 开一对玻璃窗（对称） */
-            if (shell.has("windows_grid"))
-            {
-                JsonObject gridSpec = shell.getAsJsonObject("windows_grid");
-                int spacing = Math.max(2, gridSpec.get("spacing") == null ? 3 : gridSpec.get("spacing").getAsInt());
-                String pane = stringOr(gridSpec, "pane", "minecraft:glass_pane");
-                int floors = Math.max(1, gridSpec.get("floors") == null ? 1 : gridSpec.get("floors").getAsInt());
-
-                windowGrid(grid, from, to, spacing, pane, floors);
-            }
-
-            /* 楼层板：多层中空楼的层间地板 */
-            if (shell.has("floors"))
-            {
-                JsonObject floorsSpec = shell.getAsJsonObject("floors");
-                int count = Math.max(1, floorsSpec.get("count") == null ? 1 : floorsSpec.get("count").getAsInt());
-                String slab = stringOr(floorsSpec, "block", stringOr(shell, "floor", floor));
-                int span = (to[1] - from[1] - 1) / (count + 1);
-
-                if (span > 0)
-                {
-                    for (int f = 1; f <= count; f++)
-                    {
-                        int y = from[1] + span * f;
-
-                        fill(grid, new int[] {from[0], y, from[2]}, new int[] {to[0], y, to[2]}, slab);
-                        carveDoor(grid, from, to, door);
-                    }
-                }
+                buildShell(grid, root, wing.getAsJsonObject(), wall, floor, roof);
             }
         }
 
@@ -249,6 +194,174 @@ public class AiArchitecture
         this_or_static(result, generatedDir, schematicsDir);
 
         return result;
+    }
+
+    /**
+     * 一个体积的完整构建（shell 或 wing 共用）：中空体 + 屋顶风格 + 立柱 +
+     * 窗阵 + 楼层板 + 装饰线脚（檐口/基座/窗台）+ 材质混贴。
+     * 观感的三大来源都在这里：材质变化、轮廓深度、屋顶出檐。
+     */
+    private static void buildShell(Grid grid, JsonObject root, JsonObject shell, String wall, String floor, String roof)
+    {
+        int[] from = point(shell, "from");
+        int[] to = point(shell, "to");
+        boolean windows = boolOr(shell, "windows", true);
+        String door = stringOr(shell, "door", "south");
+        String wallBlock = stringOr(shell, "wall", wall);
+        String roofBlock = stringOr(shell, "roof", roof);
+        String roofStyle = stringOr(shell, "roof_style", "flat");
+        String trim = shell.has("trim") && shell.getAsJsonObject("trim").has("block")
+            ? stringOr(shell.getAsJsonObject("trim"), "block", "minecraft:oak_log")
+            : (shell.has("trim_block") ? stringOr(shell, "trim_block", "minecraft:oak_log") : null);
+
+        hollow(grid, from, to, wallBlock, stringOr(shell, "floor", floor), roofStyle.equals("flat") ? roofBlock : null);
+        carveWindows(grid, from, to, windows);
+        carveDoor(grid, from, to, door);
+
+        /* 材质混贴：墙面上按确定性哈希把 ratio 比例换成 accent（裂纹石/苔石等），
+         * 大面墙立刻有岁月感——同参数同结果，可复现 */
+        if (shell.has("texture_mix"))
+        {
+            JsonObject mix = shell.getAsJsonObject("texture_mix");
+            String accent = stringOr(mix, "accent", "");
+            float ratio = mix.has("ratio") ? Math.min(0.5F, Math.max(0F, mix.get("ratio").getAsFloat())) : 0.15F;
+
+            if (!accent.isEmpty() && ratio > 0F)
+            {
+                for (int x = from[0]; x <= to[0]; x++)
+                {
+                    for (int y = from[1] + 1; y <= to[1] - 1; y++)
+                    {
+                        for (int z = from[2]; z <= to[2]; z++)
+                        {
+                            boolean surface = x == from[0] || x == to[0] || z == from[2] || z == to[2];
+
+                            if (surface && grid.get(x, y, z) != null
+                                && grid.get(x, y, z).equals(wallBlock)
+                                && ((x * 73856093 ^ y * 19349663 ^ z * 83492791) & 0xFF) / 255F < ratio)
+                            {
+                                grid.put(x, y, z, accent);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        /* 装饰线脚：檐口环（顶行）+ 基座环（底行） */
+        if (trim != null)
+        {
+            for (int x = from[0]; x <= to[0]; x++)
+            {
+                for (int z = from[2]; z <= to[2]; z++)
+                {
+                    boolean edge = x == from[0] || x == to[0] || z == from[2] || z == to[2];
+
+                    if (edge)
+                    {
+                        grid.put(x, to[1], z, trim);
+                        grid.put(x, from[1] + 1, z, trim);
+                    }
+                }
+            }
+        }
+
+        /* 立柱：四角通高（覆盖线脚交角，视觉骨架） */
+        if (shell.has("pillars"))
+        {
+            String pillarBlock = stringOr(shell.getAsJsonObject("pillars"), "block", "minecraft:oak_log");
+
+            for (int[] corner : new int[][] { {from[0], from[2]}, {to[0], from[2]}, {from[0], to[2]}, {to[0], to[2]} })
+            {
+                fill(grid, new int[] {corner[0], from[1] + 1, corner[1]}, new int[] {corner[0], to[1] - 1, corner[1]}, pillarBlock);
+            }
+        }
+
+        /* 屋顶风格：flat 平顶 / stepped 四向阶梯 / gable 人字（脊沿 X）；均出檐 1 格 */
+        if (roofStyle.equals("stepped"))
+        {
+            /* 只扩 X/Z 出檐；层高由 steppedRoof 自行逐层 +i（y 抬升量在这里
+             * 预加会被尺寸钳制全部丢弃——第 40 轮实测教训） */
+            steppedRoof(grid, new int[] {from[0] - 1, to[1], from[2] - 1}, new int[] {to[0] + 1, to[1], to[2] + 1}, roofBlock, false);
+        }
+        else if (roofStyle.equals("gable"))
+        {
+            gableRoof(grid, new int[] {from[0] - 1, to[1], from[2] - 1}, new int[] {to[0] + 1, to[1], to[2] + 1}, roofBlock);
+        }
+        else if (trim != null)
+        {
+            /* 平顶也给出檐檐口环 */
+            for (int x = from[0] - 1; x <= to[0] + 1; x++)
+            {
+                for (int z = from[2] - 1; z <= to[2] + 1; z++)
+                {
+                    if (x < from[0] || x > to[0] || z < from[2] || z > to[2])
+                    {
+                        grid.put(x, to[1], z, roofBlock);
+                    }
+                }
+            }
+        }
+
+        /* 窗阵 */
+        if (shell.has("windows_grid"))
+        {
+            JsonObject gridSpec = shell.getAsJsonObject("windows_grid");
+            int spacing = Math.max(2, gridSpec.get("spacing") == null ? 3 : gridSpec.get("spacing").getAsInt());
+            String pane = stringOr(gridSpec, "pane", "minecraft:glass_pane");
+            int floors = Math.max(1, gridSpec.get("floors") == null ? 1 : gridSpec.get("floors").getAsInt());
+
+            windowGrid(grid, from, to, spacing, pane, floors);
+
+            /* 窗台：每扇窗下一行替换为线脚材质 */
+            if (trim != null)
+            {
+                int wallTop = to[1] - 1;
+                int floorH = Math.max(2, (to[2] - from[2] - 2) / Math.max(1, floors));
+
+                for (int f = 0; f < floors; f++)
+                {
+                    int y = from[1] + 2 + f * floorH;
+
+                    if (y + 1 > wallTop - 1)
+                    {
+                        break;
+                    }
+
+                    for (int x = from[0] + 2; x < to[0] - 1; x += spacing)
+                    {
+                        if (grid.get(x, y - 1, from[2]) != null) grid.put(x, y - 1, from[2], trim);
+                        if (grid.get(x, y - 1, to[2]) != null) grid.put(x, y - 1, to[2], trim);
+                    }
+
+                    for (int z = from[2] + 2; z < to[2] - 1; z += spacing)
+                    {
+                        if (grid.get(from[0], y - 1, z) != null) grid.put(from[0], y - 1, z, trim);
+                        if (grid.get(to[0], y - 1, z) != null) grid.put(to[0], y - 1, z, trim);
+                    }
+                }
+            }
+        }
+
+        /* 楼层板 */
+        if (shell.has("floors"))
+        {
+            JsonObject floorsSpec = shell.getAsJsonObject("floors");
+            int count = Math.max(1, floorsSpec.get("count") == null ? 1 : floorsSpec.get("count").getAsInt());
+            String slab = stringOr(floorsSpec, "block", stringOr(shell, "floor", floor));
+            int span = (to[1] - from[1] - 1) / (count + 1);
+
+            if (span > 0)
+            {
+                for (int f = 1; f <= count; f++)
+                {
+                    int y = from[1] + span * f;
+
+                    fill(grid, new int[] {from[0], y, from[2]}, new int[] {to[0], y, to[2]}, slab);
+                    carveDoor(grid, from, to, door);
+                }
+            }
+        }
     }
 
     /* ---- ops ---- */
@@ -412,6 +525,11 @@ public class AiArchitecture
         Grid(int w, int h, int d)
         {
             this.size = new int[]{w, h, d};
+        }
+
+        String get(int x, int y, int z)
+        {
+            return this.cells.get(key(x, y, z));
         }
 
         void put(int x, int y, int z, String block)

@@ -214,7 +214,7 @@ public class PoseSolverTest
         try
         {
             java.io.InputStream stream = PoseSolverTest.class.getResourceAsStream(
-                "/assets/bbs/models/star36/" + variant + "/model.bbs.json");
+                "/ai_models/star36/" + variant + "/model.bbs.json");
 
             if (stream == null)
             {

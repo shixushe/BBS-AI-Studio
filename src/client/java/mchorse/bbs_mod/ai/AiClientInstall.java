@@ -27,6 +27,7 @@ public class AiClientInstall
 
         installed = true;
 
+        mchorse.bbs_mod.ai.AiBuiltinModels.install();
         GhostFrameLayer.install();
         AiDebugServer.install();
         BBSMod.events.register(new AiClientInstall());

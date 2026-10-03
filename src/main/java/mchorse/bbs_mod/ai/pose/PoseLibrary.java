@@ -46,21 +46,31 @@ public class PoseLibrary
     private static final Map<String, Map<String, float[]>> POSES = Map.ofEntries(
         Map.entry("idle", Map.of()),
         /* 走路左右两步：LLM 交替使用才有步态 */
-        Map.entry("walk_step", Map.of(
-            "left_leg", new float[] {24F, 0F, 0F},
-            "right_leg", new float[] {-16F, 0F, 0F},
-            "left_knee", new float[] {-28F, 0F, 0F},
-            "left_arm", new float[] {-12F, 0F, 3F},
-            "left_elbow", new float[] {-14F, 0F, 0F},
-            "right_arm", new float[] {13F, 0F, -3F}
+        /* 走1（平静）t=0：作者真实关键帧蒸馏（10 骨骼含躯干扭转/肘/膝） */
+        Map.entry("walk_step", Map.ofEntries(
+            Map.entry("left_leg", new float[] {16.2F, 0.7F, 0.3F}),
+            Map.entry("right_leg", new float[] {-16F, 0F, 0F}),
+            Map.entry("left_knee", new float[] {18F, 0F, 0F}),
+            Map.entry("right_knee", new float[] {7F, 0F, 0F}),
+            Map.entry("left_arm", new float[] {-18F, 5.5F, -3.2F}),
+            Map.entry("left_elbow", new float[] {-10F, 0F, 0F}),
+            Map.entry("right_arm", new float[] {18F, -5.4F, 5.4F}),
+            Map.entry("right_elbow", new float[] {-12F, 0F, 0F}),
+            Map.entry("head", new float[] {0F, 0F, -0.1F}),
+            Map.entry("body", new float[] {2F, 6F, 0.6F})
         )),
-        Map.entry("walk_step_b", Map.of(
-            "left_leg", new float[] {-16F, 0F, 0F},
-            "right_leg", new float[] {24F, 0F, 0F},
-            "right_knee", new float[] {-28F, 0F, 0F},
-            "left_arm", new float[] {13F, 0F, 3F},
-            "right_arm", new float[] {-12F, 0F, -3F},
-            "right_elbow", new float[] {-14F, 0F, 0F}
+        /* 走1（平静）t=0.5：右脚前（镜像步态） */
+        Map.entry("walk_step_b", Map.ofEntries(
+            Map.entry("left_leg", new float[] {-21.8F, 0.7F, 0.3F}),
+            Map.entry("right_leg", new float[] {23F, 0F, 0F}),
+            Map.entry("left_knee", new float[] {12F, 0F, 0F}),
+            Map.entry("right_knee", new float[] {10F, 0F, 0F}),
+            Map.entry("left_arm", new float[] {18F, 5.5F, -2.5F}),
+            Map.entry("left_elbow", new float[] {-12F, 0F, 0F}),
+            Map.entry("right_arm", new float[] {-18F, -5.4F, 5.4F}),
+            Map.entry("right_elbow", new float[] {-10F, 0F, 0F}),
+            Map.entry("head", new float[] {1F, 2F, 0.1F}),
+            Map.entry("body", new float[] {2.5F, -6F, -0.2F})
         )),
         Map.entry("crouch", Map.of(
             "body", new float[] {19F, 0F, 0F},
@@ -153,15 +163,18 @@ public class PoseLibrary
             "right_knee", new float[] {85F, 0F, 0F},
             "body", new float[] {4F, 0F, 0F}
         )),
-        Map.entry("run", Map.of(
-            "body", new float[] {16F, 0F, 0F},
-            "left_leg", new float[] {46F, 0F, 0F},
-            "right_leg", new float[] {-34F, 0F, 0F},
-            "left_knee", new float[] {-52F, 0F, 0F},
-            "left_arm", new float[] {-62F, 0F, 5F},
-            "left_elbow", new float[] {-60F, 0F, 0F},
-            "right_arm", new float[] {38F, 0F, -5F},
-            "right_elbow", new float[] {-60F, 0F, 0F}
+        /* 奔跑 t=0：作者真实关键帧（含 torso/anchor，带躯干前倾 + 膝弯 65°） */
+        Map.entry("run", Map.ofEntries(
+            Map.entry("left_leg", new float[] {15F, 0F, 0F}),
+            Map.entry("right_leg", new float[] {-30F, 0F, 0F}),
+            Map.entry("left_knee", new float[] {0F, 0F, 0F}),
+            Map.entry("right_knee", new float[] {65F, 0F, 0F}),
+            Map.entry("left_arm", new float[] {-12.3F, -2.2F, -9.8F}),
+            Map.entry("left_elbow", new float[] {-42.5F, 0F, 0F}),
+            Map.entry("right_arm", new float[] {24.8F, -3F, 9.5F}),
+            Map.entry("right_elbow", new float[] {-7.5F, 0F, 0F}),
+            Map.entry("head", new float[] {-7.5F, -5F, 0F}),
+            Map.entry("body", new float[] {15F, 5F, -0.1F})
         )),
         /* 眨眼：眼骨 Y 压缩到 0.12（rotation 三位 + scale 三位），仅当眼睛已绑定时参与 */
         Map.entry("blink", Map.of(

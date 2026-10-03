@@ -1,0 +1,68 @@
+{
+ "description": "Star 3.6 作者动画蒸馏的运动质量参数（走1平静/奔跑 提取）",
+ "walk_cycle": {
+  "source": "走1（平静）",
+  "duration_seconds": 1,
+  "keyframes_per_cycle": 7,
+  "leg_swing_deg": [
+   16.2,
+   -22
+  ],
+  "arm_counter_swing_deg": [
+   18,
+   -18
+  ],
+  "knee_bend_deg": [
+   18,
+   7
+  ],
+  "torso_twist_y_deg": [
+   6,
+   -6
+  ],
+  "torso_lean_x_deg": 2,
+  "head_bob_deg": [
+   0,
+   1
+  ]
+ },
+ "run_cycle": {
+  "source": "奔跑",
+  "duration_seconds": 1,
+  "keyframes_per_cycle": 5,
+  "leg_swing_deg": [
+   15,
+   -30,
+   -45
+  ],
+  "knee_bend_deg": [
+   0,
+   65
+  ],
+  "arm_swing_deg": [
+   -12,
+   30
+  ],
+  "elbow_bend_deg": [
+   -42.5,
+   -7.5
+  ],
+  "torso_lean_x_deg": 15,
+  "torso_twist_y_deg": [
+   5,
+   0
+  ],
+  "head_stabilize_deg": [
+   -7.5,
+   -10
+  ]
+ },
+ "quality_rules": [
+  "膝弯只出现在摆动腿（支撑腿伸直）",
+  "手臂与腿反相（右手前=左脚前）",
+  "走路时手臂直臂摆动；跑步时肘弯 42°",
+  "躯干 Y 轴反扭跟随步伐节奏",
+  "跑步时躯干前倾 15°（vs 走路 2°）",
+  "头部保持稳定（眼望前方，不随步伐晃动）"
+ ]
+}

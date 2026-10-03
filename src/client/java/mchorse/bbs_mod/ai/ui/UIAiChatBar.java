@@ -296,6 +296,22 @@ public class UIAiChatBar extends UIElement
                 + "。也可使用其它这些命名空间下的真实方块 id；拼写错误的方块会被自动忽略。";
         }
 
+        /* 运动质量参数：从作者动画蒸馏的量化规律 */
+        try
+        {
+            var motionStream = UIAiChatBar.class.getResourceAsStream("/ai_skills/motion_patterns.json");
+
+            if (motionStream != null)
+            {
+                String motionJson = new String(motionStream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                motionStream.close();
+
+                system += "\n\n运动质量规则（作者动画蒸馏）:" + motionJson;
+            }
+        }
+        catch (Exception ignored)
+        {}
+
         if (!caps.particles.isEmpty())
         {
             system += "\n\n可用粒子效果（fx.id 用这些名字）: " + String.join(", ", caps.particles)

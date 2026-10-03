@@ -593,3 +593,21 @@ md5 校验一致部署，游戏已重启。
 **测试**：PoseSolverTest 新增 starAdaptation() 9 项（中文解析/可选不阻塞/
 眨眼缩放/两端写入 0 与 0/pose.bones.head 双通道），注册 gradle poseSolverTest
 任务并入 check；ALL PASS (50 checks)。
+
+## 三十二、第二十六轮（2026-10-03，骨骼下拉闪退修复）
+
+用户点开 AI 绑定页签的骨骼下拉即闪退。崩溃链：UIChoiceButton.open →
+UIChoiceMenu.build:149 `option.equals(current)` —— 选项列表里混进了 null。
+
+根因：新的全树骨骼清单把部分骨架（BOBJ 系）骨骼表里的 null 键也带了进来，
+传进 UIChoiceButton 的选项集合。
+
+四层防御（任何一层都足以止血，全上以求绝后患）：
+1. UIChoiceMenu.build 渲染层跳过 null 选项（所有下拉的最终兜底）；
+2. AiFormWalker 遍历时过滤 null/空骨骼名；
+3. AI 绑定页签构建选项时 removeIf(isNull)；
+4. 绑定确认对话框同样过滤。
+
+顺带修一个自伤：上一轮的空值过滤会把「添加自定义骨骼」的占位空串值立即
+删除，导致 [添加] 无效——放宽为仅过滤空键与 null 值（占位空串在 apply 时
+因 inventory 不含空串天然不生效）。

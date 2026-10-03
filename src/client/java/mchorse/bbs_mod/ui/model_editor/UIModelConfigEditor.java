@@ -708,8 +708,9 @@ public class UIModelConfigEditor extends UIElement
 
             options.add(none);
             options.addAll(bones);
+            options.removeIf(java.util.Objects::isNull);
 
-            if (!options.contains(current))
+            if (current != null && !options.contains(current))
             {
                 options.add(current);
             }

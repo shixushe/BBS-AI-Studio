@@ -67,6 +67,7 @@ public class UIAiAskOverlayPanel extends UIOverlayPanel
 
         options.add(SKIP);
         options.addAll(inventory);
+        options.removeIf(java.util.Objects::isNull);
 
         for (String generic : unresolved)
         {

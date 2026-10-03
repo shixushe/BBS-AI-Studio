@@ -60,10 +60,10 @@ public class AiBoneBindings
     /** Store and persist one model's generic -> actual map. */
     public static void set(String modelKey, Map<String, String> map)
     {
-        /* 丢弃空键/空值/UI 的「未绑定」占位，保持绑定表干净 */
+        /* 丢弃空键和 null 值；空串值是「已添加未选骨骼」的占位，保留它
+         * （apply 时 inventory 不含空串，天然不生效），否则添加动作会被吞掉 */
         map.entrySet().removeIf((e) ->
-            e.getKey() == null || e.getKey().trim().isEmpty()
-                || e.getValue() == null || e.getValue().trim().isEmpty());
+            e.getKey() == null || e.getKey().trim().isEmpty() || e.getValue() == null);
 
         ensureLoaded();
 

@@ -73,6 +73,12 @@ public class AiFormWalker
 
         for (String bone : bones)
         {
+            /* 部分骨架（BOBJ 等）的骨骼表可能带 null 键，跳过 */
+            if (bone == null || bone.isEmpty())
+            {
+                continue;
+            }
+
             Set<String> paths = ends.computeIfAbsent(bone, (k) -> new LinkedHashSet<>());
 
             if (paths.add(path))

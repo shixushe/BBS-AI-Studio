@@ -133,6 +133,12 @@ public class UIChoiceMenu <T>
 
         for (T option : this.options)
         {
+            /* 骨骼清单这类动态来源可能混入 null，渲染层兜底跳过，绝不闪退 */
+            if (option == null)
+            {
+                continue;
+            }
+
             if (this.available != null && !this.available.test(option))
             {
                 menu.action(this.icon.apply(option), this.unavailableLabel.apply(option), Colors.GRAY & Colors.RGB, () -> {});

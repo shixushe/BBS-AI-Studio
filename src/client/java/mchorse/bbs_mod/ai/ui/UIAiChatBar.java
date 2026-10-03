@@ -580,6 +580,7 @@ public class UIAiChatBar extends UIElement
         AiPreviewState.get().setFx(generated.fx);
         /* 预览键已真实落通道：只刷新时间轴，绝不路由跳面板 */
         AiFilmBridge.notifyTimeline(AiPreviewState.get().getDiff());
+        this.ghostOnionOn();
 
         /* 键在姿态分组下——预览期就切过去，立即可见可改 */
         try
@@ -653,10 +654,70 @@ public class UIAiChatBar extends UIElement
         /* 空 diff 由 applyPreview 真实应用时填充（打磨路径同样真实预览） */
         AiPreviewState.get().begin(replay, plan, new FrameDiff());
         AiFilmBridge.notifyTimeline(AiPreviewState.get().getDiff());
+        this.ghostOnionOn();
         this.refreshPreviewRow();
     }
 
     /** Diff of what the plan would change, computed without touching channels. */
+
+    /** 洋葱皮被幽灵预览接管前的用户原值（confirm/discard 恢复用）。 */
+    private int[] savedOnion;
+    private boolean savedOnionEnabled;
+
+    /**
+     * §5.4 幽灵轮廓：预览期间把 BBS 原生洋葱皮临时接管为品牌色、前后各 1 帧
+     * ——预览键落在 pose 通道上，洋葱皮正好渲染前后关键帧的半透明轮廓。
+     * 结束（入框/丢弃）恢复用户原值。
+     */
+    private void ghostOnionOn()
+    {
+        try
+        {
+            var onion = this.panel.getController().getOnionSkin();
+
+            this.savedOnion = new int[] {onion.preColor.get(), onion.postColor.get(),
+                onion.preFrames.get(), onion.postFrames.get()};
+            this.savedOnionEnabled = onion.enabled.get();
+
+            int accent = mchorse.bbs_mod.utils.colors.Colors.setA(
+                mchorse.bbs_mod.utils.colors.Colors.opaque(BBSSettings.primaryColor.get()), 0.5F);
+
+            onion.enabled.set(true);
+            onion.preColor.set(accent);
+            onion.postColor.set(accent);
+            onion.preFrames.set(1);
+            onion.postFrames.set(1);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    private void ghostOnionRestore()
+    {
+        if (this.savedOnion == null)
+        {
+            return;
+        }
+
+        try
+        {
+            var onion = this.panel.getController().getOnionSkin();
+
+            onion.preColor.set(this.savedOnion[0]);
+            onion.postColor.set(this.savedOnion[1]);
+            onion.preFrames.set(this.savedOnion[2]);
+            onion.postFrames.set(this.savedOnion[3]);
+            onion.enabled.set(this.savedOnionEnabled);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+        this.savedOnion = null;
+    }
 
     private void confirm()
     {
@@ -723,6 +784,7 @@ public class UIAiChatBar extends UIElement
             e.printStackTrace();
         }
 
+        this.ghostOnionRestore();
         this.refreshPreviewRow();
 
         /* The transcript keeps the receipt around - what was accepted and how
@@ -773,6 +835,8 @@ public class UIAiChatBar extends UIElement
         FrameDiff diff = state.getDiff();
 
         state.discard();
+
+        this.ghostOnionRestore();
 
         /* 回滚后刷新时间轴与视口（不路由） */
         AiFilmBridge.notifyTimeline(diff);

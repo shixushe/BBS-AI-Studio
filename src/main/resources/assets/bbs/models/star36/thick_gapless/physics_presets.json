@@ -1,0 +1,24 @@
+{
+    "物理骨链": {
+        "bones": {
+            "1": {
+                "gravity": 1.0,
+                "end": "1",
+                "damping": 0.15,
+                "iterations": 4
+            },
+            "2": {
+                "gravity": 1.0,
+                "end": "2",
+                "damping": 0.15,
+                "iterations": 4
+            },
+            "3": {
+                "gravity": 1.0,
+                "end": "3",
+                "damping": 0.15,
+                "iterations": 4
+            }
+        }
+    }
+}

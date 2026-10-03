@@ -39,6 +39,7 @@ public class PoseSolverTest
         poseWritesThroughCommit();
         libraryCoversContract();
         starAdaptation();
+        starBuiltins();
 
         System.out.println("\n" + (failures == 0 ? "ALL PASS" : failures + " FAILURES") + " (" + checks + " checks)");
 
@@ -132,6 +133,121 @@ public class PoseSolverTest
         equal("elastic_out", PoseSolver.interpFor("elastic").getKey(), "elastic -> elastic_out");
         equal("exp_out", PoseSolver.interpFor("snap").getKey(), "snap -> exp_out");
         equal("linear", PoseSolver.interpFor("whatever").getKey(), "unknown intent falls back to linear");
+    }
+
+    /**
+     * 内置 Star 3.6 模型深度适配回归：直接读取随 mod 打包的 model.bbs.json，
+     * 走真实组遍历 + BoneNameResolver，断言——核心六骨骼全解析、眼睛变体的
+     * 眼瞳命中、默认绑定齐全。任何一环断了（改名/漏拷/别名回退）都会在这里爆。
+     */
+    private static void starBuiltins()
+    {
+        String[][] variants = {
+            {"slim_eyes", "59", "true"},
+            {"slim_gapless", "48", "false"},
+            {"thick_eyes", null, "true"},
+            {"thick_gapless", null, "false"},
+        };
+
+        for (String[] spec : variants)
+        {
+            String variant = spec[0];
+            String expectedCount = spec[1];
+            boolean hasEyes = spec[2].equals("true");
+
+            List<String> bones = readBuiltinBones(variant);
+
+            if (bones == null)
+            {
+                fail("builtin model missing from resources: " + variant);
+
+                continue;
+            }
+
+            if (expectedCount != null)
+            {
+                equal(Integer.parseInt(expectedCount), bones.size(), variant + " bone count matches the shipped model");
+            }
+
+            BoneNameResolver.Result result = BoneNameResolver.resolve(bones);
+
+            check(result.resolved.containsKey("head") && result.resolved.get("head").actual.equals("head"),
+                variant + ": head auto-resolves exact");
+            check(result.resolved.containsKey("body") && result.resolved.get("body").actual.equals("body"),
+                variant + ": body wins over torso/torso_lower decoys");
+            check(result.resolved.containsKey("left_arm") && result.resolved.get("left_arm").actual.equals("left_arm"),
+                variant + ": left_arm exact");
+            check(result.resolved.containsKey("left_leg") && result.resolved.get("left_leg").actual.equals("left_leg"),
+                variant + ": left_leg exact");
+            check(result.isComplete(), variant + ": core six complete (optional eyes excluded)");
+
+            if (hasEyes)
+            {
+                check(bones.contains("左眼瞳") && bones.contains("右眼瞳"), variant + ": eye bones present");
+                check(result.resolved.get("left_eye") != null
+                    && result.resolved.get("left_eye").actual.equals("左眼瞳"), variant + ": left_eye <- 左眼瞳");
+                check(result.resolved.get("right_eye") != null
+                    && result.resolved.get("right_eye").actual.equals("右眼瞳"), variant + ": right_eye <- 右眼瞳");
+            }
+
+            /* 默认绑定：内置表应有该变体的绑定且含眼睛变体的眼瞳 */
+            java.util.Map<String, String> defaults = mchorse.bbs_mod.ai.pose.AiBoneBindings.builtinDefaults("bbs:star36/" + variant);
+
+            check(defaults.containsKey("head") && defaults.get("head").equals("head"),
+                variant + ": builtin default binding head");
+            check(hasEyes == defaults.containsKey("left_eye"), variant + ": defaults carry eyes iff the variant has them");
+        }
+    }
+
+    /** Walk a shipped model.bbs.json's group hierarchy (recursive groups maps). */
+    private static List<String> readBuiltinBones(String variant)
+    {
+        try
+        {
+            java.io.InputStream stream = PoseSolverTest.class.getResourceAsStream(
+                "/assets/bbs/models/star36/" + variant + "/model.bbs.json");
+
+            if (stream == null)
+            {
+                return null;
+            }
+
+            byte[] raw = stream.readAllBytes();
+            stream.close();
+
+            mchorse.bbs_mod.data.types.MapType map = mchorse.bbs_mod.data.DataToString.mapFromString(new String(raw, java.nio.charset.StandardCharsets.UTF_8));
+
+            if (map == null || !map.has("model"))
+            {
+                return null;
+            }
+
+            List<String> out = new java.util.ArrayList<>();
+            collectGroups(map.get("model").asMap().get("groups"), out);
+
+            return out;
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void collectGroups(mchorse.bbs_mod.data.types.BaseType groupsValue, List<String> out)
+    {
+        if (groupsValue == null || !mchorse.bbs_mod.data.types.BaseType.isMap(groupsValue))
+        {
+            return;
+        }
+
+        for (String name : groupsValue.asMap().keys())
+        {
+            out.add(name);
+
+            mchorse.bbs_mod.data.types.BaseType nested = groupsValue.asMap().get(name).asMap().get("groups");
+
+            collectGroups(nested, out);
+        }
     }
 
     /** Star-model-shaped inventory: real names, plus decoys that must not win. */

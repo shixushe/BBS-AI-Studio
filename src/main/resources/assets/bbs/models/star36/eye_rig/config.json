@@ -1,0 +1,11 @@
+{
+    "welds": [],
+    "culling": false,
+    "pose_group": "",
+    "anchor": "",
+    "ui_scale": 1.0,
+    "scale": [1.0, 1.0, 1.0],
+    "procedural": true,
+    "on_cpu": false,
+    "disabledBones": []
+}

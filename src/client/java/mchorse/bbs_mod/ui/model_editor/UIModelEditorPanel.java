@@ -106,6 +106,12 @@ public class UIModelEditorPanel extends UIDataDashboardPanel<ModelConfig>
 
     private final ModelForm form = new ModelForm();
 
+    /** The edited form — bindings and config pages key their data off its model id. */
+    public ModelForm getForm()
+    {
+        return this.form;
+    }
+
     /** The model id waiting for its instance to load (models load asynchronously). */
     private String pendingId;
 

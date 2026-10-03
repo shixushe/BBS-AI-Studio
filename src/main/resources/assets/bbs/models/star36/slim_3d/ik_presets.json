@@ -1,0 +1,75 @@
+{
+    "IK": {
+        "left_leg_end": {
+            "pole_target": "pole_left_leg",
+            "chain_length": 3,
+            "enabled": true,
+            "target": "controller_left_leg"
+        },
+        "left_arm_end": {
+            "pole_target": "pole_left_arm",
+            "chain_length": 3,
+            "enabled": true,
+            "target": "controller_left_arm"
+        },
+        "right_leg_end": {
+            "pole_target": "pole_right_leg",
+            "chain_length": 3,
+            "enabled": true,
+            "target": "controller_right_leg"
+        },
+        "left_leg": {
+            "chain_length": 2,
+            "enabled": true,
+            "target": "Move_X"
+        },
+        "right_leg": {
+            "chain_length": 2,
+            "enabled": true,
+            "target": "Move_X"
+        },
+        "right_arm_end": {
+            "pole_target": "pole_right_arm",
+            "chain_length": 3,
+            "enabled": true,
+            "target": "controller_right_arm"
+        }
+    },
+    "手部无IK": {
+        "left_leg_end": {
+            "pole_target": "pole_left_leg",
+            "chain_length": 3,
+            "enabled": true,
+            "target": "controller_left_leg"
+        },
+        "left_arm_end": {
+            "pole_target": "pole_left_arm",
+            "chain_length": 3,
+            "enabled": false,
+            "target": "controller_left_arm"
+        },
+        "right_leg_end": {
+            "pole_target": "pole_right_leg",
+            "chain_length": 3,
+            "enabled": true,
+            "target": "controller_right_leg"
+        },
+        "left_leg": {
+            "chain_length": 2,
+            "enabled": true,
+            "target": "Move_X"
+        },
+        "right_leg": {
+            "chain_length": 2,
+            "enabled": true,
+            "target": "Move_X"
+        },
+        "right_arm_end": {
+            "pole_target": "pole_right_arm",
+            "chain_length": 3,
+            "enabled": false,
+            "target": "controller_right_arm"
+        }
+    },
+    "简约IK": {}
+}

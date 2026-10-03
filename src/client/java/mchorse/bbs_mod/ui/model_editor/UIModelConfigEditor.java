@@ -673,7 +673,12 @@ public class UIModelConfigEditor extends UIElement
         hint.color(Colors.LIGHTER_GRAY, false);
         page.add(hint);
 
-        String modelKey = this.modelPanel.getData() == null ? null : this.modelPanel.getData().getId();
+        /* 绑定按「模型 id」持久化（与聊天生成流同一把钥匙）——表单实例 id 每次随机，用它会丢失用户绑定 */
+        String modelKey = this.modelPanel.getForm() == null ? null : this.modelPanel.getForm().model.get();
+
+        String finalKey = modelKey == null || modelKey.isEmpty()
+            ? (this.modelPanel.getData() == null ? null : this.modelPanel.getData().getId())
+            : modelKey;
 
         if (modelKey == null)
         {
@@ -691,7 +696,7 @@ public class UIModelConfigEditor extends UIElement
 
         java.util.Collections.sort(bones);
 
-        Map<String, String> saved = mchorse.bbs_mod.ai.pose.AiBoneBindings.get(modelKey);
+        Map<String, String> saved = mchorse.bbs_mod.ai.pose.AiBoneBindings.get(finalKey);
         String none = L10n.lang("bbs.ui.model_editor.ai_bindings_none").get();
 
         /* 内置必绑 + 可选（眼睛）+ 用户自定义，一起去重后逐行渲染 */
@@ -725,7 +730,7 @@ public class UIModelConfigEditor extends UIElement
             pick.h(UIConstants.CONTROL_HEIGHT);
             pick.callback((choice) ->
             {
-                Map<String, String> map = new LinkedHashMap<>(mchorse.bbs_mod.ai.pose.AiBoneBindings.get(modelKey));
+                Map<String, String> map = new LinkedHashMap<>(mchorse.bbs_mod.ai.pose.AiBoneBindings.get(finalKey));
 
                 if (choice == null || choice.equals(none))
                 {
@@ -736,7 +741,7 @@ public class UIModelConfigEditor extends UIElement
                     map.put(generic, choice);
                 }
 
-                mchorse.bbs_mod.ai.pose.AiBoneBindings.set(modelKey, map);
+                mchorse.bbs_mod.ai.pose.AiBoneBindings.set(finalKey, map);
             });
 
             UIElement row = UI.labelRow(L10n.lang("bbs.ui.ai.ask.bone").format(generic), pick);
@@ -747,10 +752,10 @@ public class UIModelConfigEditor extends UIElement
             {
                 UIIcon remove = new UIIcon(Icons.REMOVE, (b) ->
                 {
-                    Map<String, String> map = new LinkedHashMap<>(mchorse.bbs_mod.ai.pose.AiBoneBindings.get(modelKey));
+                    Map<String, String> map = new LinkedHashMap<>(mchorse.bbs_mod.ai.pose.AiBoneBindings.get(finalKey));
 
                     map.remove(generic);
-                    mchorse.bbs_mod.ai.pose.AiBoneBindings.set(modelKey, map);
+                    mchorse.bbs_mod.ai.pose.AiBoneBindings.set(finalKey, map);
                     this.fillAiBindings();
                 });
 
@@ -776,10 +781,10 @@ public class UIModelConfigEditor extends UIElement
                     return;
                 }
 
-                Map<String, String> map = new LinkedHashMap<>(mchorse.bbs_mod.ai.pose.AiBoneBindings.get(modelKey));
+                Map<String, String> map = new LinkedHashMap<>(mchorse.bbs_mod.ai.pose.AiBoneBindings.get(finalKey));
 
                 map.put(name, "");
-                mchorse.bbs_mod.ai.pose.AiBoneBindings.set(modelKey, map);
+                mchorse.bbs_mod.ai.pose.AiBoneBindings.set(finalKey, map);
                 this.fillAiBindings();
             }));
 

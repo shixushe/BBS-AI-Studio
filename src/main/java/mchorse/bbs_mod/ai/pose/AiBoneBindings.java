@@ -47,14 +47,72 @@ public class AiBoneBindings
         return slash >= 0 ? last.substring(slash + 1) : last;
     }
 
-    /** The saved bindings for a model, or an empty map. */
+    /**
+     * 内置 Star 3.6 系列的默认 AI 绑定：核心六骨骼精确命中 + 眼睛变体的眼瞳。
+     * normalize 取末段（slim_eyes 等），与模型 id 的末段一致。
+     */
+    private static final Map<String, Map<String, String>> BUILTIN_DEFAULTS = new LinkedHashMap<>();
+
+    static
+    {
+        Map<String, String> eyes = new LinkedHashMap<>();
+
+        eyes.put("head", "head");
+        eyes.put("body", "body");
+        eyes.put("left_arm", "left_arm");
+        eyes.put("right_arm", "right_arm");
+        eyes.put("left_leg", "left_leg");
+        eyes.put("right_leg", "right_leg");
+        eyes.put("left_eye", "左眼瞳");
+        eyes.put("right_eye", "右眼瞳");
+
+        for (String id : new String[] {"slim_eyes", "thick_eyes"})
+        {
+            BUILTIN_DEFAULTS.put(id, eyes);
+        }
+
+        Map<String, String> core = new LinkedHashMap<>();
+
+        core.put("head", "head");
+        core.put("body", "body");
+        core.put("left_arm", "left_arm");
+        core.put("right_arm", "right_arm");
+        core.put("left_leg", "left_leg");
+        core.put("right_leg", "right_leg");
+
+        for (String id : new String[] {"slim_gapless", "slim_female", "slim_weld", "slim_3d",
+            "thick_gapless", "thick_weld", "thick_3d"})
+        {
+            BUILTIN_DEFAULTS.put(id, core);
+        }
+    }
+
+    /** The saved bindings for a model, falling back to built-in defaults (Star 3.6). */
     public static Map<String, String> get(String modelKey)
     {
         ensureLoaded();
 
         Map<String, String> map = bindings.get(normalize(modelKey));
 
+        if (map == null || map.isEmpty())
+        {
+            Map<String, String> defaults = builtinDefaults(modelKey);
+
+            if (defaults != null)
+            {
+                return defaults;
+            }
+        }
+
         return map == null ? Map.of() : map;
+    }
+
+    /**
+     * 内置默认绑定（无需加载设置文件，纯静态表）——测试与 UI 预填都可安全调用。
+     */
+    public static Map<String, String> builtinDefaults(String modelKey)
+    {
+        return BUILTIN_DEFAULTS.get(normalize(modelKey));
     }
 
     /** Store and persist one model's generic -> actual map. */

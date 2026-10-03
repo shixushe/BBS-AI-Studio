@@ -801,3 +801,23 @@ filmInfo: **replays=3（ModelForm + ParticleForm×2）**——两轮验证粒子
 
 **过程记录**：一次脚本搬移事故把 solve 块切进确认对话框 lambda——git checkout
 单文件回滚后用 Edit 精确重打补丁（教训：结构级搬移不甩给正则脚本）。
+
+## 四十二、第三十六轮（2026-10-03，Star 3.6 深度适配：内置化 + 默认绑定 + 回归测试）
+
+用户要求：深度适配 Star 3.6（模型文件在项目文件夹，含多个人物模型），完成后
+设为 mod 自带模型，尤其 AI 骨骼绑定，并自行自动测试。
+
+- **内置化**：10 个变体全部进 mod 资产 assets/bbs/models/star36/*（ASCII
+  安全命名：slim/thick × gapless/eyes/weld/female/3d + eye_rig，共 67 文件，
+  剔除 mp4/txt）——作为 bbs:star36/* 内置模型随 jar 分发，重装也有。
+- **默认 AI 绑定**：AiBoneBindings.BUILTIN_DEFAULTS——核心六骨骼精确绑定 +
+  眼睛变体（slim_eyes/thick_eyes）的 left_eye→左眼瞳、right_eye→右眼瞳；
+  get() 在无保存绑定时回落默认；builtinDefaults() 纯静态访问（测试/UI 可
+  用，不触发 MC bootstrap）。
+- **绑定钥匙 bug 修复**：绑定页签此前按「表单实例 id」（每次随机）存绑定，
+  聊天生成流却按「模型 id」读——**用户在页签绑的永远到不了聊天**。页签改用
+  modelPanel.getForm().model.get()（新增访问器），两边同一把钥匙。
+- **自动测试**：PoseSolverTest.starBuiltins()——直接读取打包内的
+  model.bbs.json（getResourceAsStream），真实组遍历 + BoneNameResolver
+  断言（4 变体 × 9 项：骨数、核心六精确命中、body 胜过 torso/torso_lower
+  诱饵、眼睛变体眼瞳映射、默认绑定齐全）。ALL PASS（90 checks）。

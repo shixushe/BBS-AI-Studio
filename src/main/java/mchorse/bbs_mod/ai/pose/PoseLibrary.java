@@ -20,9 +20,16 @@ public class PoseLibrary
 
     /**
      * Optional generic bones: resolved and driven when the model has them
-     * (Star 3.6 ships eyes), silently skipped otherwise - never blocking.
+     * (Star 3.6 ships eyes/elbows/knees/headwear/brows), silently skipped
+     * otherwise - never blocking. 眨眼缩放与关节弯曲全靠这批扩展骨骼。
      */
-    public static final List<String> OPTIONAL_BONES = List.of("left_eye", "right_eye");
+    public static final List<String> OPTIONAL_BONES = List.of(
+        "left_eye", "right_eye",
+        "left_elbow", "right_elbow",
+        "left_knee", "right_knee",
+        "headwear",
+        "left_eyebrow", "right_eyebrow"
+    );
 
     /**
      * 每个姿态的根重心偏移（方块）：蹲/落地类压低重心让脚贴地。
@@ -40,14 +47,18 @@ public class PoseLibrary
         Map.entry("walk_step", Map.of(
             "left_leg", new float[] {24F, 0F, 0F},
             "right_leg", new float[] {-16F, 0F, 0F},
+            "left_knee", new float[] {-28F, 0F, 0F},
             "left_arm", new float[] {-12F, 0F, 3F},
+            "left_elbow", new float[] {-14F, 0F, 0F},
             "right_arm", new float[] {13F, 0F, -3F}
         )),
         Map.entry("walk_step_b", Map.of(
             "left_leg", new float[] {-16F, 0F, 0F},
             "right_leg", new float[] {24F, 0F, 0F},
+            "right_knee", new float[] {-28F, 0F, 0F},
             "left_arm", new float[] {13F, 0F, 3F},
-            "right_arm", new float[] {-12F, 0F, -3F}
+            "right_arm", new float[] {-12F, 0F, -3F},
+            "right_elbow", new float[] {-14F, 0F, 0F}
         )),
         Map.entry("crouch", Map.of(
             "body", new float[] {19F, 0F, 0F},
@@ -74,12 +85,15 @@ public class PoseLibrary
         Map.entry("punch", Map.of(
             "right_arm", new float[] {-68F, 0F, -5F},
             "left_arm", new float[] {14F, 0F, 6F},
+            "left_elbow", new float[] {28F, 0F, 0F},
             "body", new float[] {0F, -12F, 0F},
             "head", new float[] {0F, 8F, 0F}
         )),
         Map.entry("kick", Map.of(
             "right_leg", new float[] {-58F, 0F, 0F},
+            "right_knee", new float[] {-26F, 0F, 0F},
             "left_leg", new float[] {-5F, 0F, 0F},
+            "left_knee", new float[] {-10F, 0F, 0F},
             "body", new float[] {10F, 6F, 0F},
             "left_arm", new float[] {0F, 0F, 22F},
             "right_arm", new float[] {0F, 0F, -18F}
@@ -90,15 +104,19 @@ public class PoseLibrary
             "left_arm", new float[] {0F, 0F, 7F}
         )),
         Map.entry("land", Map.of(
-            "left_leg", new float[] {-22F, 0F, 0F},
-            "right_leg", new float[] {-22F, 0F, 0F},
+            "left_leg", new float[] {-14F, 0F, 0F},
+            "right_leg", new float[] {-14F, 0F, 0F},
+            "left_knee", new float[] {-34F, 0F, 0F},
+            "right_knee", new float[] {-34F, 0F, 0F},
             "body", new float[] {16F, 0F, 0F},
             "left_arm", new float[] {17F, 0F, 12F},
             "right_arm", new float[] {17F, 0F, -12F}
         )),
         Map.entry("reach", Map.of(
             "right_arm", new float[] {-96F, 0F, -3F},
+            "right_elbow", new float[] {-12F, 0F, 0F},
             "left_arm", new float[] {-8F, 0F, 4F},
+            "left_elbow", new float[] {24F, 0F, 0F},
             "head", new float[] {-5F, 0F, 0F}
         )),
         Map.entry("point", Map.of(

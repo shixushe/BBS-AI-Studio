@@ -179,6 +179,12 @@ public class PoseSolverTest
                 variant + ": left_arm exact");
             check(result.resolved.containsKey("left_leg") && result.resolved.get("left_leg").actual.equals("left_leg"),
                 variant + ": left_leg exact");
+            check(result.resolved.get("left_elbow") != null
+                && result.resolved.get("left_elbow").actual.equals("left_elbow"), variant + ": left_elbow exact");
+            check(result.resolved.get("right_knee") != null
+                && result.resolved.get("right_knee").actual.equals("right_knee"), variant + ": right_knee exact");
+            check(result.resolved.get("headwear") != null
+                && result.resolved.get("headwear").actual.equals("headwear"), variant + ": headwear exact");
             check(result.isComplete(), variant + ": core six complete (optional eyes excluded)");
 
             if (hasEyes)
@@ -196,6 +202,9 @@ public class PoseSolverTest
             check(defaults.containsKey("head") && defaults.get("head").equals("head"),
                 variant + ": builtin default binding head");
             check(hasEyes == defaults.containsKey("left_eye"), variant + ": defaults carry eyes iff the variant has them");
+            check(hasEyes == defaults.containsKey("left_eyebrow"), variant + ": defaults carry brows iff eyes variant");
+            check(defaults.containsKey("left_elbow") && defaults.containsKey("right_knee") && defaults.containsKey("headwear"),
+                variant + ": defaults carry elbows/knees/headwear");
         }
     }
 
@@ -313,8 +322,9 @@ public class PoseSolverTest
         equal(0, poses.get(0).tick, "first beat tick");
         equal(20, poses.get(2).tick, "last beat tick");
 
-        /* punch moves four bones (right_arm, left_arm, body, head) */
-        equal(4, poses.get(2).channels.size(), "punch channel count");
+        /* punch moves five bones (right_arm, left_arm, left_elbow, body, head) */
+        equal(5, poses.get(2).channels.size(), "punch channel count");
+        check(poses.get(2).channels.stream().anyMatch(c -> c.bone.equals("left_elbow")), "punch guards with the left elbow when bound");
         check(poses.get(2).channels.stream().anyMatch(c -> c.bone.equals("right_arm")), "punch uses the RESOLVED right_arm name");
 
         /* idles carry no bones - nothing to write */
@@ -351,7 +361,7 @@ public class PoseSolverTest
         List<PoseSolver.KeyPose> poses = PoseSolver.solve(plan(), bones);
         List<FrameCommitter.ChannelWrite> writes = PoseSolver.toChannelWrites(poses, properties);
 
-        equal(6, writes.size(), "six bone channels touched (crouch: body+legs+head, punch: arms+body+head)");
+        equal(7, writes.size(), "seven bone channels touched (crouch adds left_elbow via punch; walk knees excluded from this plan)");
 
         KeyframeChannel arm = properties.get(TrackId.parse("pose.bones.right_arm"));
 
@@ -369,7 +379,7 @@ public class PoseSolverTest
         equal(1, arm.getKeyframes().size(), "redo restores the punch key");
 
         /* FrameDiff saw every written tick */
-        equal(8, FrameDiffProbe.diff.changedKeyCount(), "diff covers punch's 4 + crouch's 4 + idle's 0 keys");
+        equal(9, FrameDiffProbe.diff.changedKeyCount(), "diff covers punch's 5 + crouch's 4 + idle's 0 keys");
     }
 
     private static void libraryCoversContract()

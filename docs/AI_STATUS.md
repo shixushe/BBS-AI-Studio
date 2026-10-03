@@ -821,3 +821,19 @@ filmInfo: **replays=3（ModelForm + ParticleForm×2）**——两轮验证粒子
   model.bbs.json（getResourceAsStream），真实组遍历 + BoneNameResolver
   断言（4 变体 × 9 项：骨数、核心六精确命中、body 胜过 torso/torso_lower
   诱饵、眼睛变体眼瞳映射、默认绑定齐全）。ALL PASS（90 checks）。
+
+## 四十三、第三十七轮（2026-10-03，Star 3.6 全骨骼精细化适配）
+
+用户要求：不只核心六骨骼，**所有骨骼**精细化适配 + 各种功能适配。
+
+- **可选通用骨骼扩至 15 个**：核心 6 + left_eye/right_eye + left_elbow/
+  right_elbow + left_knee/right_knee + headwear + left_eyebrow/right_eyebrow
+  （ALIASES 改 builder 构建，绕开 Map.of 十对上限；中文别名齐：左肘/左膝/
+  头饰/左眉毛）。
+- **姿态库 v3：肘膝关节弯曲**——walk_step(A) 左膝 -28°+左肘 -14°、
+  walk_step_b 右膝 -28°+右肘 -14°（真步态，不再是直腿直臂滑行）、punch 左肘
+  28° 护手、kick 双膝（踢腿 -26°+支撑 -10°）、reach 双肘、land 膝 -34° 深蹲
+  （大腿角度回调到 -14°，靠膝盖做深弯）。
+- **默认绑定全量扩展**：眼睛变体 15 条（含双眼/双眉），非眼睛变体 11 条
+  （肘/膝/头饰）——内置 Star 模型开箱即全骨骼绑定。
+- 测试断言扩展：肘/膝/头饰精确解析 + 默认绑定携带断言。ALL PASS（116 checks）。

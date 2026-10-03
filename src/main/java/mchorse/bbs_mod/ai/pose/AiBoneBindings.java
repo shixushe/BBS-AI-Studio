@@ -65,6 +65,13 @@ public class AiBoneBindings
         eyes.put("right_leg", "right_leg");
         eyes.put("left_eye", "左眼瞳");
         eyes.put("right_eye", "右眼瞳");
+        eyes.put("left_elbow", "left_elbow");
+        eyes.put("right_elbow", "right_elbow");
+        eyes.put("left_knee", "left_knee");
+        eyes.put("right_knee", "right_knee");
+        eyes.put("headwear", "headwear");
+        eyes.put("left_eyebrow", "左眉毛");
+        eyes.put("right_eyebrow", "右眉毛");
 
         for (String id : new String[] {"slim_eyes", "thick_eyes"})
         {
@@ -79,6 +86,11 @@ public class AiBoneBindings
         core.put("right_arm", "right_arm");
         core.put("left_leg", "left_leg");
         core.put("right_leg", "right_leg");
+        core.put("left_elbow", "left_elbow");
+        core.put("right_elbow", "right_elbow");
+        core.put("left_knee", "left_knee");
+        core.put("right_knee", "right_knee");
+        core.put("headwear", "headwear");
 
         for (String id : new String[] {"slim_gapless", "slim_female", "slim_weld", "slim_3d",
             "thick_gapless", "thick_weld", "thick_3d"})

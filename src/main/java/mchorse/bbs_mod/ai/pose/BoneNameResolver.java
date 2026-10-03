@@ -20,16 +20,30 @@ import java.util.Map;
 public class BoneNameResolver
 {
     /** Alias tables per generic bone, checked in order, first hit wins. */
-    private static final Map<String, List<String>> ALIASES = Map.of(
-        "head", List.of("head", "neck", "headtop", "头", "头部", "脑袋"),
-        "body", List.of("body", "torso", "chest", "spine", "bodylower", "torsolower", "bodyupper", "身体", "躯干", "上身"),
-        "left_arm", List.of("leftarm", "armleft", "larm", "arml", "左臂", "左手", "左胳膊", "左上臂"),
-        "right_arm", List.of("rightarm", "armright", "rarm", "armr", "右臂", "右手", "右胳膊", "右上臂"),
-        "left_leg", List.of("leftleg", "legleft", "lleg", "legl", "左腿", "左脚", "左足", "左大腿"),
-        "right_leg", List.of("rightleg", "legright", "rleg", "legr", "右腿", "右脚", "右足", "右大腿"),
-        "left_eye", List.of("lefteye", "eyeleft", "leye", "左眼", "左眼球", "左眼瞳", "瞳左", "左瞳"),
-        "right_eye", List.of("righteye", "eyeright", "reye", "右眼", "右眼球", "右眼瞳", "瞳右", "右瞳")
-    );
+    private static final Map<String, List<String>> ALIASES = buildAliases();
+
+    private static Map<String, List<String>> buildAliases()
+    {
+        Map<String, List<String>> map = new java.util.LinkedHashMap<>();
+
+        map.put("head", List.of("head", "neck", "headtop", "头", "头部", "脑袋"));
+        map.put("body", List.of("body", "torso", "chest", "spine", "bodylower", "torsolower", "bodyupper", "身体", "躯干", "上身"));
+        map.put("left_arm", List.of("leftarm", "armleft", "larm", "arml", "左臂", "左手", "左胳膊", "左上臂"));
+        map.put("right_arm", List.of("rightarm", "armright", "rarm", "armr", "右臂", "右手", "右胳膊", "右上臂"));
+        map.put("left_leg", List.of("leftleg", "legleft", "lleg", "legl", "左腿", "左脚", "左足", "左大腿"));
+        map.put("right_leg", List.of("rightleg", "legright", "rleg", "legr", "右腿", "右脚", "右足", "右大腿"));
+        map.put("left_eye", List.of("lefteye", "eyeleft", "leye", "左眼", "左眼球", "左眼瞳", "瞳左", "左瞳"));
+        map.put("right_eye", List.of("righteye", "eyeright", "reye", "右眼", "右眼球", "右眼瞳", "瞳右", "右瞳"));
+        map.put("left_elbow", List.of("leftelbow", "elbowleft", "左肘", "左手肘"));
+        map.put("right_elbow", List.of("rightelbow", "elbowright", "右肘", "右手肘"));
+        map.put("left_knee", List.of("leftknee", "kneeleft", "左膝", "左膝盖"));
+        map.put("right_knee", List.of("rightknee", "kneeright", "右膝", "右膝盖"));
+        map.put("headwear", List.of("headwear", "hat", "helmet", "帽子", "头饰"));
+        map.put("left_eyebrow", List.of("lefteyebrow", "eyebrowleft", "左眉", "左眉毛"));
+        map.put("right_eyebrow", List.of("righteyebrow", "eyebrowright", "右眉", "右眉毛"));
+
+        return map;
+    }
 
     public static class Resolution
     {

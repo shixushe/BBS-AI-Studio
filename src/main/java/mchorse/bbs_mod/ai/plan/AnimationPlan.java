@@ -43,6 +43,18 @@ public class AnimationPlan
 
     public String notes = "";
 
+    /** 特效请求（宽松解析）：lighting 打光 / particle 粒子，解析失败的条目直接丢弃 */
+    public static class Fx
+    {
+        public int tick;
+        public String kind = "";
+        public String id = "";
+        public float value = 1F;
+        public int duration;
+    }
+
+    public final List<Fx> fx = new ArrayList<>();
+
     public static class Beat
     {
         public int index;
@@ -87,6 +99,35 @@ public class AnimationPlan
         }
 
         plan.notes = map.getString("notes", "");
+
+        BaseType fxList = map.get("fx");
+
+        if (BaseType.isList(fxList))
+        {
+            for (int i = 0; i < fxList.asList().size(); i++)
+            {
+                BaseType entry = fxList.asList().get(i);
+
+                if (!BaseType.isMap(entry))
+                {
+                    continue;
+                }
+
+                MapType fxMap = entry.asMap();
+                Fx fx = new Fx();
+
+                fx.tick = fxMap.getInt("tick");
+                fx.kind = fxMap.getString("kind", "").trim().toLowerCase();
+                fx.id = fxMap.getString("id", "").trim();
+                fx.value = fxMap.getFloat("value", 1F);
+                fx.duration = Math.max(0, fxMap.getInt("duration", 0));
+
+                if (!fx.kind.isEmpty() && fx.tick >= 0)
+                {
+                    plan.fx.add(fx);
+                }
+            }
+        }
 
         BaseType beats = map.get("beats");
 

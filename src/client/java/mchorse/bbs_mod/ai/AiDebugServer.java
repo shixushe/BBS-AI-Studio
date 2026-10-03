@@ -418,6 +418,31 @@ public class AiDebugServer
                         return sb.toString();
                     }
 
+                    if (op.equals("filmInfo"))
+                    {
+                        var dashboard = mchorse.bbs_mod.BBSModClient.getDashboard();
+                        var panel = dashboard.getPanels().panel;
+
+                        if (!(panel instanceof mchorse.bbs_mod.ui.film.UIFilmPanel filmPanel) || filmPanel.getData() == null)
+                        {
+                            return "no film open";
+                        }
+
+                        StringBuilder sb = new StringBuilder();
+                        var film = filmPanel.getData();
+
+                        sb.append("replays=").append(film.replays.getList().size()).append(" | ");
+
+                        for (var replay : film.replays.getList())
+                        {
+                            sb.append(replay.getId())
+                                .append(":").append(replay.form.get() == null ? "null" : replay.form.get().getClass().getSimpleName())
+                                .append(" ");
+                        }
+
+                        return sb.toString();
+                    }
+
                     return "unknown op " + op;
                 }
                 catch (Exception e)

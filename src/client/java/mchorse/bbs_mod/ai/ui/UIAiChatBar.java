@@ -247,6 +247,20 @@ public class UIAiChatBar extends UIElement
         AiChatMessage thinking = this.history.log(AiChatMessage.Role.ASSISTANT, L10n.lang("bbs.ui.ai.chat.thinking").get());
 
         String system = L10n.lang("bbs.ui.ai.panel.prompt").get();
+
+        /* L0 能力扫描：让模型只请求本安装真实存在的能力 */
+        mchorse.bbs_mod.ai.AiCapabilities caps = mchorse.bbs_mod.ai.AiCapabilities.scan(this.panel.getData());
+
+        if (!caps.particles.isEmpty())
+        {
+            system += "\n\n可用粒子效果（fx.id 用这些名字）: " + String.join(", ", caps.particles)
+                + "。粒子用法：顶层 fx 数组 {\"tick\":<出现 tick>,\"kind\":\"particle\",\"id\":\"效果名\"}。";
+        }
+
+        system += "\n\n灯光：fx 数组 {\"tick\":T,\"kind\":\"lighting\",\"value\":<亮度倍率,默认1,打击瞬间可用2~3>,\"duration\":<回落 tick 数>}——会在该 tick 打亮并在 duration 后回到 1。"
+            + (caps.ik ? "\nIK: 场景已有 " + caps.ikChains + " 条约束链（手动配置，动画无需请求）。" : "")
+            + (caps.numericChannels > 0 ? "\n曲线打磨：生成后可用「打磨」模式对 " + caps.numericChannels + " 条数值通道做缓动/回弹处理。" : "");
+
         AiChatRequest request = new AiChatRequest(system, script);
 
         request.temperature(AiSettings.temperature.get());
@@ -313,6 +327,23 @@ public class UIAiChatBar extends UIElement
 
             /* Saved model bindings (model editor's AI tab / past confirmations) answer first */
             mchorse.bbs_mod.ai.pose.AiBoneBindings.apply(modelForm.model.get(), inventory, bones);
+
+            thinking.addProcess("能力扫描：" + caps.summary());
+
+            java.util.List<AnimationPlan.Fx> fxList = generated.fx;
+
+            for (AnimationPlan.Fx fx : fxList)
+            {
+                if (fx.kind.equals("particle"))
+                {
+                    thinking.addProcess("粒子请求：" + fx.id + " @tick " + fx.tick + "（入框时创建粒子回放）");
+                }
+                else if (fx.kind.equals("lighting"))
+                {
+                    thinking.addProcess("打光请求：亮度 " + fx.value + " @tick " + fx.tick
+                        + (fx.duration > 0 ? "，" + fx.duration + " tick 后回落" : ""));
+                }
+            }
 
             thinking.addProcess("骨骼绑定：" + (inventory.size() - bones.unresolved.size()) + "/" + inventory.size()
                 + "（清单来自 " + boneEnds.size() + " 根骨骼 × " + new java.util.LinkedHashSet<String>() {{
@@ -382,6 +413,40 @@ public class UIAiChatBar extends UIElement
             /* 整只 Pose 写进 pose 属性轨道——用户看得见、可编辑的那条 */
             writes = mchorse.bbs_mod.ai.pose.PoseSolver.toPoseTrackWrites(poses, boneEnds, replay.properties, replay.form.get());
 
+            /* 打光 fx：lighting 数值通道打键（预览可见，随入框/丢弃一起结算） */
+            for (AnimationPlan.Fx fx : generated.fx)
+            {
+                if (!fx.kind.equals("lighting"))
+                {
+                    continue;
+                }
+
+                mchorse.bbs_mod.film.replays.tracks.TrackId lightingId =
+                    mchorse.bbs_mod.film.replays.tracks.TrackId.property("", "lighting");
+                KeyframeChannel<?> lighting = replay.properties.getOrCreate(replay.form.get(), lightingId);
+                FrameCommitter.ChannelWrite lw = new FrameCommitter.ChannelWrite(lightingId.toKey(), lighting, 0F);
+
+                EditPatch.KeyWrite hit = new EditPatch.KeyWrite();
+
+                hit.tick = fx.tick;
+                hit.value = fx.value;
+                hit.interpolation = "exp_out";
+                lw.keys.add(hit);
+
+                if (fx.duration > 0)
+                {
+                    EditPatch.KeyWrite back = new EditPatch.KeyWrite();
+
+                    back.tick = fx.tick + fx.duration;
+                    back.value = 1F;
+                    lw.keys.add(back);
+                }
+
+                writes.add(lw);
+            }
+
+            /* 粒子 fx 是结构性的：预览期只登记，入框时创建 */
+
             StringBuilder ends = new StringBuilder();
 
             for (FrameCommitter.ChannelWrite write : writes)
@@ -404,6 +469,7 @@ public class UIAiChatBar extends UIElement
 
         /* 空 diff 由 applyPreview 在真实应用时填充——预填会双倍计数 */
         AiPreviewState.get().begin(replay, writes, new FrameDiff());
+        AiPreviewState.get().setFx(generated.fx);
         /* 预览键已真实落通道：只刷新时间轴，绝不路由跳面板 */
         AiFilmBridge.notifyTimeline(AiPreviewState.get().getDiff());
 
@@ -494,9 +560,47 @@ public class UIAiChatBar extends UIElement
         }
 
         /* 预览阶段键已真实写入——入框只负责把预览前快照包成一个撤销条目 */
+        java.util.List<AnimationPlan.Fx> pendingFx = new ArrayList<>(state.getFx());
         FrameDiff diff = state.confirm(this.panel.getUndoHandler().getUndoManager());
 
         AiFilmBridge.broadcast(diff);
+
+        /* 粒子 fx：结构性的，预览不动场景，入框时创建粒子回放 */
+        for (AnimationPlan.Fx fx : pendingFx)
+        {
+            if (!fx.kind.equals("particle") || fx.id.isEmpty())
+            {
+                continue;
+            }
+
+            try
+            {
+                mchorse.bbs_mod.forms.forms.ParticleForm particle = new mchorse.bbs_mod.forms.forms.ParticleForm();
+
+                particle.effect.set(fx.id);
+
+                Replay particleReplay = this.panel.getData().replays.addReplay();
+
+                particleReplay.form.set(particle);
+                particleReplay.category.set("ai");
+
+                /* 出生点沿用演员在该 tick 的位置 */
+                float at = Math.max(0F, fx.tick);
+
+                particleReplay.keyframes.x.insert(0, this.replayActorX(at));
+                particleReplay.keyframes.y.insert(0, this.replayActorY(at));
+                particleReplay.keyframes.z.insert(0, this.replayActorZ(at));
+
+                this.history.log(AiChatMessage.Role.SYSTEM,
+                    "粒子回放已创建：" + fx.id + " @tick " + fx.tick + "（可在回放列表调位置/裁剪时长）");
+            }
+            catch (Exception e)
+            {
+                this.history.log(AiChatMessage.Role.ERROR, "粒子回放创建失败：" + e.getMessage());
+            }
+        }
+
+        this.history.refresh();
 
         /* 入框后把时间轴带到姿态分组，pose.bones 行直接可见 */
         try
@@ -517,6 +621,42 @@ public class UIAiChatBar extends UIElement
          * to take it back, per the undo contract */
         this.history.log(AiChatMessage.Role.ASSISTANT, L10n.lang("bbs.ui.ai.bar.committed").format(diff.changedKeyCount()).get());
         this.history.refresh();
+    }
+
+    private double replayActorX(float tick)
+    {
+        return this.currentReplayDouble(this.panel.replayEditor.getReplay() == null ? null : this.panel.replayEditor.getReplay().keyframes.x, tick);
+    }
+
+    private double replayActorY(float tick)
+    {
+        Replay r = this.panel.replayEditor.getReplay();
+
+        return this.currentReplayDouble(r == null ? null : r.keyframes.y, tick);
+    }
+
+    private double replayActorZ(float tick)
+    {
+        Replay r = this.panel.replayEditor.getReplay();
+
+        return this.currentReplayDouble(r == null ? null : r.keyframes.z, tick);
+    }
+
+    private double currentReplayDouble(KeyframeChannel<Double> channel, float tick)
+    {
+        if (channel == null || channel.getKeyframes().isEmpty())
+        {
+            return 0D;
+        }
+
+        try
+        {
+            return channel.interpolate(tick);
+        }
+        catch (Exception e)
+        {
+            return channel.getKeyframes().get(0).getY();
+        }
     }
 
     private void discard()

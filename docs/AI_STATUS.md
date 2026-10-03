@@ -752,3 +752,29 @@ Pose），逐骨骼通道在这个表单上不生成行、用户一辈子不会�
 **实机端到端验证**（MCP 全程驱动）：generate("walk forward") → aiReport:
 pose 通道 9 键 skipped=[]；截图证实视口角色摆出姿态、时间轴姿势行出现关键
 帧列、预览行「预览中·9 处改动」。
+
+## 四十、第三十四轮（2026-10-03，AI 粒子/打光/插件/曲线 落地）
+
+用户质询：AI 粒子、AI 打光、AI 用插件和曲线是否落到实处。
+
+**现状盘点**：曲线(意图插值+打磨模式)早已落地；粒子/打光/插件此前**完全没接**。
+
+**本轮落地**：
+- **L0 能力扫描器 AiCapabilities**：粒子资产清单(config/bbs/assets/particles)、
+  灯光通道(恒可用)、IK 约束链计数(FormBone.constraints)、BBS 生态插件识别
+  (physics/vfx/lumen/ik/fslovecml/bbs++/posecurve 关键字)、可打磨数值通道数。
+- **提示词注入**：生成前把能力清单拼进 system prompt——模型只请求真实存在的
+  能力，粒子给出可用 id 列表与 fx JSON 用法，灯光给 fx schema。
+- **AnimationPlan.fx**（宽松解析）：顶层可选 fx 数组 {tick,kind,id,value,
+  duration}；解析失败的条目丢弃不炸。
+- **AI 打光执行**：fx kind=lighting → 演员表单 lighting 属性通道打键
+  （value 亮起,duration 后回落 1），走预览→入框结算，与姿态同一套快照/撤销。
+- **AI 粒子执行**：fx kind=particle → 预览期登记+回执提示,入框时自动创建
+  ParticleForm 回放（effect=资产 id,出生点=演员在该 tick 的插值位置,
+  category="ai"）——结构性变更不入预览快照,诚实分区。
+- 过程区新增：能力扫描摘要行 + 每条 fx 的处理行。
+
+**MCP 实机验证**：generate("punch + lighting flash 2.5/4t + particle 1") →
+aiReport: pose 5 键 + **lighting 2 键**（2.5→1.0）skipped=[]；入框后
+filmInfo: **replays=3（ModelForm + ParticleForm×2）**——两轮验证粒子回放
+均自动创建,粒子效果 "1" 已被游戏解析加载。

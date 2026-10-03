@@ -47,6 +47,14 @@ public class AiPreviewState
     /** Pre-apply snapshots: rollback on 丢弃, deferred undo entry on 入框. */
     private final List<FrameCommitter.PendingCapture> captures = new ArrayList<>();
 
+    /** 结构性特效请求（粒子回放等）——预览不执行，入框时创建 */
+    private List<mchorse.bbs_mod.ai.plan.AnimationPlan.Fx> fx = new ArrayList<>();
+
+    public List<mchorse.bbs_mod.ai.plan.AnimationPlan.Fx> getFx()
+    {
+        return this.fx;
+    }
+
     /**
      * Begin (or replace) a preview: the writes are applied FOR REAL so the
      * viewport and playback show the proposal immediately - nothing is
@@ -112,6 +120,7 @@ public class AiPreviewState
         this.ticks.clear();
         this.entries.clear();
         this.captures.clear();
+        this.fx = new ArrayList<>();
 
         return result;
     }
@@ -132,6 +141,11 @@ public class AiPreviewState
         }
 
         this.captures.clear();
+    }
+
+    public void setFx(List<mchorse.bbs_mod.ai.plan.AnimationPlan.Fx> fx)
+    {
+        this.fx = fx == null ? new ArrayList<>() : fx;
     }
 
     public boolean isActive()
@@ -179,5 +193,6 @@ public class AiPreviewState
         this.diff = null;
         this.ticks.clear();
         this.entries.clear();
+        this.fx = new ArrayList<>();
     }
 }

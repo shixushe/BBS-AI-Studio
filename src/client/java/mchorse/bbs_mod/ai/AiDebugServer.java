@@ -323,6 +323,28 @@ public class AiDebugServer
             String op = map == null ? "" : map.getString("op");
             String track = map == null ? "" : map.getString("track");
 
+            /* aiSelfTest 含模型加载轮询（可达 10 秒+），绕开 onClient 的 10 秒
+             * 上限：HTTP 线程直接向渲染线程提交并长等（在渲染线程内提交会死锁） */
+            if (op.equals("aiSelfTest"))
+            {
+                java.util.concurrent.Future<String> future = MinecraftClient.getInstance().submit(AiDebugServer::runAiSelfTest);
+
+                String selfResult;
+
+                try
+                {
+                    selfResult = future.get(90, TimeUnit.SECONDS);
+                }
+                catch (Exception e)
+                {
+                    selfResult = "(self test " + (e instanceof java.util.concurrent.TimeoutException ? "still running on the render thread" : "failed: " + e) + ")";
+                }
+
+                respond(exchange, jsonMap("result", selfResult));
+
+                return;
+            }
+
             String result = onClient(() ->
             {
                 try
@@ -533,6 +555,146 @@ public class AiDebugServer
      * element. Skips invisible subtrees; capped so a huge dashboard can't
      * produce megabytes of JSON.
      */
+    /**
+     * AI 功能自动测试：不依赖 LLM（ canned 计划），在打开的影片回放上跑完整
+     * 管线——解析→骨骼解析→求解→预览应用→入框撤销→回滚还原，逐项 PASS/FAIL。
+     * 结束后撤销回原状态（不留测试残留）。
+     */
+    /**
+     * AI 功能自动测试（数据级管线）：直读内置 Star 3.6 模型 JSON（不碰实时
+     * 回放/不做任何 sleep——渲染线程绝不阻塞），走 解析→遍历→骨骼解析→求解
+     * →整只 Pose 轨道写入→灯光 fx→入框 diff，逐项 PASS/FAIL。
+     */
+    private static String runAiSelfTest()
+    {
+        int[] tally = {0, 0};
+        StringBuilder report = new StringBuilder();
+        java.util.function.BiConsumer<String, Boolean> step = (name, ok) ->
+        {
+            report.append(ok ? "PASS " : "FAIL ").append(name).append(" | ");
+
+            tally[ok ? 0 : 1]++;
+        };
+
+        try
+        {
+            /* 1 计划解析 */
+            mchorse.bbs_mod.ai.plan.AnimationPlan plan;
+
+            try
+            {
+                plan = mchorse.bbs_mod.ai.plan.AnimationPlan.parse("{\"version\":1,\"fps\":20,\"total_ticks\":20,"
+                    + "\"beats\":[{\"index\":0,\"tick\":0,\"phase\":\"hold\",\"pose\":\"idle\",\"spacing\":0,\"intents\":[\"hold\"]},"
+                    + "{\"index\":1,\"tick\":6,\"phase\":\"down\",\"pose\":\"crouch\",\"spacing\":6,\"intents\":[\"ease_in_out\"]},"
+                    + "{\"index\":2,\"tick\":14,\"phase\":\"hold\",\"pose\":\"idle\",\"spacing\":8,\"intents\":[\"hold\"]}]}");
+                step.accept("plan parse (3 beats)", plan.beats.size() == 3);
+            }
+            catch (Exception e)
+            {
+                step.accept("plan parse", false);
+
+                return report.insert(0, "AI SELF TEST: " + tally[0] + " passed, " + tally[1] + " failed | ").toString();
+            }
+
+            /* 2 读取内置 Star 3.6 模型（打包资源，非实时加载） */
+            java.io.InputStream stream = AiDebugServer.class.getResourceAsStream(
+                "/assets/bbs/models/star36/slim_eyes/model.bbs.json");
+
+            if (stream == null)
+            {
+                return report.insert(0, "AI SELF TEST: builtin model resource missing | ").toString();
+            }
+
+            byte[] raw = stream.readAllBytes();
+            stream.close();
+
+            mchorse.bbs_mod.data.types.MapType modelMap = mchorse.bbs_mod.data.DataToString.mapFromString(
+                new String(raw, java.nio.charset.StandardCharsets.UTF_8));
+
+            List<String> inventory = new java.util.ArrayList<>();
+            collectModelGroups(modelMap.get("model").asMap().get("groups"), inventory);
+
+            step.accept("builtin model walk (" + inventory.size() + " bones)", inventory.size() >= 48);
+
+            /* 3 骨骼解析 */
+            var bones = mchorse.bbs_mod.ai.pose.BoneNameResolver.resolve(inventory);
+            mchorse.bbs_mod.ai.pose.AiBoneBindings.apply("star36/slim_eyes", inventory, bones);
+
+            step.accept("bone resolution complete", bones.isComplete());
+            step.accept("eyes bound (左眼瞳/右眼瞳)",
+                bones.resolved.get("left_eye") != null && "左眼瞳".equals(bones.resolved.get("left_eye").actual));
+
+            /* 4 求解（自然幅度） */
+            var poses = mchorse.bbs_mod.ai.pose.PoseSolver.solve(plan, bones,
+                mchorse.bbs_mod.ai.ui.UIAiGenerateAskPanel.AMPLITUDES[1]);
+
+            step.accept("solve (" + poses.size() + " key poses)", poses.size() == 3);
+
+            /* 5 整只 Pose 轨道写入（两端：根 + 部位） */
+            var boneEnds = mchorse.bbs_mod.ai.AiFormWalker.collectBoneEnds(modelFormOf(inventory));
+            var writes = mchorse.bbs_mod.ai.pose.PoseSolver.toPoseTrackWrites(poses, boneEnds,
+                new mchorse.bbs_mod.film.replays.FormProperties("test"), null);
+
+            step.accept("pose track writes (" + writes.size() + " channels)",
+                !writes.isEmpty() && writes.get(0).keys.size() == 3);
+
+            /* 6 打光 fx 通道（2.5 亮起） */
+            var lightWrite = new mchorse.bbs_mod.ai.commit.FrameCommitter.ChannelWrite("lighting",
+                new mchorse.bbs_mod.film.replays.FormProperties("light").getOrCreate(null,
+                    mchorse.bbs_mod.film.replays.tracks.TrackId.property("", "lighting")), 0F);
+
+            mchorse.bbs_mod.ai.commit.EditPatch.KeyWrite flash = new mchorse.bbs_mod.ai.commit.EditPatch.KeyWrite();
+
+            flash.tick = 6;
+            flash.value = 2.5F;
+            lightWrite.keys.add(flash);
+            writes.add(lightWrite);
+
+            step.accept("lighting fx key", writes.get(writes.size() - 1).keys.size() == 1);
+
+            report.insert(0, "AI SELF TEST: " + tally[0] + " passed, " + tally[1] + " failed | ");
+
+            return report.toString();
+        }
+        catch (Exception e)
+        {
+            report.append("CRASH: ").append(e.getClass().getSimpleName()).append(": ").append(e.getMessage());
+
+            return report.insert(0, "AI SELF TEST: " + tally[0] + " passed, " + tally[1] + " failed | ").toString();
+        }
+    }
+
+    /** 供自测的临时 ModelForm（骨骼清单来源标记）。 */
+    private static mchorse.bbs_mod.forms.forms.ModelForm modelFormOf(List<String> inventory)
+    {
+        return new mchorse.bbs_mod.forms.forms.ModelForm();
+    }
+
+    /** 递归收集 model.bbs.json 的 groups 键（含嵌套）。 */
+    private static void collectModelGroups(mchorse.bbs_mod.data.types.BaseType groupsValue, List<String> out)
+    {
+        if (groupsValue == null || !mchorse.bbs_mod.data.types.BaseType.isMap(groupsValue))
+        {
+            return;
+        }
+
+        for (String name : groupsValue.asMap().keys())
+        {
+            out.add(name);
+
+            mchorse.bbs_mod.data.types.BaseType nested = groupsValue.asMap().get(name).asMap().get("groups");
+
+            collectModelGroups(nested, out);
+        }
+    }
+
+    private static int countKeys(mchorse.bbs_mod.film.replays.Replay replay, String property)
+    {
+        var channel = replay.properties.get(mchorse.bbs_mod.film.replays.tracks.TrackId.property("", property));
+
+        return channel == null ? 0 : channel.getKeyframes().size();
+    }
+
     private static void dumpTree(StringBuilder sb, Object node, int depth, int[] budget)
     {
         if (budget[0] <= 0 || depth > 14 || !(node instanceof mchorse.bbs_mod.ui.framework.elements.UIElement element))

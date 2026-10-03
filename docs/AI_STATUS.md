@@ -902,3 +902,20 @@ usage_requests 行保留统计标签 + 补齐 zh/en 语言条目（防他处引�
   yuushya 等模组方块，拼写错误自动忽略不炸。
 - **丢弃可见**：Result.dropped（复用 Grid.unknown）+ 控制台日志——
   幻觉方块被剔多少不再无声。
+
+## 四十五（续）、第四十轮（2026-10-03，AI 功能自动测试装置 + 两个实锤修复）
+
+用户要求：自动测试 AI 功能。
+
+- **/debug op=aiSelfTest**：数据级管线自测（零 sleep、绝不阻塞渲染线程）——
+  直读内置 Star 3.6 slim_eyes 模型 JSON（59 骨骼），走 计划解析→组遍历→
+  骨骼解析（含眼睛绑定断言）→求解→整只 Pose 轨道写入→灯光 fx 键，
+  7 项全 PASS。跑通前修掉：CME 式的渲染线程 sleep 阻塞（资源重载互卡死锁
+  的元凶，已改纯数据测试）、onClient 10 秒上限（aiSelfTest 移到 HTTP 层
+  直接提交渲染线程长等）。
+- **实锤修复：jar 资产扫描大小写**——InternalAssetsSourcePack 用
+  startsWith("bbs") 匹配 mods 目录 jar，BBS-AI-Studio-2.8-1.20.1.jar
+  （大写开头）从未被扫描——**本 mod 自带资产（含 Star 3.6 内置模型）此前
+  根本不可见**。改为大小写不敏感；首次发现新资产触发了一次全量资源重载
+  （一次性）。
+- 全套测试：数据级自测 7 项 + gradle 套件 92/29/116 全绿。

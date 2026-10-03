@@ -144,7 +144,7 @@ public class InternalAssetsSourcePack implements ISourcePack
             {
                 String name = file.getName();
 
-                if (name.startsWith("bbs") && name.contains(version) && name.endsWith(".jar"))
+                if (name.toLowerCase().startsWith("bbs") && name.contains(version) && name.toLowerCase().endsWith(".jar"))
                 {
                     this.getLinksFromZipFile(file, link, links, recursive);
                 }

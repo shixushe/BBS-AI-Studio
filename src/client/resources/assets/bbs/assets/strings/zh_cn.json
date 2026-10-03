@@ -3725,5 +3725,7 @@
   "bbs.ui.ai.structure.export_axiom": "Axiom 蓝图：%s（蓝图浏览器直接可见）",
   "bbs.ui.ai.structure.cot_analyze": "▸ 分析主题「%s」——确定轮廓与材料……",
   "bbs.ui.ai.structure.cot_draft": "▸ 起草建造单（外壳/门窗/塔楼）……",
-  "bbs.ui.ai.structure.cot_expand": "▸ 展开为方块并写出蓝图……"
+  "bbs.ui.ai.structure.cot_expand": "▸ 展开为方块并写出蓝图……",
+  "bbs.config.ai.usage_prompt_tokens": "Token 用量（输入）",
+  "bbs.config.ai.usage_completion_tokens": "Token 用量（输出）"
 }

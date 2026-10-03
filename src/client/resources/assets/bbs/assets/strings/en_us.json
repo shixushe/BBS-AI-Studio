@@ -3081,5 +3081,7 @@
   "bbs.ui.ai.structure.export_axiom": "Axiom blueprint: %s (visible in the blueprint browser)",
   "bbs.ui.ai.structure.cot_analyze": "▸ Analyzing \"%s\" - silhouette and materials...",
   "bbs.ui.ai.structure.cot_draft": "▸ Drafting the build order (shell/openings/towers)...",
-  "bbs.ui.ai.structure.cot_expand": "▸ Expanding to blocks and writing blueprints..."
+  "bbs.ui.ai.structure.cot_expand": "▸ Expanding to blocks and writing blueprints...",
+  "bbs.config.ai.usage_prompt_tokens": "Token usage (prompt)",
+  "bbs.config.ai.usage_completion_tokens": "Token usage (completion)"
 }

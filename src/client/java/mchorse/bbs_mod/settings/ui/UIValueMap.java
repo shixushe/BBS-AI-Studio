@@ -85,10 +85,15 @@ public class UIValueMap
 
         register(ValueInt.class, (value, ui) ->
         {
-            /* AI token 用量：只读统计标签（累计请求数/输入/输出） */
-            if (value == mchorse.bbs_mod.ai.AiSettings.usageRequests
-                || value == mchorse.bbs_mod.ai.AiSettings.usagePromptTokens
+            /* AI token 用量：输入/输出两条计数器不渲染（数字并进 requests 行的标签） */
+            if (value == mchorse.bbs_mod.ai.AiSettings.usagePromptTokens
                 || value == mchorse.bbs_mod.ai.AiSettings.usageCompletionTokens)
+            {
+                return java.util.Collections.emptyList();
+            }
+
+            /* AI token 用量：只读统计标签（累计请求数/输入/输出） */
+            if (value == mchorse.bbs_mod.ai.AiSettings.usageRequests)
             {
                 UILabel stats = new UILabel(mchorse.bbs_mod.l10n.keys.IKey.constant(
                     "累计 " + mchorse.bbs_mod.ai.AiSettings.usageRequests.get() + " 次调用 · 输入 "
@@ -96,11 +101,6 @@ public class UIValueMap
                         + mchorse.bbs_mod.ai.AiSettings.usageCompletionTokens.get() + " tok"));
 
                 stats.color(mchorse.bbs_mod.utils.colors.Colors.LIGHTER_GRAY, false);
-
-                if (value != mchorse.bbs_mod.ai.AiSettings.usageRequests)
-                {
-                    stats.setVisible(false);
-                }
 
                 return Arrays.asList(UIValueFactory.column(stats, value));
             }

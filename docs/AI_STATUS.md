@@ -879,3 +879,13 @@ BlockArchitect 等），采纳可移植技术升级 AiArchitecture：
 灯笼命令）→ 784 块生成+放置成功；.nbt/.schem/.mcfunction 三件齐全
 （mcfunction 785 行，材质分布符合设计：白陶土 309、屋顶板 308、云杉原木
 24、玻璃 17、灯笼 1）。
+
+## 四十六、第四十一轮（2026-10-03，统计行渲染修正）
+
+用户截图：设置页露出原始键名 bbs.config.ai.usage_prompt_tokens(-comment)。
+
+根因：输入/输出两条计数器用「隐藏标签」的方式抑制渲染，但
+UIValueFactory.column 的标题标签仍会渲染（无语言条目→原始键名）。
+
+修复：这两条直接返回空列表（完全不渲染，数字并进 requests 行的统计标签）；
+usage_requests 行保留统计标签 + 补齐 zh/en 语言条目（防他处引用露键）。

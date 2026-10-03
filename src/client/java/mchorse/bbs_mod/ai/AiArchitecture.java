@@ -61,13 +61,22 @@ public class AiArchitecture
         /** Resolved block id per packed (x << 24 | z << 12 | y) cell. */
         public final Map<Long, String> cells;
 
+        /** LLM 幻觉出的未知方块被剔除的格数（0 = 全部合法）。 */
+        public final int dropped;
+
         public Result(String name, String title, int blocks, List<Integer> size, Map<Long, String> cells)
+        {
+            this(name, title, blocks, size, cells, 0);
+        }
+
+        public Result(String name, String title, int blocks, List<Integer> size, Map<Long, String> cells, int dropped)
         {
             this.name = name;
             this.title = title;
             this.blocks = blocks;
             this.size = size;
             this.cells = cells;
+            this.dropped = dropped;
         }
     }
 
@@ -230,7 +239,12 @@ public class AiArchitecture
             writeMcfunction(grid, new File(schematicsDir, name + ".mcfunction"));
         }
 
-        Result result = new Result(name, title, placed, size, new LinkedHashMap<>(grid.cells()));
+        if (grid.unknown() > 0)
+        {
+            System.out.println("[BBS AI] Ignored " + grid.unknown() + " unknown block cells from the plan");
+        }
+
+        Result result = new Result(name, title, placed, size, new LinkedHashMap<>(grid.cells()), grid.unknown());
 
         this_or_static(result, generatedDir, schematicsDir);
 

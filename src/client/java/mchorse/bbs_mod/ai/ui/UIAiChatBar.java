@@ -271,6 +271,20 @@ public class UIAiChatBar extends UIElement
         /* L0 能力扫描：让模型只请求本安装真实存在的能力 */
         mchorse.bbs_mod.ai.AiCapabilities caps = mchorse.bbs_mod.ai.AiCapabilities.scan(this.panel.getData());
 
+        if (!caps.modBlocks.isEmpty())
+        {
+            StringBuilder palette = new StringBuilder();
+
+            for (java.util.Map.Entry<String, Integer> entry : caps.modBlocks.entrySet())
+            {
+                palette.append(entry.getKey()).append("(").append(entry.getValue()).append("个) ");
+            }
+
+            system += "\n\n已安装建筑类模组方块（可直接用其 id，如 " + String.join("、", caps.blockSamples) + " …）: "
+                + palette.toString().trim()
+                + "。也可使用其它这些命名空间下的真实方块 id；拼写错误的方块会被自动忽略。";
+        }
+
         if (!caps.particles.isEmpty())
         {
             system += "\n\n可用粒子效果（fx.id 用这些名字）: " + String.join(", ", caps.particles)

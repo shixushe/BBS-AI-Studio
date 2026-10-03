@@ -32,7 +32,37 @@ public class PoseSolver
         public int tick;
         public String phase;
         public String pose;
+        /** 到达这一拍的缓动意图（计划 intents 首选），决定进入段的插值 */
+        public String intent = "linear";
         public final List<BoneChannel> channels = new ArrayList<>();
+    }
+
+    /**
+     * Plan intent vocabulary -> BBS interpolation, mirroring the polish path's
+     * semantics (snap/impact front-load then hold; elastic/back overshoot out).
+     * Named easings keep keys legible in the curve editor's dropdown.
+     */
+    public static mchorse.bbs_mod.utils.interps.IInterp interpFor(String intent)
+    {
+        if (intent == null)
+        {
+            return Interpolations.LINEAR;
+        }
+
+        switch (intent)
+        {
+            case "hold": return Interpolations.CONST;
+            case "ease_in": return Interpolations.CUBIC_IN;
+            case "ease_out": return Interpolations.CUBIC_OUT;
+            case "ease_in_out": return Interpolations.CUBIC_INOUT;
+            case "elastic": return Interpolations.ELASTIC_OUT;
+            case "overshoot": return Interpolations.BACK_OUT;
+            case "snap":
+            case "impact": return Interpolations.EXP_OUT;
+            case "smooth":
+            case "arc": return Interpolations.SINE_INOUT;
+            default: return Interpolations.LINEAR;
+        }
     }
 
     /** A single bone's contribution to a pose, in degrees. */
@@ -78,6 +108,7 @@ public class PoseSolver
             pose.tick = beat.tick;
             pose.phase = beat.phase;
             pose.pose = beat.pose;
+            pose.intent = beat.intents == null || beat.intents.isEmpty() ? "linear" : beat.intents.get(0).name().toLowerCase();
 
             for (Map.Entry<String, float[]> entry : PoseLibrary.get(beat.pose).entrySet())
             {
@@ -153,6 +184,7 @@ public class PoseSolver
 
                     key.tick = pose.tick;
                     key.interpolation = Interpolations.LINEAR.getKey();
+                    key.intent = pose.intent;
 
                     PoseTransform transform = new PoseTransform();
 
@@ -167,6 +199,23 @@ public class PoseSolver
 
                     key.poseValue = transform;
                     write.keys.add(key);
+                }
+            }
+        }
+
+        /* BBS 的键插值作用于「离开该键」的段：第 i 拍的到达意图落到第 i-1 个
+         * 键上；末键之后没有段，保持原样 */
+        for (FrameCommitter.ChannelWrite write : writes.values())
+        {
+            List<EditPatch.KeyWrite> keys = write.keys;
+
+            for (int j = 1; j < keys.size(); j++)
+            {
+                String arrival = keys.get(j).intent;
+
+                if (arrival != null)
+                {
+                    keys.get(j - 1).interpolation = interpFor(arrival).getKey();
                 }
             }
         }

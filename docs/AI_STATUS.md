@@ -628,3 +628,30 @@ NbtIo.readCompressed（gzip）读取——裸文件被当损坏拒收并进 FAIL
 
 发现但未动的旧账：assets:oak_tree 也报损坏——该文件本身是 gzip，失败原因
 另在别处（第 15 轮已记录的既有问题，面板已有优雅兜底），后续单独排查。
+
+## 三十四、第二十八轮（2026-10-03，入框跳转修复 + 动作不再生硬 + 完整制作过程）
+
+用户反馈：①点击入框跳到模型编辑器 ②动作很生硬 ③要完整思维链制作过程。
+
+① **入框跳转**：AiFilmBridge.broadcast 提交后按 aiFollow 设置路由面板
+（骨骼通道→模型编辑器）。默认值 true → **false**（设置里可重开）。用户体验
+优先：入框就该留在影片面板。
+
+② **动作不再生硬**：计划里每拍带 intents（ease/elastic/snap...），此前求解
+完全无视、一律 LINEAR。现在：
+- interpFor(intent) 映射表（对齐打磨路径语义）：ease_in/out/inout→cubic_*、
+  elastic→elastic_out、overshoot→back_out、snap/impact→exp_out、
+  smooth/arc→sine_inout、hold→constant、其余→linear；
+- BBS 键插值管「离开段」→ 第 i 拍的到达意图落到第 i-1 键（首拍线性起步）；
+- KeyWrite.intent 中转字段（transient），写键后统一二次遍历映射。
+
+③ **完整制作过程**（气泡过程区逐行刷新）：
+调用 后端类·模型·温度·max_tokens·JSON模式·思维链开关 → 模型思维链已捕获
+（N 字）→ 模型返回 model·提示/生成 token 数 → 方案解析 fps/总 tick/拍数 →
+逐拍（拍 i @tick T phase→pose←intents，超 8 拍折叠）→ 骨骼绑定 x/y（清单
+来自 N 根骨骼 × M 个表单端）→ 姿态求解 N 姿态；插值映射摘要（pose←intent→
+interp 去重）→ 通道写入 K 条（根端 x/部位端 y，共 F 个关键帧）→ 入框回执
+（N 处改动，一个撤销条目）。AiPlans 回调升级为 BiConsumer<plan, response>
+（思维链+token 数一起穿透）。
+
+测试：poseSolverTest +4 项映射检查，ALL PASS (54 checks)。

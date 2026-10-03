@@ -126,6 +126,12 @@ public class PoseSolverTest
         equal(2, writes.size(), "two-ended bone writes both form paths");
         check(properties.get(TrackId.parse("pose.bones.head")) != null, "root end channel created");
         check(properties.get(TrackId.parse("0/pose.bones.head")) != null, "body-part end channel created");
+
+        /* 意图→插值映射：到达意图落在前一个键上 */
+        equal("cubic_inout", PoseSolver.interpFor("ease_in_out").getKey(), "ease_in_out -> cubic_inout");
+        equal("elastic_out", PoseSolver.interpFor("elastic").getKey(), "elastic -> elastic_out");
+        equal("exp_out", PoseSolver.interpFor("snap").getKey(), "snap -> exp_out");
+        equal("linear", PoseSolver.interpFor("whatever").getKey(), "unknown intent falls back to linear");
     }
 
     /** Star-model-shaped inventory: real names, plus decoys that must not win. */

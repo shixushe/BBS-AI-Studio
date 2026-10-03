@@ -910,6 +910,6 @@ public class BBSSettings {
 
 		/* AI copilot (mchorse.bbs_mod.ai): BYOK gateway settings, owned by AiSettings */
 		AiSettings.register(builder);
-		aiFollow = builder.getBoolean("ai_follow", true);
+		aiFollow = builder.getBoolean("ai_follow", false); /* 入框后自动跳面板默认关：用户体验优先，设置里可开 */
 	}
 }

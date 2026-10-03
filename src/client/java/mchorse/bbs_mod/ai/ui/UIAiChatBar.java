@@ -254,20 +254,45 @@ public class UIAiChatBar extends UIElement
 
         mchorse.bbs_mod.ui.framework.UIContext context = this.getContext();
 
-        thinking.addProcess("请求模型 " + AiSettings.model.get()
-            + (AiSettings.thinking.get() ? "（思维链开）" : "（思维链关）"));
+        thinking.addProcess("调用 " + AiSettings.createBackend().getClass().getSimpleName()
+            + " · 模型 " + AiSettings.model.get()
+            + " · 温度 " + AiSettings.temperature.get()
+            + " · max_tokens " + request.maxTokens
+            + " · JSON模式 " + (request.jsonMode ? "开" : "关")
+            + (AiSettings.thinking.get() ? " · 思维链开" : ""));
         this.history.refresh();
 
-        mchorse.bbs_mod.ai.AiPlans.generatePlan(request, (generated, reasoning) ->
+        mchorse.bbs_mod.ai.AiPlans.generatePlan(request, (generated, response) ->
         {
             this.busy = false;
 
-            if (reasoning != null && !reasoning.isEmpty())
+            if (response.reasoning != null && !response.reasoning.isEmpty())
             {
-                thinking.setReasoning(reasoning);
+                thinking.setReasoning(response.reasoning);
+                thinking.addProcess("模型思维链已捕获（" + response.reasoning.length() + " 字）");
             }
 
-            thinking.addProcess("动画方案已解析：" + generated.beats.size() + " 个节拍");
+            thinking.addProcess("模型返回：" + response.model
+                + " · 提示 " + response.promptTokens + " tok + 生成 " + response.completionTokens + " tok");
+            thinking.addProcess("方案解析成功：fps=" + generated.fps + "，总 " + generated.totalTicks
+                + " tick，" + generated.beats.size() + " 拍");
+
+            int shown = Math.min(generated.beats.size(), 8);
+
+            for (int i = 0; i < shown; i++)
+            {
+                AnimationPlan.Beat beat = generated.beats.get(i);
+
+                thinking.addProcess("拍 " + beat.index + " @tick " + beat.tick
+                    + " " + beat.phase + " → " + beat.pose
+                    + "（" + beat.intents.stream().map(intent -> intent.name().toLowerCase()).collect(java.util.stream.Collectors.joining(",")) + "）");
+            }
+
+            if (generated.beats.size() > shown)
+            {
+                thinking.addProcess("……其余 " + (generated.beats.size() - shown) + " 拍略");
+            }
+
             this.history.refresh();
 
             /* 全树骨骼清单：根端 + 身体部位端（Star 3.6 的骨架在部位下） */
@@ -289,7 +314,10 @@ public class UIAiChatBar extends UIElement
             /* Saved model bindings (model editor's AI tab / past confirmations) answer first */
             mchorse.bbs_mod.ai.pose.AiBoneBindings.apply(modelForm.model.get(), inventory, bones);
 
-            thinking.addProcess("骨骼绑定：" + (inventory.size() - bones.unresolved.size()) + "/" + inventory.size());
+            thinking.addProcess("骨骼绑定：" + (inventory.size() - bones.unresolved.size()) + "/" + inventory.size()
+                + "（清单来自 " + boneEnds.size() + " 根骨骼 × " + new java.util.LinkedHashSet<String>() {{
+                    for (java.util.List<String> v : boneEnds.values()) addAll(v);
+                }}.size() + " 个表单端）");
             this.history.refresh();
 
             if (!bones.isComplete())
@@ -339,9 +367,38 @@ public class UIAiChatBar extends UIElement
         try
         {
             poses = mchorse.bbs_mod.ai.pose.PoseSolver.solve(generated, bones);
+
+            /* 插值映射摘要：拍.pose ← 意图 → BBS 插值（去重） */
+            java.util.LinkedHashSet<String> mappings = new java.util.LinkedHashSet<>();
+
+            for (mchorse.bbs_mod.ai.pose.PoseSolver.KeyPose pose : poses)
+            {
+                mappings.add(pose.pose + "←" + pose.intent + "→"
+                    + mchorse.bbs_mod.ai.pose.PoseSolver.interpFor(pose.intent).getKey());
+            }
+
+            thinking.addProcess("姿态求解：" + poses.size() + " 个关键姿态；插值映射 " + String.join("，", mappings));
+
             writes = mchorse.bbs_mod.ai.pose.PoseSolver.toChannelWrites(poses, boneEnds, replay.properties);
 
-            thinking.addProcess("姿态求解完成：" + poses.size() + " 个关键姿态，" + writes.size() + " 条通道写入待预览");
+            int rootEnds = 0;
+            int partEnds = 0;
+
+            for (FrameCommitter.ChannelWrite write : writes)
+            {
+                if (write.trackId.startsWith("pose.bones."))
+                {
+                    rootEnds++;
+                }
+                else
+                {
+                    partEnds++;
+                }
+            }
+
+            thinking.addProcess("通道写入：" + writes.size() + " 条（根端 " + rootEnds
+                + " / 部位端 " + partEnds + "），共 "
+                + writes.stream().mapToInt(w -> w.keys.size()).sum() + " 个关键帧");
         }
         catch (Exception e)
         {

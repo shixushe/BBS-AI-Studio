@@ -275,10 +275,11 @@ public class UIAiChatBar extends UIElement
 
         if (!skillPoses.isEmpty())
         {
-            List<String> names = new ArrayList<>(skillPoses.keySet());
+            String intentTable = mchorse.bbs_mod.ai.AiSkillLibrary.intentPrompt(modelForm.model.get());
 
-            system += "\n\n该模型自带的预设姿势（beat.pose 可用 \"@名字\" 直接引用，作者调好的成品姿势）: @"
-                + String.join("、@", names) + "。如 \"pose\":\"@摊手\"。适合表达情绪与标志性动作；走跑跳等位移仍用姿态库。";
+            system += "\n\n该模型自带 " + skillPoses.size() + " 个预设姿势（beat.pose 用 \"@名字\" 直接引用，作者调好的成品姿势）:"
+                + intentTable
+                + "适合表达情绪与标志性动作；走跑跳等位移仍用姿态库。";
         }
 
         if (!caps.modBlocks.isEmpty())

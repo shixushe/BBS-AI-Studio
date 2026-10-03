@@ -136,6 +136,73 @@ public class AiSkillLibrary
         return posesForModel(modelId).get(name.substring(1));
     }
 
+    /**
+     * 意图→姿势名映射表：帮助 LLM 按语义选对 @姿势。
+     * 每条 = 意图关键词列表 → 推荐姿势名列表。
+     */
+    public static final Map<String, List<String>> INTENT_MAP = buildIntentMap();
+
+    private static Map<String, List<String>> buildIntentMap()
+    {
+        Map<String, List<String>> map = new LinkedHashMap<>();
+
+        map.put("开心 可爱 卖萌", List.of("可爱姿势1", "可爱姿势2"));
+        map.put("悲伤 哭泣 崩溃 难过", List.of("大哭崩溃", "极度悲伤", "委屈"));
+        map.put("害羞 害臊", List.of("害羞姿势1", "害羞姿势2"));
+        map.put("无奈 投降 无语", List.of("无奈摊手", "浑身不自在"));
+        map.put("疑惑 困惑 不解", List.of("疑惑"));
+        map.put("自信 沉稳 冷静", List.of("沉稳站姿"));
+        map.put("登场 出场 亮相 夸张", List.of("闪亮登场姿势1（当当！）", "闪亮登场姿势2", "潮人Dab手势"));
+        map.put("赞美 敬畏 崇拜", List.of("赞美太阳"));
+        map.put("亲昵 牵手 浪漫", List.of("牵住我的手"));
+        map.put("挥手 打招呼 再见", List.of("挥手姿势1", "挥手姿势2"));
+        map.put("鞠躬 敬礼 道歉 感谢", List.of("鞠躬姿势1", "鞠躬姿势2"));
+        map.put("坐下 休息", List.of("坐姿"));
+        map.put("睡觉 睡着 休息", List.of("熟睡姿态"));
+        map.put("思考 想想 犹豫", List.of("思考姿态1", "思考姿态2", "思考姿态3"));
+        map.put("抱胸 不满 抗议", List.of("双臂抱胸"));
+        map.put("张开 拥抱 张开双臂", List.of("双臂张开"));
+        map.put("搬运 扛 拿", List.of("搬运"));
+        map.put("蹲 蹲下 蹲着", List.of("蹲下"));
+        map.put("站 起身 起来", List.of("抬头起身", "沉稳站姿"));
+        map.put("道具 手持 武器", List.of("各类随身道具动作"));
+
+        return map;
+    }
+
+    /** 格式化的意图映射提示词（只包含当前模型已有的姿势）。 */
+    public static String intentPrompt(String modelId)
+    {
+        var available = posesForModel(modelId);
+
+        if (available.isEmpty())
+        {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder("\n预设姿势意图对照表（选 @姿势名 填入 beat.pose）:\n");
+
+        for (var entry : INTENT_MAP.entrySet())
+        {
+            List<String> valid = new ArrayList<>();
+
+            for (String poseName : entry.getValue())
+            {
+                if (available.containsKey(poseName))
+                {
+                    valid.add("@" + poseName);
+                }
+            }
+
+            if (!valid.isEmpty())
+            {
+                sb.append("  ").append(entry.getKey()).append(" → ").append(String.join(" / ", valid)).append("\n");
+            }
+        }
+
+        return sb.toString();
+    }
+
     /** 排序后的技能姿势名（注入提示词用）。 */
     public static List<String> names(String modelId)
     {

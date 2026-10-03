@@ -655,3 +655,24 @@ interp 去重）→ 通道写入 K 条（根端 x/部位端 y，共 F 个关键�
 （思维链+token 数一起穿透）。
 
 测试：poseSolverTest +4 项映射检查，ALL PASS (54 checks)。
+
+## 三十五、第二十九轮（2026-10-03，真实预览：预览=可见可播，丢弃=回滚，入框=补撤销）
+
+用户反馈：预览没用（视口无变化），入框后关键帧也不在时间轴显示。
+
+根因一：预览只是记录 tick 画时间轴标记，从未把键写进通道——视口当然没变化。
+根因二：入框的键写进 pose.bones 通道（部位端），而时间轴停在「位置与旋转」
+分组——键在「姿态」分组下，用户找不到；且旧 jar 的写入还在根端（两端修复
+上一轮才进），更显无用。
+
+修复（预览状态机重写）：
+- **begin = 真实应用**：FrameCommitter.applyPreview 把写入真正落到通道
+  （与提交同一条 applyWrites 路径与守卫），视口/播放立即可见可播；同时按
+  通道抓 before 快照（PendingCapture）。生成与打磨两条路径共用。
+- **丢弃 = 回滚**：逐通道 fromData 恢复快照 + FilmEditEvents 广播，时间轴
+  与视口立即还原；begin 时若存在旧预览先回滚（防泄漏）。
+- **入框 = 补撤销**：把预览前快照 vs 当前状态包进一个 noMerging 的
+  CompoundUndo（Ctrl+Z 一步回到 AI 之前），随后广播 + 自动把回放编辑器
+  切到 POSE 分类——pose.bones 行直接出现在时间轴。
+- 双计数修复：begin 改收空 diff 由 applyPreview 填充（原 buildPreviewDiff
+  预填 + 应用填充会双倍）。

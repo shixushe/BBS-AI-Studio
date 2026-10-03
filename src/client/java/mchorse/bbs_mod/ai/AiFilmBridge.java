@@ -52,7 +52,7 @@ public class AiFilmBridge
     }
 
     /** One broadcast + one interface follow per commit (spec 5.9: jump once). */
-    private static void broadcast(FrameDiff diff)
+    public static void broadcast(FrameDiff diff)
     {
         if (diff.affectedChannels.isEmpty())
         {

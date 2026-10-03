@@ -369,7 +369,7 @@ public class UIReplaysEditor extends UIElement implements IBoneSelectionHost
         }
     }
 
-    private void setCategory(TrackCategory c)
+    public void setCategory(TrackCategory c)
     {
         this.actionsMode = false;
         this.allMode = false;

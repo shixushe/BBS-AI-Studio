@@ -162,6 +162,69 @@ public class FrameCommitter
     }
 
     /** A pre-resolved channel plus the keys to write onto it. */
+    /** A channel's pre-apply snapshot: the rollback and the deferred undo entry both eat these. */
+    public static class PendingCapture
+    {
+        public final KeyframeChannel channel;
+        public final MapType oldState;
+
+        PendingCapture(KeyframeChannel channel, MapType oldState)
+        {
+            this.channel = channel;
+            this.oldState = oldState;
+        }
+    }
+
+    /**
+     * Preview application: apply the writes for real (viewport and playback
+     * show them) but push NO undo entry - the caller holds the captures and
+     * either promotes them into one CompoundUndo (入框) or restores them
+     * (丢弃). Same guards as the committing path.
+     */
+    public static List<PendingCapture> applyPreview(List<ChannelWrite> writes, FrameDiff diff)
+    {
+        List<PendingCapture> captures = new ArrayList<>();
+
+        if (writes == null)
+        {
+            return captures;
+        }
+
+        for (ChannelWrite write : writes)
+        {
+            if (write.channel == null)
+            {
+                diff.skippedTracks.add(write.trackId);
+
+                continue;
+            }
+
+            IKeyframeFactory factory = write.channel.getFactory();
+
+            if (!isNumericFactory(factory) && !write.poseChannel)
+            {
+                diff.skippedTracks.add(write.trackId);
+
+                continue;
+            }
+
+            MapType oldState = mchorse.bbs_mod.ai.commit.ChannelStateUndo.capture(write.channel);
+
+            if (applyWrites(write.channel, factory, write, diff) > 0)
+            {
+                if (write.newlyCreated)
+                {
+                    diff.createdTracks.add(write.trackId);
+                }
+
+                diff.affectedChannels.add(write.channel);
+                captures.add(new PendingCapture(write.channel, oldState));
+            }
+        }
+
+        return captures;
+    }
+
     public static class ChannelWrite
     {
         public final String trackId;
@@ -187,7 +250,7 @@ public class FrameCommitter
     }
 
     /** Writes one channel's keys; returns how many keys ended up written. */
-    private static int applyWrites(KeyframeChannel channel, IKeyframeFactory factory, ChannelWrite write, FrameDiff diff)
+    public static int applyWrites(KeyframeChannel channel, IKeyframeFactory factory, ChannelWrite write, FrameDiff diff)
     {
         int written = 0;
 

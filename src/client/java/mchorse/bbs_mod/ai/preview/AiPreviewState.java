@@ -44,25 +44,94 @@ public class AiPreviewState
     /** The pending writes - preview and confirm run the exact same list. */
     private List<FrameCommitter.ChannelWrite> plan;
 
-    /** Begin (or replace) a preview for the given replay. */
+    /** Pre-apply snapshots: rollback on 丢弃, deferred undo entry on 入框. */
+    private final List<FrameCommitter.PendingCapture> captures = new ArrayList<>();
+
+    /**
+     * Begin (or replace) a preview: the writes are applied FOR REAL so the
+     * viewport and playback show the proposal immediately - nothing is
+     * committed to the undo history yet. 丢弃 restores the captures; 入框
+     * promotes them into one CompoundUndo.
+     */
     public void begin(Replay replay, List<FrameCommitter.ChannelWrite> plan, FrameDiff diff)
     {
+        /* A stale preview (user generated again without discarding) must not
+         * leak its captures - roll them back first */
+        this.rollbackCaptures();
+
         this.replay = replay;
         this.plan = plan;
         this.diff = diff;
 
         this.ticks.clear();
         this.entries.clear();
+        this.captures.clear();
 
-        if (diff != null)
+        if (plan != null && !plan.isEmpty())
         {
-            this.entries.addAll(diff.entries);
+            this.captures.addAll(FrameCommitter.applyPreview(plan, diff));
+        }
 
-            for (FrameDiff.Entry entry : diff.entries)
+        for (FrameDiff.Entry entry : diff.entries)
+        {
+            this.ticks.add(entry.tick);
+            this.entries.add(entry);
+        }
+    }
+
+    /**
+     * 入框: the preview keys are already in the channels - wrap the captured
+     * pre-preview states into one no-merge undo entry so Ctrl+Z returns to
+     * the pre-AI state, and hand the diff back for the receipt/broadcast.
+     */
+    public FrameDiff confirm(mchorse.bbs_mod.utils.undo.UndoManager<mchorse.bbs_mod.settings.values.core.ValueGroup> undoManager)
+    {
+        FrameDiff result = this.diff;
+
+        if (!this.captures.isEmpty() && undoManager != null)
+        {
+            List<mchorse.bbs_mod.utils.undo.IUndo<mchorse.bbs_mod.settings.values.core.ValueGroup>> undos = new ArrayList<>();
+
+            for (FrameCommitter.PendingCapture capture : this.captures)
             {
-                this.ticks.add(entry.tick);
+                undos.add(new mchorse.bbs_mod.ai.commit.ChannelStateUndo(
+                    capture.channel.getPath(), capture.oldState,
+                    mchorse.bbs_mod.ai.commit.ChannelStateUndo.capture(capture.channel)));
+            }
+
+            mchorse.bbs_mod.utils.undo.CompoundUndo<mchorse.bbs_mod.settings.values.core.ValueGroup> compound =
+                new mchorse.bbs_mod.utils.undo.CompoundUndo<>(undos.toArray(new mchorse.bbs_mod.utils.undo.IUndo[0]));
+
+            compound.noMerging();
+            undoManager.pushUndo(compound);
+        }
+
+        this.replay = null;
+        this.plan = null;
+        this.diff = null;
+        this.ticks.clear();
+        this.entries.clear();
+        this.captures.clear();
+
+        return result;
+    }
+
+    /** 丢弃: bitwise-restore every channel the preview touched. */
+    private void rollbackCaptures()
+    {
+        for (FrameCommitter.PendingCapture capture : this.captures)
+        {
+            try
+            {
+                capture.channel.fromData(capture.oldState);
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
             }
         }
+
+        this.captures.clear();
     }
 
     public boolean isActive()
@@ -103,6 +172,8 @@ public class AiPreviewState
 
     public void discard()
     {
+        this.rollbackCaptures();
+
         this.replay = null;
         this.plan = null;
         this.diff = null;

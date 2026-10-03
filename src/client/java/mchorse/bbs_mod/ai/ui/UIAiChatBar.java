@@ -410,7 +410,8 @@ public class UIAiChatBar extends UIElement
             return;
         }
 
-        AiPreviewState.get().begin(replay, writes, this.buildPreviewDiff(writes));
+        /* 空 diff 由 applyPreview 在真实应用时填充——预填会双倍计数 */
+        AiPreviewState.get().begin(replay, writes, new FrameDiff());
 
         int lastTick = generated.beats.isEmpty() ? 0 : generated.beats.get(generated.beats.size() - 1).tick;
 
@@ -468,7 +469,8 @@ public class UIAiChatBar extends UIElement
 
         /* Compute the diff by dry-running the polisher result against the
          * current keys - the preview state only holds what WOULD change */
-        AiPreviewState.get().begin(replay, plan, this.buildPreviewDiff(plan));
+        /* 空 diff 由 applyPreview 真实应用时填充（打磨路径同样真实预览） */
+        AiPreviewState.get().begin(replay, plan, new FrameDiff());
         this.refreshPreviewRow();
     }
 
@@ -508,19 +510,45 @@ public class UIAiChatBar extends UIElement
             return;
         }
 
-        FrameDiff diff = AiFilmBridge.commit(this.panel, state.getPlan());
+        /* 预览阶段键已真实写入——入框只负责把预览前快照包成一个撤销条目 */
+        FrameDiff diff = state.confirm(this.panel.getUndoHandler().getUndoManager());
 
-        state.discard();
+        AiFilmBridge.broadcast(diff);
+
+        /* 入框后把时间轴带到姿态分组，pose.bones 行直接可见 */
+        try
+        {
+            if (this.panel.replayEditor != null)
+            {
+                this.panel.replayEditor.setCategory(mchorse.bbs_mod.api.client.editor.TrackCategory.POSE);
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
         this.refreshPreviewRow();
 
         /* The transcript keeps the receipt around - what was accepted and how
          * to take it back, per the undo contract */
         this.history.log(AiChatMessage.Role.ASSISTANT, L10n.lang("bbs.ui.ai.bar.committed").format(diff.changedKeyCount()).get());
+        this.history.refresh();
     }
 
     private void discard()
     {
-        AiPreviewState.get().discard();
+        AiPreviewState state = AiPreviewState.get();
+        FrameDiff diff = state.getDiff();
+
+        state.discard();
+
+        /* 回滚后广播，时间轴与视口立即回到预览前 */
+        if (diff != null && !diff.affectedChannels.isEmpty())
+        {
+            AiFilmBridge.broadcast(diff);
+        }
+
         this.refreshPreviewRow();
     }
 

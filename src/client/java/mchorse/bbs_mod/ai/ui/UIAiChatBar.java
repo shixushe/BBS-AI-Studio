@@ -70,6 +70,10 @@ public class UIAiChatBar extends UIElement
     /** Change count already reported to the transcript, so the preview entry logs once per result. */
     private int lastLoggedCount = -1;
 
+    /** 生成询问面板带回的答案：动作幅度索引（0 含蓄/1 自然/2 夸张）与地面识别开关 */
+    private int lastAmplitude = 1;
+    private boolean groundDetect = true;
+
     public UIAiChatBar(UIFilmPanel panel)
     {
         this.panel = panel;
@@ -175,7 +179,7 @@ public class UIAiChatBar extends UIElement
         }
         else
         {
-            this.executeGenerate(text);
+            this.askThenGenerate(text);
         }
     }
 
@@ -213,8 +217,24 @@ public class UIAiChatBar extends UIElement
      * replay's model bones -> the same preview/commit pipeline polish uses.
      * The end-to-end loop of the copilot spec's delivery goal.
      */
+    /** 点「执行」(生成模式)：先向用户补充细节（幅度/地面识别），再走生成。 */
+    public void askThenGenerate(String script)
+    {
+        mchorse.bbs_mod.ui.framework.UIContext context = this.getContext();
+
+        mchorse.bbs_mod.ui.framework.elements.overlay.UIOverlay.addOverlay(context,
+            new UIAiGenerateAskPanel(context, (answer) -> this.executeGenerate(script, answer[0], answer[1] == 1)), 240, 0.7F);
+    }
+
     public void executeGenerate(String script)
     {
+        this.executeGenerate(script, 1, true);
+    }
+
+    public void executeGenerate(String script, int amplitudeIndex, boolean groundDetect)
+    {
+        this.lastAmplitude = amplitudeIndex;
+        this.groundDetect = groundDetect;
         this.history.log(AiChatMessage.Role.USER, script);
         this.input.setText("");
 
@@ -329,6 +349,9 @@ public class UIAiChatBar extends UIElement
             mchorse.bbs_mod.ai.pose.AiBoneBindings.apply(modelForm.model.get(), inventory, bones);
 
             thinking.addProcess("能力扫描：" + caps.summary());
+            thinking.addProcess("用户设定：幅度 "
+                + (this.lastAmplitude == 0 ? "含蓄" : this.lastAmplitude == 1 ? "自然" : "夸张")
+                + " · 地面识别" + (this.groundDetect ? "开（蹲/落地自动贴地）" : "关"));
 
             java.util.List<AnimationPlan.Fx> fxList = generated.fx;
 
@@ -397,7 +420,8 @@ public class UIAiChatBar extends UIElement
 
         try
         {
-            poses = mchorse.bbs_mod.ai.pose.PoseSolver.solve(generated, bones);
+            poses = mchorse.bbs_mod.ai.pose.PoseSolver.solve(generated, bones,
+                mchorse.bbs_mod.ai.ui.UIAiGenerateAskPanel.AMPLITUDES[Math.max(0, Math.min(2, this.lastAmplitude))]);
 
             /* 插值映射摘要：拍.pose ← 意图 → BBS 插值（去重） */
             java.util.LinkedHashSet<String> mappings = new java.util.LinkedHashSet<>();
@@ -412,6 +436,75 @@ public class UIAiChatBar extends UIElement
 
             /* 整只 Pose 写进 pose 属性轨道——用户看得见、可编辑的那条 */
             writes = mchorse.bbs_mod.ai.pose.PoseSolver.toPoseTrackWrites(poses, boneEnds, replay.properties, replay.form.get());
+
+            /* 地面识别：蹲/压缩/落地拍在 y 通道插重心下沉键（幅度来自 ROOT_Y），保证脚贴地 */
+            if (this.groundDetect)
+            {
+                KeyframeChannel<Double> yChannel = replay.keyframes.y;
+                double baseY = yChannel.getKeyframes().isEmpty()
+                    ? this.replayActorY(0)
+                    : yChannel.getKeyframes().get(0).getY();
+                int sinkKeys = 0;
+                int totalTick = Math.max(1, generated.totalTicks);
+
+                for (mchorse.bbs_mod.ai.pose.PoseSolver.KeyPose pose : poses)
+                {
+                    float sink = mchorse.bbs_mod.ai.pose.PoseLibrary.ROOT_Y.getOrDefault(pose.pose, 0F);
+
+                    if (sink == 0F)
+                    {
+                        continue;
+                    }
+
+                    FrameCommitter.ChannelWrite sinkWrite = null;
+
+                    for (FrameCommitter.ChannelWrite write : writes)
+                    {
+                        if (write.trackId.equals("y"))
+                        {
+                            sinkWrite = write;
+
+                            break;
+                        }
+                    }
+
+                    if (sinkWrite == null)
+                    {
+                        sinkWrite = new FrameCommitter.ChannelWrite("y", yChannel, 0F);
+                        writes.add(sinkWrite);
+                    }
+
+                    EditPatch.KeyWrite down = new EditPatch.KeyWrite();
+
+                    down.tick = pose.tick;
+                    down.value = (float) (baseY + sink);
+                    down.interpolation = "cubic_out";
+                    sinkWrite.keys.add(down);
+
+                    EditPatch.KeyWrite up = new EditPatch.KeyWrite();
+
+                    up.tick = Math.min(totalTick, pose.tick + 6);
+                    up.value = (float) baseY;
+                    up.interpolation = "cubic_inout";
+                    sinkWrite.keys.add(up);
+
+                    sinkKeys += 2;
+                }
+
+                if (sinkKeys > 0)
+                {
+                    for (FrameCommitter.ChannelWrite write : writes)
+                    {
+                        if (write.trackId.equals("y"))
+                        {
+                            write.keys.sort(java.util.Comparator.comparingDouble(k -> k.tick));
+                        }
+                    }
+
+                    thinking.addProcess("地面识别：蹲/落地重心键 +" + sinkKeys
+                        + "（y 通道，基线 " + String.format("%.2f", baseY) + "）");
+                }
+            }
 
             /* 打光 fx：lighting 数值通道打键（预览可见，随入框/丢弃一起结算） */
             for (AnimationPlan.Fx fx : generated.fx)

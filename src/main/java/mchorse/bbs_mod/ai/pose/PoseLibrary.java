@@ -24,70 +24,87 @@ public class PoseLibrary
      */
     public static final List<String> OPTIONAL_BONES = List.of("left_eye", "right_eye");
 
+    /**
+     * 每个姿态的根重心偏移（方块）：蹲/落地类压低重心让脚贴地。
+     * 仅当地面识别开启且检测到地面时应用。
+     */
+    public static final Map<String, Float> ROOT_Y = Map.of(
+        "crouch", -0.45F,
+        "compress", -0.18F,
+        "land", -0.22F
+    );
+
     private static final Map<String, Map<String, float[]>> POSES = Map.ofEntries(
         Map.entry("idle", Map.of()),
+        /* 走路左右两步：LLM 交替使用才有步态 */
+        Map.entry("walk_step", Map.of(
+            "left_leg", new float[] {24F, 0F, 0F},
+            "right_leg", new float[] {-16F, 0F, 0F},
+            "left_arm", new float[] {-12F, 0F, 3F},
+            "right_arm", new float[] {13F, 0F, -3F}
+        )),
+        Map.entry("walk_step_b", Map.of(
+            "left_leg", new float[] {-16F, 0F, 0F},
+            "right_leg", new float[] {24F, 0F, 0F},
+            "left_arm", new float[] {13F, 0F, 3F},
+            "right_arm", new float[] {-12F, 0F, -3F}
+        )),
         Map.entry("crouch", Map.of(
-            "body", new float[] {28F, 0F, 0F},
-            "left_leg", new float[] {-42F, 0F, 0F},
-            "right_leg", new float[] {-42F, 0F, 0F},
-            "head", new float[] {-18F, 0F, 0F}
+            "body", new float[] {19F, 0F, 0F},
+            "left_leg", new float[] {-30F, 0F, 0F},
+            "right_leg", new float[] {-30F, 0F, 0F},
+            "head", new float[] {-12F, 0F, 0F}
         )),
         Map.entry("compress", Map.of(
-            "body", new float[] {14F, 0F, 0F},
-            "left_leg", new float[] {-20F, 0F, 0F},
-            "right_leg", new float[] {-20F, 0F, 0F}
+            "body", new float[] {10F, 0F, 0F},
+            "left_leg", new float[] {-14F, 0F, 0F},
+            "right_leg", new float[] {-14F, 0F, 0F}
         )),
         Map.entry("rise", Map.of(
-            "body", new float[] {-8F, 0F, 0F},
-            "left_arm", new float[] {0F, 0F, 12F},
-            "right_arm", new float[] {0F, 0F, -12F}
+            "body", new float[] {-6F, 0F, 0F},
+            "left_arm", new float[] {0F, 0F, 8F},
+            "right_arm", new float[] {0F, 0F, -8F}
         )),
         Map.entry("fall", Map.of(
-            "left_arm", new float[] {0F, 0F, 135F},
-            "right_arm", new float[] {0F, 0F, -135F},
-            "left_leg", new float[] {12F, 0F, 0F},
-            "right_leg", new float[] {-8F, 0F, 0F}
+            "left_arm", new float[] {0F, 0F, 62F},
+            "right_arm", new float[] {0F, 0F, -62F},
+            "left_leg", new float[] {9F, 0F, 0F},
+            "right_leg", new float[] {-6F, 0F, 0F}
         )),
         Map.entry("punch", Map.of(
-            "right_arm", new float[] {-92F, 0F, -6F},
-            "left_arm", new float[] {18F, 0F, 8F},
-            "body", new float[] {0F, -18F, 0F},
-            "head", new float[] {0F, 12F, 0F}
+            "right_arm", new float[] {-68F, 0F, -5F},
+            "left_arm", new float[] {14F, 0F, 6F},
+            "body", new float[] {0F, -12F, 0F},
+            "head", new float[] {0F, 8F, 0F}
         )),
         Map.entry("kick", Map.of(
-            "right_leg", new float[] {-85F, 0F, 0F},
-            "left_leg", new float[] {-6F, 0F, 0F},
-            "body", new float[] {14F, 8F, 0F},
-            "left_arm", new float[] {0F, 0F, 32F},
-            "right_arm", new float[] {0F, 0F, -28F}
+            "right_leg", new float[] {-58F, 0F, 0F},
+            "left_leg", new float[] {-5F, 0F, 0F},
+            "body", new float[] {10F, 6F, 0F},
+            "left_arm", new float[] {0F, 0F, 22F},
+            "right_arm", new float[] {0F, 0F, -18F}
         )),
         Map.entry("turn", Map.of(
-            "body", new float[] {0F, 42F, 0F},
-            "head", new float[] {0F, 28F, 0F},
-            "left_arm", new float[] {0F, 0F, 10F}
-        )),
-        Map.entry("walk_step", Map.of(
-            "left_leg", new float[] {34F, 0F, 0F},
-            "right_leg", new float[] {-24F, 0F, 0F},
-            "left_arm", new float[] {-18F, 0F, 4F},
-            "right_arm", new float[] {20F, 0F, -4F}
+            "body", new float[] {0F, 28F, 0F},
+            "head", new float[] {0F, 18F, 0F},
+            "left_arm", new float[] {0F, 0F, 7F}
         )),
         Map.entry("land", Map.of(
-            "left_leg", new float[] {-32F, 0F, 0F},
-            "right_leg", new float[] {-32F, 0F, 0F},
-            "body", new float[] {24F, 0F, 0F},
-            "left_arm", new float[] {26F, 0F, 18F},
-            "right_arm", new float[] {26F, 0F, -18F}
+            "left_leg", new float[] {-22F, 0F, 0F},
+            "right_leg", new float[] {-22F, 0F, 0F},
+            "body", new float[] {16F, 0F, 0F},
+            "left_arm", new float[] {17F, 0F, 12F},
+            "right_arm", new float[] {17F, 0F, -12F}
         )),
         Map.entry("reach", Map.of(
-            "right_arm", new float[] {-158F, 0F, -4F},
-            "left_arm", new float[] {-12F, 0F, 6F},
-            "head", new float[] {-8F, 0F, 0F}
+            "right_arm", new float[] {-96F, 0F, -3F},
+            "left_arm", new float[] {-8F, 0F, 4F},
+            "head", new float[] {-5F, 0F, 0F}
         )),
         Map.entry("point", Map.of(
-            "right_arm", new float[] {-88F, 0F, -14F},
-            "head", new float[] {0F, -16F, 0F},
-            "left_arm", new float[] {0F, 0F, 6F}
+            "right_arm", new float[] {-62F, 0F, -10F},
+            "head", new float[] {0F, -10F, 0F},
+            "left_arm", new float[] {0F, 0F, 4F}
         )),
         /* 眨眼：眼骨 Y 压缩到 0.12（rotation 三位 + scale 三位），仅当眼睛已绑定时参与 */
         Map.entry("blink", Map.of(

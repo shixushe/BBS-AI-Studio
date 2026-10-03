@@ -36,6 +36,9 @@ public class PoseSolver
         public String pose;
         /** 到达这一拍的缓动意图（计划 intents 首选），决定进入段的插值 */
         public String intent = "linear";
+
+        /** 该拍的根重心偏移（方块，负=下沉），来自姿态库 ROOT_Y */
+        public float rootY;
         public final List<BoneChannel> channels = new ArrayList<>();
     }
 
@@ -89,6 +92,15 @@ public class PoseSolver
      */
     public static List<KeyPose> solve(AnimationPlan plan, BoneNameResolver.Result bones)
     {
+        return solve(plan, bones, 1F);
+    }
+
+    /**
+     * @param amplitude 动作幅度系数（0.6 含蓄 / 1 自然 / 1.35 夸张），只缩放旋转，
+     *                  眨眼的眼皮压缩不放大
+     */
+    public static List<KeyPose> solve(AnimationPlan plan, BoneNameResolver.Result bones, float amplitude)
+    {
         if (!bones.isComplete())
         {
             throw new IllegalArgumentException("Bone map is unresolved (missing: " + bones.unresolved + ") - confirm candidates in the UI first");
@@ -111,6 +123,7 @@ public class PoseSolver
             pose.phase = beat.phase;
             pose.pose = beat.pose;
             pose.intent = beat.intents == null || beat.intents.isEmpty() ? "linear" : beat.intents.get(0).name().toLowerCase();
+            pose.rootY = PoseLibrary.ROOT_Y.getOrDefault(beat.pose, 0F);
 
             for (Map.Entry<String, float[]> entry : PoseLibrary.get(beat.pose).entrySet())
             {
@@ -125,10 +138,12 @@ public class PoseSolver
 
                 BoneChannel channel = new BoneChannel();
 
+                float scale = entry.getValue().length >= 6 ? 1F : amplitude; /* 眨眼的缩放分量不吃幅度 */
+
                 channel.bone = resolution.actual;
-                channel.x = entry.getValue()[0];
-                channel.y = entry.getValue()[1];
-                channel.z = entry.getValue()[2];
+                channel.x = entry.getValue()[0] * scale;
+                channel.y = entry.getValue()[1] * scale;
+                channel.z = entry.getValue()[2] * scale;
                 channel.values = entry.getValue();
                 pose.channels.add(channel);
             }

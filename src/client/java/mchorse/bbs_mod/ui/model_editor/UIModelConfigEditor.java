@@ -768,7 +768,10 @@ public class UIModelConfigEditor extends UIElement
             {
                 String name = this.aiBindingName == null ? "" : this.aiBindingName.trim().toLowerCase().replace(" ", "_");
 
-                if (name.isEmpty() || saved.containsKey(name))
+                /* 空名/重名/内置与可选骨骼名都拒绝——内置名走已有行，防占位空值覆盖现有绑定 */
+                if (name.isEmpty() || saved.containsKey(name)
+                    || mchorse.bbs_mod.ai.pose.PoseLibrary.GENERIC_BONES.contains(name)
+                    || mchorse.bbs_mod.ai.pose.PoseLibrary.OPTIONAL_BONES.contains(name))
                 {
                     return;
                 }

@@ -118,6 +118,22 @@ tasks.register('poseSolverTest', JavaExec) {
 	mainClass = 'mchorse.bbs_mod.ai.PoseSolverTest'
 }
 
+tasks.register('aiCopilotTest', JavaExec) {
+	group = 'verification'
+	description = 'Checks the AI copilot contracts without starting Minecraft.'
+	dependsOn tasks.named('testClasses')
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'mchorse.bbs_mod.ai.AiCopilotTest'
+}
+
+tasks.register('frameCommitTest', JavaExec) {
+	group = 'verification'
+	description = 'Checks M3 commit/undo contracts without starting Minecraft.'
+	dependsOn tasks.named('testClasses')
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'mchorse.bbs_mod.ai.FrameCommitTest'
+}
+
 tasks.register('anchorInterpolationTest', JavaExec) {
 	group = 'verification'
 	description = 'Checks anchor keyframes and resolved transitions without starting Minecraft.'
@@ -128,7 +144,8 @@ tasks.register('anchorInterpolationTest', JavaExec) {
 }
 
 tasks.named('check') {
-	dependsOn tasks.named('migrationTest'), tasks.named('anchorInterpolationTest'), tasks.named('poseSolverTest')
+	dependsOn tasks.named('migrationTest'), tasks.named('anchorInterpolationTest'), tasks.named('poseSolverTest'),
+			tasks.named('aiCopilotTest'), tasks.named('frameCommitTest')
 }
 
 java {

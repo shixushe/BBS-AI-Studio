@@ -412,6 +412,8 @@ public class UIAiChatBar extends UIElement
 
         /* 空 diff 由 applyPreview 在真实应用时填充——预填会双倍计数 */
         AiPreviewState.get().begin(replay, writes, new FrameDiff());
+        /* 预览键已真实落通道：广播让时间轴立即显示它们 */
+        AiFilmBridge.broadcast(AiPreviewState.get().getDiff());
 
         int lastTick = generated.beats.isEmpty() ? 0 : generated.beats.get(generated.beats.size() - 1).tick;
 
@@ -471,35 +473,11 @@ public class UIAiChatBar extends UIElement
          * current keys - the preview state only holds what WOULD change */
         /* 空 diff 由 applyPreview 真实应用时填充（打磨路径同样真实预览） */
         AiPreviewState.get().begin(replay, plan, new FrameDiff());
+        AiFilmBridge.broadcast(AiPreviewState.get().getDiff());
         this.refreshPreviewRow();
     }
 
     /** Diff of what the plan would change, computed without touching channels. */
-    private FrameDiff buildPreviewDiff(List<FrameCommitter.ChannelWrite> plan)
-    {
-        FrameDiff diff = new FrameDiff();
-
-        for (FrameCommitter.ChannelWrite write : plan)
-        {
-            /* Every resulting key that differs from the channel's current key
-             * at the same tick is an UPDATED entry; keys absent now are ADDED */
-            for (EditPatch.KeyWrite key : write.keys)
-            {
-                mchorse.bbs_mod.utils.keyframes.Keyframe existing = FrameCommitter.findKeyAt(write.channel, key.tick);
-
-                if (existing == null)
-                {
-                    diff.entries.add(new FrameDiff.Entry(write.trackId, key.tick, FrameDiff.Change.ADDED, Double.NaN, key.value));
-                }
-                else if (!FrameCommitter.sameState(existing, key))
-                {
-                    diff.entries.add(new FrameDiff.Entry(write.trackId, key.tick, FrameDiff.Change.UPDATED, existing.getY(), key.value));
-                }
-            }
-        }
-
-        return diff;
-    }
 
     private void confirm()
     {

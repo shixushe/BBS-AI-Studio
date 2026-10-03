@@ -676,3 +676,27 @@ interp 去重）→ 通道写入 K 条（根端 x/部位端 y，共 F 个关键�
   切到 POSE 分类——pose.bones 行直接出现在时间轴。
 - 双计数修复：begin 改收空 diff 由 applyPreview 填充（原 buildPreviewDiff
   预填 + 应用填充会双倍）。
+
+## 三十六、第三十轮（2026-10-03，测试工程师专项：全链路逻辑审查）
+
+以测试工程师身份系统审查 AI 全链路。**已验证正确**（代码走查+测试执行）：
+combinePaths 空前缀拼接（两端路径正确性）、applyPreview 与提交路径同守卫、
+预览→丢弃/入框往返、意图→插值映射表、可选骨骼不阻塞、绑定页签去重渲染、
+GLM thinking 按代次、finish_reason 映射、对话框合并、遍历器 null/环防护。
+
+**修复**：
+1. **.schem 也是裸 NBT**（WorldEdit 端同病）——上轮补丁已覆盖写入端
+   （replace 命中两处），本轮把存量 5 个 debug_*.schem 原位转 gzip；
+2. **绑定页签 [添加] 可用内置名覆盖现有绑定**（如输入 head 会把已有绑定
+   清成占位空值）——现在内置/可选/重名/空名一律拒绝；
+3. **预览应用后缺 FilmEditEvents 广播**——时间轴可能不立即显示预览键；
+   生成与打磨两路径 begin 后都补广播；
+4. 移除死代码 buildPreviewDiff（真实预览后语义已失效）。
+
+**测试基建**：AiCopilotTest(92)/FrameCommitTest(29)/PoseSolverTest(54)
+注册为 gradle 任务并入 check，连同 migrationTest/anchorInterpolationTest
+一次性全绿；修掉测试 main 手工 classpath 跑不起来的老问题。
+
+**记录不动**：预览期间 Ctrl+Z 再丢弃会覆盖该通道的用户手工撤销（极端
+顺序，快照恢复语义如此）；GLM-5.x thinking 开关下仍发 reasoning_effort=low
+（代次限制，只能调强度）。

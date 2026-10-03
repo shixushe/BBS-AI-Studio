@@ -56,6 +56,9 @@ public class AiClient
                 {
                     response = backend.chat(request);
 
+                    /* 用量统计：所有成功调用在此汇总（后台线程，同步块安全） */
+                    AiSettings.recordUsage(response.promptTokens, response.completionTokens);
+
                     failure = null;
 
                     break;

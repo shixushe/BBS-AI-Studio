@@ -85,6 +85,26 @@ public class UIValueMap
 
         register(ValueInt.class, (value, ui) ->
         {
+            /* AI token 用量：只读统计标签（累计请求数/输入/输出） */
+            if (value == mchorse.bbs_mod.ai.AiSettings.usageRequests
+                || value == mchorse.bbs_mod.ai.AiSettings.usagePromptTokens
+                || value == mchorse.bbs_mod.ai.AiSettings.usageCompletionTokens)
+            {
+                UILabel stats = new UILabel(mchorse.bbs_mod.l10n.keys.IKey.constant(
+                    "累计 " + mchorse.bbs_mod.ai.AiSettings.usageRequests.get() + " 次调用 · 输入 "
+                        + mchorse.bbs_mod.ai.AiSettings.usagePromptTokens.get() + " tok · 输出 "
+                        + mchorse.bbs_mod.ai.AiSettings.usageCompletionTokens.get() + " tok"));
+
+                stats.color(mchorse.bbs_mod.utils.colors.Colors.LIGHTER_GRAY, false);
+
+                if (value != mchorse.bbs_mod.ai.AiSettings.usageRequests)
+                {
+                    stats.setVisible(false);
+                }
+
+                return Arrays.asList(UIValueFactory.column(stats, value));
+            }
+
             if (value == BBSSettings.editorPreviewSizeMode)
             {
                 UICirculate button = new UICirculate(null);

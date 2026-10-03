@@ -289,8 +289,8 @@ public class UIStructureAiPanel extends UIDashboardPanel
             L10n.lang("bbs.ui.ai.structure.build_prompt").format(theme).get());
 
         request.temperature(0.6F);
-        /* No maxTokens cap: 0 = the field is omitted, so providers that allow
-         * unlimited output (OpenAI-compatible / Gemini) use their maximum */
+        /* 0 = the field is omitted, so the provider's own output cap applies */
+        request.maxTokens(mchorse.bbs_mod.ai.AiSettings.maxTokens.get());
 
         AiClient.get().chat(request, (response) -> MinecraftClient.getInstance().execute(() ->
         {
@@ -507,6 +507,7 @@ public class UIStructureAiPanel extends UIDashboardPanel
         AiChatRequest request = new AiChatRequest(L10n.lang("bbs.ui.ai.structure.ai_system").get(), user);
 
         request.temperature(0.4F);
+        request.maxTokens(mchorse.bbs_mod.ai.AiSettings.maxTokens.get());
 
         AiClient.get().chat(request, (response) -> MinecraftClient.getInstance().execute(() ->
         {

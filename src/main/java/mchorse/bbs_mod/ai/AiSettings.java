@@ -29,6 +29,12 @@ public class AiSettings
     public static ValueFloat temperature;
     public static ValueInt timeoutMs;
     public static ValueInt maxRetries;
+    /** 单次请求最大输出 token；0 = 不发送该字段（由服务商上限决定，即无限） */
+    public static ValueInt maxTokens;
+    /** 累计 token 用量（跨会话持久化） */
+    public static ValueInt usagePromptTokens;
+    public static ValueInt usageCompletionTokens;
+    public static ValueInt usageRequests;
     /** 思维链开关：开启后思考型模型（GLM-4.6/5.x 非 flash）保留思考并回传思维链 */
     public static ValueBoolean thinking;
 
@@ -53,6 +59,10 @@ public class AiSettings
         temperature = builder.getFloat("temperature", 0.7F, 0F, 1F); /* GLM 限 [0,1] */
         timeoutMs = builder.getInt("timeout_ms", 60000, 1000, 300000);
         maxRetries = builder.getInt("max_retries", 1, 0, 5);
+        maxTokens = builder.getInt("max_tokens", 8192, 0, 131072);
+        usagePromptTokens = builder.getInt("usage_prompt_tokens", 0, 0, Integer.MAX_VALUE);
+        usageCompletionTokens = builder.getInt("usage_completion_tokens", 0, 0, Integer.MAX_VALUE);
+        usageRequests = builder.getInt("usage_requests", 0, 0, Integer.MAX_VALUE);
         thinking = builder.getBoolean("thinking", false);
         supportsVision = builder.getBoolean("supports_vision", false);
         supportsTools = builder.getBoolean("supports_tools", false);
@@ -68,6 +78,19 @@ public class AiSettings
         return !baseUrl.get().trim().isEmpty()
             && !apiKey.get().trim().isEmpty()
             && !model.get().trim().isEmpty();
+    }
+
+    /** 累计一次成功调用的 token 用量（后台线程调用安全：同步块） */
+    public static synchronized void recordUsage(int promptTokens, int completionTokens)
+    {
+        if (promptTokens <= 0 && completionTokens <= 0)
+        {
+            return;
+        }
+
+        usagePromptTokens.set(usagePromptTokens.get() + Math.max(0, promptTokens));
+        usageCompletionTokens.set(usageCompletionTokens.get() + Math.max(0, completionTokens));
+        usageRequests.set(usageRequests.get() + 1);
     }
 
     /**

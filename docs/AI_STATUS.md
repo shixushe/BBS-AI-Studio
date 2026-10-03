@@ -837,3 +837,19 @@ filmInfo: **replays=3（ModelForm + ParticleForm×2）**——两轮验证粒子
 - **默认绑定全量扩展**：眼睛变体 15 条（含双眼/双眉），非眼睛变体 11 条
   （肘/膝/头饰）——内置 Star 模型开箱即全骨骼绑定。
 - 测试断言扩展：肘/膝/头饰精确解析 + 默认绑定携带断言。ALL PASS（116 checks）。
+
+## 四十四、第三十八轮（2026-10-03，max_tokens 可设（0=无限）+ token 用量统计）
+
+用户需求：单次最大 token 用户可设、最大值为无限；加 token 用量统计放设置里。
+
+- **AiSettings.max_tokens**（0~131072，默认 8192）：0 = 请求省略 max_tokens
+  字段，由服务商上限决定（即无限；GLM-4.6/5.x 为 128K）。设置页标签注明
+  「0=无限」语义。
+- **token 用量统计**：usage_prompt_tokens / usage_completion_tokens /
+  usage_requests 三个持久化计数器，AiClient 成功路径统一累加（同步块，
+  后台线程安全）；设置页 AI 分类渲染只读统计标签「累计 N 次调用 · 输入 X
+  tok · 输出 Y tok」（打开设置即刷新）。
+- **接线补全**：生成/打磨重试链/创意/结构生成/AI 描述 全部请求统一走
+  AiSettings.max_tokens（修掉两轮里 python 批量补丁静默丢失的问题——本轮
+  改用 Edit 逐一落地并以 grep 复核）。
+- 过程区 max_tokens 显示 ∞（0 时）。

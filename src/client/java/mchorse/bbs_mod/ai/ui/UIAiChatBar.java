@@ -284,6 +284,7 @@ public class UIAiChatBar extends UIElement
         AiChatRequest request = new AiChatRequest(system, script);
 
         request.temperature(AiSettings.temperature.get());
+        request.maxTokens(AiSettings.maxTokens.get());
         request.json(AiSettings.jsonMode.get() && AiSettings.supportsJsonMode.get());
 
         mchorse.bbs_mod.ui.framework.UIContext context = this.getContext();
@@ -291,7 +292,7 @@ public class UIAiChatBar extends UIElement
         thinking.addProcess("调用 " + AiSettings.createBackend().getClass().getSimpleName()
             + " · 模型 " + AiSettings.model.get()
             + " · 温度 " + AiSettings.temperature.get()
-            + " · max_tokens " + request.maxTokens
+            + " · max_tokens " + (request.maxTokens > 0 ? String.valueOf(request.maxTokens) : "∞(服务商上限)")
             + " · JSON模式 " + (request.jsonMode ? "开" : "关")
             + (AiSettings.thinking.get() ? " · 思维链开" : ""));
         this.history.refresh();

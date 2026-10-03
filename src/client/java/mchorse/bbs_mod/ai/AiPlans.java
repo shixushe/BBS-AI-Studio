@@ -46,6 +46,7 @@ public class AiPlans
                     + ". Reply again with ONLY the corrected JSON object.");
 
                 retry.temperature(request.temperature);
+                retry.maxTokens(request.maxTokens);
                 retry.json(request.jsonMode);
                 attempt(retry, onSuccess, onError, 1);
 

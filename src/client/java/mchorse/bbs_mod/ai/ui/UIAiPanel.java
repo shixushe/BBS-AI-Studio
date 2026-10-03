@@ -293,6 +293,7 @@ public class UIAiPanel extends UIDashboardPanel
         AiChatRequest request = new AiChatRequest(system, theme);
 
         request.temperature(1F);
+        request.maxTokens(mchorse.bbs_mod.ai.AiSettings.maxTokens.get());
 
         AiClient.get().chat(request, (response) -> MinecraftClient.getInstance().execute(() ->
         {

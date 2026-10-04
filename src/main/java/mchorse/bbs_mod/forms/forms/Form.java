@@ -394,7 +394,14 @@ public abstract class Form extends ValueGroup
     {
         if (this.cachedID == null)
         {
-            this.cachedID = BBSMod.getForms().getType(this).toString();
+            try
+            {
+                this.cachedID = BBSMod.getForms().getType(this).toString();
+            }
+            catch (Exception e)
+            {
+                this.cachedID = "unknown";
+            }
         }
 
         return this.cachedID;

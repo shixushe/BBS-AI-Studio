@@ -1217,3 +1217,15 @@ PoseTransform.rotate 期望弧度（0.283 rad）。差 57 倍——所有姿势�
 作者动画中 torso 和 torso_lower 反相扭曲（±6°~±10°）的规律已编码。
 
 **测试**：三套全绿（92/29/148）。
+
+## 六十、第五十轮（2026-10-04，FluidForm 悬停闪退修复）
+
+用户在模型选择器悬停 BBS++ FluidForm 时闪退：
+`IllegalStateException: Object FluidForm is not part of this factory!`
+
+根因：合并 BBS-Cubed 时 FluidForm 注册到了 `BBSMod.getForms()` 的 Link 注册
+但未注册到 `MapFactory` 的类型映射——`getFormId()` 调用 `getType(this)` 找
+不到就 throw。
+
+修复：`Form.getFormId()` 加 try-catch，未注册的表单返回 "unknown" 而非
+崩溃。这是防御性修复——FluidForm 的正式注册由 BBS++ 的 addon 初始化负责。

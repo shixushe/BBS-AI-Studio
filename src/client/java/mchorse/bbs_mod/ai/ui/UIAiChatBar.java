@@ -81,6 +81,9 @@ public class UIAiChatBar extends UIElement
     private int lastAmplitude = 1;
     private boolean groundDetect = true;
 
+    /** 贴地移动：行走位移沿地形起伏、遇墙截断（询问面板可关） */
+    private boolean lastSnap = true;
+
     public UIAiChatBar(UIFilmPanel panel)
     {
         this.panel = panel;
@@ -224,24 +227,31 @@ public class UIAiChatBar extends UIElement
      * replay's model bones -> the same preview/commit pipeline polish uses.
      * The end-to-end loop of the copilot spec's delivery goal.
      */
-    /** 点「执行」(生成模式)：先向用户补充细节（幅度/地面识别），再走生成。 */
+    /** 点「执行」(生成模式)：先向用户补充细节（幅度/地面识别/贴地），再走生成。 */
     public void askThenGenerate(String script)
     {
         mchorse.bbs_mod.ui.framework.UIContext context = this.getContext();
 
         mchorse.bbs_mod.ui.framework.elements.overlay.UIOverlay.addOverlay(context,
-            new UIAiGenerateAskPanel(context, (answer) -> this.executeGenerate(script, answer[0], answer[1] == 1)), 240, 0.7F);
+            new UIAiGenerateAskPanel(context, (answer) -> this.executeGenerate(script, answer[0],
+                answer[1] == 1, answer.length > 2 && answer[2] == 1)), 240, 0.7F);
     }
 
     public void executeGenerate(String script)
     {
-        this.executeGenerate(script, 1, true);
+        this.executeGenerate(script, 1, true, true);
     }
 
     public void executeGenerate(String script, int amplitudeIndex, boolean groundDetect)
     {
+        this.executeGenerate(script, amplitudeIndex, groundDetect, true);
+    }
+
+    public void executeGenerate(String script, int amplitudeIndex, boolean groundDetect, boolean groundSnap)
+    {
         this.lastAmplitude = amplitudeIndex;
         this.groundDetect = groundDetect;
+        this.lastSnap = groundSnap;
         this.history.log(AiChatMessage.Role.USER, script);
         this.input.setText("");
 
@@ -514,6 +524,75 @@ public class UIAiChatBar extends UIElement
                 int sinkKeys = 0;
                 int totalTick = Math.max(1, generated.totalTicks);
 
+                /* 行走位移先算：贴地采样的 y 键要沿着这条轨迹取地表高度 */
+                int firstWalk = -1;
+                int lastWalk = -1;
+
+                for (mchorse.bbs_mod.ai.pose.PoseSolver.KeyPose pose : poses)
+                {
+                    if (WALK_POSES.contains(pose.pose))
+                    {
+                        if (firstWalk < 0)
+                        {
+                            firstWalk = pose.tick;
+                        }
+
+                        lastWalk = pose.tick;
+                    }
+                }
+
+                double x0 = this.replayActorX(0);
+                double z0 = this.replayActorZ(0);
+                double yawRad = Math.toRadians(this.currentReplayDouble(replay.keyframes.yaw, 0));
+                double dirX = -Math.sin(yawRad);
+                double dirZ = Math.cos(yawRad);
+                double travel = 0D;
+                boolean wallHit = false;
+
+                /* 世界锚点：键坐标是电影空间，与世界隔着锚点/相对偏移（直接拿
+                 * 键坐标采样曾把虚空基岩当成墙）。电影实体在真实世界里的位置
+                 * 才是碰撞与贴地的采样基准；换算回键空间只差 anchorDY */
+                mchorse.bbs_mod.forms.entities.IEntity worldAnchor =
+                    this.panel.getController() == null ? null
+                        : this.panel.getController().getEntities().get(replay.getId());
+
+                double wx = worldAnchor == null ? x0 : worldAnchor.getX();
+                double wy = worldAnchor == null ? baseY : worldAnchor.getY();
+                double wz = worldAnchor == null ? z0 : worldAnchor.getZ();
+                double anchorDY = baseY - wy;
+
+                /* 起点自检：演员出生位置本身被方块包裹（电影世界对齐异常，
+                 * 比如嵌在虚空基岩里）时，碰撞/地表采样全部不可信——本次
+                 * 放弃截断与贴地，按电影空间平面行走，绝不误报"前方碰壁" */
+                net.minecraft.world.World snapWorld = this.worldOrNull();
+                boolean startFree = snapWorld != null && !this.bodyBlocked(snapWorld, wx, wy, wz);
+
+                if (firstWalk >= 0 && lastWalk > firstWalk)
+                {
+                    double raw = WALK_SPEED * (lastWalk - firstWalk);
+
+                    if (startFree)
+                    {
+                        /* 碰壁截断：沿路径逐 0.25 格采样碰撞箱，撞墙就停在墙前 */
+                        travel = this.clampTravel(wx, wy, wz, dirX, dirZ, raw);
+                        wallHit = travel + 0.01D < raw;
+                    }
+                    else
+                    {
+                        travel = raw;
+                    }
+
+                    if (travel > 0.05D)
+                    {
+                        this.writeLinearMove(writes, replay.keyframes.x, "x", firstWalk, lastWalk, x0, x0 + dirX * travel);
+                        this.writeLinearMove(writes, replay.keyframes.z, "z", firstWalk, lastWalk, z0, z0 + dirZ * travel);
+                    }
+                    else
+                    {
+                        travel = 0D;
+                    }
+                }
+
                 for (int i = 0; i < poses.size(); i++)
                 {
                     mchorse.bbs_mod.ai.pose.PoseSolver.KeyPose pose = poses.get(i);
@@ -543,10 +622,16 @@ public class UIAiChatBar extends UIElement
                         writes.add(sinkWrite);
                     }
 
+                    /* 贴地移动：每个 y 键取所在位置的地表高度（世界坐标），
+                     * 加回键空间与世界空间的竖直偏移；起点异常时退回平面 */
+                    double[] lowPos = this.travelPos(wx, wz, dirX, dirZ, travel, firstWalk, lastWalk, pose.tick);
+                    double lowBase = this.lastSnap && startFree
+                        ? this.groundYAt(lowPos[0], lowPos[1], wy) + anchorDY : baseY;
+
                     EditPatch.KeyWrite down = new EditPatch.KeyWrite();
 
                     down.tick = pose.tick;
-                    down.value = (float) (baseY + sink);
+                    down.value = (float) (lowBase + sink);
                     down.interpolation = walk ? "cubic_inout" : "cubic_out";
                     sinkWrite.keys.add(down);
 
@@ -566,44 +651,20 @@ public class UIAiChatBar extends UIElement
                         up.tick = Math.min(totalTick, pose.tick + 6);
                     }
 
-                    up.value = (float) baseY;
+                    double upBase = baseY;
+
+                    if (this.lastSnap && startFree)
+                    {
+                        double[] upPos = this.travelPos(wx, wz, dirX, dirZ, travel, firstWalk, lastWalk, up.tick);
+
+                        upBase = this.groundYAt(upPos[0], upPos[1], wy) + anchorDY;
+                    }
+
+                    up.value = (float) upBase;
                     up.interpolation = "cubic_inout";
                     sinkWrite.keys.add(up);
 
                     sinkKeys += 2;
-                }
-
-                /* 行走位移：沿角色初始朝向匀速前进，走路段落真往前走 */
-                int firstWalk = -1;
-                int lastWalk = -1;
-
-                for (mchorse.bbs_mod.ai.pose.PoseSolver.KeyPose pose : poses)
-                {
-                    if (WALK_POSES.contains(pose.pose))
-                    {
-                        if (firstWalk < 0)
-                        {
-                            firstWalk = pose.tick;
-                        }
-
-                        lastWalk = pose.tick;
-                    }
-                }
-
-                double travel = 0D;
-
-                if (firstWalk >= 0 && lastWalk > firstWalk)
-                {
-                    double x0 = this.replayActorX(0);
-                    double z0 = this.replayActorZ(0);
-                    double yawRad = Math.toRadians(this.currentReplayDouble(replay.keyframes.yaw, 0));
-                    double dx = -Math.sin(yawRad);
-                    double dz = Math.cos(yawRad);
-
-                    travel = WALK_SPEED * (lastWalk - firstWalk);
-
-                    this.writeLinearMove(writes, replay.keyframes.x, "x", firstWalk, lastWalk, x0, x0 + dx * travel);
-                    this.writeLinearMove(writes, replay.keyframes.z, "z", firstWalk, lastWalk, z0, z0 + dz * travel);
                 }
 
                 if (sinkKeys > 0 || travel > 0D)
@@ -617,12 +678,19 @@ public class UIAiChatBar extends UIElement
                     }
 
                     thinking.addProcess("地面识别：蹲/落地重心键 +" + sinkKeys
-                        + "（y 通道，基线 " + String.format("%.2f", baseY) + "）");
+                        + "（y 通道，基线 " + String.format("%.2f", baseY)
+                        + (this.lastSnap && startFree ? "，贴地采样" : "")
+                        + (this.lastSnap && !startFree ? "，世界基准异常按平面" : "") + "）");
 
                     if (travel > 0D)
                     {
                         thinking.addProcess("行走位移：沿朝向前进 " + String.format("%.1f", travel)
-                            + " 格（x/z 线性键，原版步速）");
+                            + " 格（x/z 线性键，原版步速" + (wallHit ? "，前方碰壁已截断" : "")
+                            + (!startFree ? "，未做碰壁检测" : "") + "）");
+                    }
+                    else if (wallHit)
+                    {
+                        thinking.addProcess("行走位移：前方被挡，原地踏步（未穿墙）");
                     }
                 }
             }
@@ -781,9 +849,15 @@ public class UIAiChatBar extends UIElement
         {
             var onion = this.panel.getController().getOnionSkin();
 
-            this.savedOnion = new int[] {onion.preColor.get(), onion.postColor.get(),
-                onion.preFrames.get(), onion.postFrames.get()};
-            this.savedOnionEnabled = onion.enabled.get();
+            /* 只在第一次接管时保存用户原值——连续生成（上一次预览还没
+             * 决定就再生成）时不能把 AI 样式当成"用户原值"存进去，
+             * 否则入框后洋葱皮会永远停留在幽灵样式（幽灵帧不消失） */
+            if (this.savedOnion == null)
+            {
+                this.savedOnion = new int[] {onion.preColor.get(), onion.postColor.get(),
+                    onion.preFrames.get(), onion.postFrames.get()};
+                this.savedOnionEnabled = onion.enabled.get();
+            }
 
             int accent = mchorse.bbs_mod.utils.colors.Colors.setA(
                 mchorse.bbs_mod.utils.colors.Colors.opaque(BBSSettings.primaryColor.get()), 0.5F);
@@ -836,6 +910,12 @@ public class UIAiChatBar extends UIElement
 
         /* 预览阶段键已真实写入——入框只负责把预览前快照包成一个撤销条目 */
         java.util.List<AnimationPlan.Fx> pendingFx = new ArrayList<>(state.getFx());
+
+        /* 替换旧 AI 内容：上次入框的键尾巴（比这次长的部分）与特效回放先清掉，
+         * 否则旧动画残键和一堆旧粒子回放会一直留着——看起来像幽灵帧没消失 */
+        int trimmed = this.trimLastFootprint(state);
+        int removedFx = this.removeOldAiReplays();
+
         FrameDiff diff = state.confirm(this.panel.getUndoHandler().getUndoManager());
 
         AiFilmBridge.broadcast(diff);
@@ -929,7 +1009,125 @@ public class UIAiChatBar extends UIElement
         /* The transcript keeps the receipt around - what was accepted and how
          * to take it back, per the undo contract */
         this.history.log(AiChatMessage.Role.ASSISTANT, L10n.lang("bbs.ui.ai.bar.committed").format(diff.changedKeyCount()).get());
+
+        if (trimmed > 0)
+        {
+            this.history.log(AiChatMessage.Role.SYSTEM, "已清理上次 AI 的残留键 " + trimmed + " 个（重新生成替换旧内容）");
+        }
+
+        if (removedFx > 0)
+        {
+            this.history.log(AiChatMessage.Role.SYSTEM, "已移除上次 AI 的特效回放 " + removedFx + " 个（新生成会重建）");
+        }
+
         this.history.refresh();
+    }
+
+    /** 上次 AI 计划比这次长的部分：把超出新计划范围的旧键删掉（返回删除数） */
+    private int trimLastFootprint(AiPreviewState state)
+    {
+        Map<String, Float> last = state.getFootprint();
+
+        if (last.isEmpty() || state.getPlan() == null)
+        {
+            return 0;
+        }
+
+        int removed = 0;
+
+        for (FrameCommitter.ChannelWrite write : state.getPlan())
+        {
+            Float oldMax = last.get(write.trackId);
+
+            if (oldMax == null)
+            {
+                continue;
+            }
+
+            float newMax = -1F;
+
+            for (EditPatch.KeyWrite key : write.keys)
+            {
+                newMax = Math.max(newMax, key.tick);
+            }
+
+            /* 预览已写入新键：删掉旧尾巴 (newMax, oldMax] */
+            mchorse.bbs_mod.utils.keyframes.KeyframeChannel<?> channel = write.channel;
+
+            for (int i = channel.getKeyframes().size() - 1; i >= 0; i--)
+            {
+                float tick = channel.getKeyframes().get(i).getTick();
+
+                if (tick > newMax && tick <= oldMax)
+                {
+                    channel.remove(i);
+                    removed++;
+                }
+            }
+
+            last.remove(write.trackId);
+        }
+
+        /* 上次碰过、这次没碰的通道：旧键整个都是残留 */
+        Replay replay = this.panel.replayEditor == null ? null : this.panel.replayEditor.getReplay();
+
+        if (replay != null)
+        {
+            for (Map.Entry<String, Float> entry : last.entrySet())
+            {
+                try
+                {
+                    var rawChannel = replay.properties.get(mchorse.bbs_mod.film.replays.tracks.TrackId.parse(entry.getKey()));
+                    mchorse.bbs_mod.utils.keyframes.KeyframeChannel<?> channel = rawChannel;
+
+                    if (channel == null)
+                    {
+                        continue;
+                    }
+
+                    for (int i = channel.getKeyframes().size() - 1; i >= 0; i--)
+                    {
+                        if (channel.getKeyframes().get(i).getTick() <= entry.getValue())
+                        {
+                            channel.remove(i);
+                            removed++;
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    /* 未知通道键格式：保守跳过 */
+                }
+            }
+        }
+
+        return removed;
+    }
+
+    /** 删掉上次 AI 入框创建的特效回放（category=ai），返回删除数 */
+    private int removeOldAiReplays()
+    {
+        if (this.panel.getData() == null)
+        {
+            return 0;
+        }
+
+        java.util.List<Replay> stale = new ArrayList<>();
+
+        for (Replay replay : this.panel.getData().replays.getList())
+        {
+            if ("ai".equals(replay.category.get()))
+            {
+                stale.add(replay);
+            }
+        }
+
+        for (Replay replay : stale)
+        {
+            this.panel.getData().replays.remove(replay);
+        }
+
+        return stale.size();
     }
 
     private double replayActorX(float tick)
@@ -951,11 +1149,97 @@ public class UIAiChatBar extends UIElement
         return this.currentReplayDouble(r == null ? null : r.keyframes.z, tick);
     }
 
+    /** 当前客户端世界（可为 null——不在世界内时世界采样全部退化为平面） */
+    private net.minecraft.world.World worldOrNull()
+    {
+        return net.minecraft.client.MinecraftClient.getInstance().world;
+    }
+
+    /** 行走轨迹上 tick 时刻的 (x,z)：位移区间内线性插值，之外停在端点 */
+    private double[] travelPos(double x0, double z0, double dirX, double dirZ, double travel,
+        int firstWalk, int lastWalk, float tick)
+    {
+        if (travel <= 0D || lastWalk <= firstWalk)
+        {
+            return new double[] {x0, z0};
+        }
+
+        double frac = (tick - firstWalk) / (double) (lastWalk - firstWalk);
+
+        frac = Math.max(0D, Math.min(1D, frac));
+
+        return new double[] {x0 + dirX * travel * frac, z0 + dirZ * travel * frac};
+    }
+
+    /** 贴地：采样 (x,z) 的地表高度（世界坐标，与回放键一致）；无世界时回退 fallback */
+    private double groundYAt(double x, double z, double fallback)
+    {
+        try
+        {
+            net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
+
+            if (client.world == null)
+            {
+                return fallback;
+            }
+
+            return client.world.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,
+                (int) Math.floor(x), (int) Math.floor(z));
+        }
+        catch (Exception e)
+        {
+            return fallback;
+        }
+    }
+
+    /** 碰壁截断：沿 (dirX,dirZ) 逐 0.25 格采样，返回不穿墙的最大位移 */
+    private double clampTravel(double x0, double feetY, double z0, double dirX, double dirZ, double maxDist)
+    {
+        try
+        {
+            net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
+
+            if (client.world == null)
+            {
+                return maxDist;
+            }
+
+            double dist = 0D;
+
+            while (dist < maxDist)
+            {
+                double step = Math.min(0.25D, maxDist - dist);
+
+                if (this.bodyBlocked(client.world, x0 + dirX * (dist + step), feetY, z0 + dirZ * (dist + step)))
+                {
+                    break;
+                }
+
+                dist += step;
+            }
+
+            return dist;
+        }
+        catch (Exception e)
+        {
+            return maxDist;
+        }
+    }
+
+    /** 头部高度（feetY+1）有碰撞才算墙——1 格台阶不算，贴地模式下由
+     * y 采样抬过去，斜坡和台阶不会把行走堵死 */
+    private boolean bodyBlocked(net.minecraft.world.World world, double x, double feetY, double z)
+    {
+        net.minecraft.util.math.BlockPos head =
+            net.minecraft.util.math.BlockPos.ofFloored(x, feetY + 1, z);
+
+        return !world.getBlockState(head).getCollisionShape(world, head).isEmpty();
+    }
+
     /** 行走位移：在 x/z 通道插两端线性键（起点 a、终点 b），中间匀速 */
     private void writeLinearMove(List<FrameCommitter.ChannelWrite> writes, KeyframeChannel<Double> channel,
         String trackId, int fromTick, int toTick, double a, double b)
-    {
-        FrameCommitter.ChannelWrite write = null;
+    {        FrameCommitter.ChannelWrite write = null;
 
         for (FrameCommitter.ChannelWrite existing : writes)
         {

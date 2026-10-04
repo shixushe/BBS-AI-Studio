@@ -28,6 +28,7 @@ public class UIAiGenerateAskPanel extends UIOverlayPanel
 
     private final UIChoiceButton<String> amplitude;
     private final UIToggle ground;
+    private final UIToggle snap;
     private int amplitudeIndex = 1;
 
     public UIAiGenerateAskPanel(UIContext context, Consumer<int[]> onGenerate)
@@ -69,11 +70,15 @@ public class UIAiGenerateAskPanel extends UIOverlayPanel
         this.ground = new UIToggle(L10n.lang("bbs.ui.ai.ask_generate.ground"), true, (t) -> {});
         this.ground.h(UIConstants.CONTROL_HEIGHT);
 
+        this.snap = new UIToggle(L10n.lang("bbs.ui.ai.ask_generate.snap"), true, (t) -> {});
+        this.snap.h(UIConstants.CONTROL_HEIGHT);
+
         UIButton go = new UIButton(L10n.lang("bbs.ui.ai.ask_generate.go"), (b) ->
         {
             this.close();
 
-            onGenerate.accept(new int[] {this.amplitudeIndex, this.ground.getValue() ? 1 : 0});
+            onGenerate.accept(new int[] {this.amplitudeIndex, this.ground.getValue() ? 1 : 0,
+                this.snap.getValue() ? 1 : 0});
         });
 
         UIButton cancel = new UIButton(L10n.lang("bbs.ui.ai.ask.cancel"), (b) -> this.close());
@@ -87,6 +92,7 @@ public class UIAiGenerateAskPanel extends UIOverlayPanel
         this.content.add(hint);
         this.content.add(UI.labelRow(L10n.lang("bbs.ui.ai.ask_generate.amplitude"), this.amplitude));
         this.content.add(UI.labelRow(L10n.lang("bbs.ui.ai.ask_generate.ground_label"), this.ground));
+        this.content.add(UI.labelRow(L10n.lang("bbs.ui.ai.ask_generate.snap_label"), this.snap));
         this.content.add(bottom);
     }
 }

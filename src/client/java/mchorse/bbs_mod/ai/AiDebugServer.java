@@ -591,6 +591,69 @@ public class AiDebugServer
                             sb.append("\n");
                         }
 
+                        /* 世界探针：演员位置处脚/头方块与地表采样——验证
+                         * 碰壁截断与贴地采样所用的坐标是否与真实场景对齐 */
+                        try
+                        {
+                            var client = net.minecraft.client.MinecraftClient.getInstance();
+
+                            if (client.world != null)
+                            {
+                                double px = replay.keyframes.x.getKeyframes().isEmpty() ? 0D
+                                    : replay.keyframes.x.getKeyframes().get(0).getValue();
+                                double py = replay.keyframes.y.getKeyframes().isEmpty() ? 0D
+                                    : replay.keyframes.y.getKeyframes().get(0).getValue();
+                                double pz = replay.keyframes.z.getKeyframes().isEmpty() ? 0D
+                                    : replay.keyframes.z.getKeyframes().get(0).getValue();
+
+                                sb.append("probe pos=(").append(String.format("%.1f,%.1f,%.1f", px, py, pz)).append(")\n");
+
+                                var panelAny = dashboard.getPanels().panel instanceof mchorse.bbs_mod.ui.film.UIFilmPanel fp2
+                                    ? fp2 : null;
+                                var anchor = panelAny != null && panelAny.getController() != null
+                                    ? panelAny.getController().getEntities().get(replay.getId()) : null;
+
+                                if (anchor != null)
+                                {
+                                    sb.append("  worldAnchor=(")
+                                        .append(String.format("%.1f,%.1f,%.1f", anchor.getX(), anchor.getY(), anchor.getZ()))
+                                        .append(")\n");
+
+                                    px = anchor.getX();
+                                    py = anchor.getY();
+                                    pz = anchor.getZ();
+                                }
+                                else
+                                {
+                                    sb.append("  worldAnchor=NULL\n");
+                                }
+
+                                for (int dy = -1; dy <= 1; dy++)
+                                {
+                                    var pos = net.minecraft.util.math.BlockPos.ofFloored(px, py + dy, pz);
+
+                                    sb.append("  block@").append(dy >= 0 ? "+" : "").append(dy).append("=")
+                                        .append(client.world.getBlockState(pos).getBlock().getName().getString())
+                                        .append(" collision=")
+                                        .append(!client.world.getBlockState(pos).getCollisionShape(client.world, pos).isEmpty())
+                                        .append("\n");
+                                }
+
+                                sb.append("  topY=").append(client.world.getTopY(
+                                        net.minecraft.world.Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,
+                                        (int) Math.floor(px), (int) Math.floor(pz)))
+                                    .append("\n");
+                            }
+                            else
+                            {
+                                sb.append("probe: no world\n");
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            sb.append("probe failed: ").append(e).append("\n");
+                        }
+
                         /* 已存的 pose 轨道：每个表单端一条，列前 3 个键的骨骼与角度 */
                         for (String end : new java.util.LinkedHashSet<>(boneEnds.values().stream()
                             .flatMap(java.util.List::stream).collect(java.util.stream.Collectors.toList())))

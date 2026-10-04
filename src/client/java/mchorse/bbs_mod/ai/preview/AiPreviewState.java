@@ -1,5 +1,6 @@
 package mchorse.bbs_mod.ai.preview;
 
+import mchorse.bbs_mod.ai.commit.EditPatch;
 import mchorse.bbs_mod.ai.commit.FrameCommitter;
 import mchorse.bbs_mod.ai.commit.FrameDiff;
 import mchorse.bbs_mod.film.replays.Replay;
@@ -7,6 +8,7 @@ import mchorse.bbs_mod.film.replays.Replay;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -49,6 +51,16 @@ public class AiPreviewState
 
     /** 结构性特效请求（粒子回放等）——预览不执行，入框时创建 */
     private List<mchorse.bbs_mod.ai.plan.AnimationPlan.Fx> fx = new ArrayList<>();
+
+    /** 上一次 AI 入框的痕迹：每条通道写到哪个 tick 为止——下次入框时把
+     * 超出新计划范围的旧键清掉（旧动画比新计划长的"尾巴"），否则残键
+     * 会一直留在时间轴上，看起来像幽灵帧没消失 */
+    private final Map<String, Float> footprint = new java.util.HashMap<>();
+
+    public Map<String, Float> getFootprint()
+    {
+        return this.footprint;
+    }
 
     public List<mchorse.bbs_mod.ai.plan.AnimationPlan.Fx> getFx()
     {
@@ -95,6 +107,27 @@ public class AiPreviewState
     public FrameDiff confirm(mchorse.bbs_mod.utils.undo.UndoManager<mchorse.bbs_mod.settings.values.core.ValueGroup> undoManager)
     {
         FrameDiff result = this.diff;
+
+        /* 记录本次计划每条通道写到的最大 tick，供下次入框清旧尾巴 */
+        this.footprint.clear();
+
+        if (this.plan != null)
+        {
+            for (FrameCommitter.ChannelWrite write : this.plan)
+            {
+                float max = -1F;
+
+                for (EditPatch.KeyWrite key : write.keys)
+                {
+                    max = Math.max(max, key.tick);
+                }
+
+                if (max >= 0F)
+                {
+                    this.footprint.put(write.trackId, max);
+                }
+            }
+        }
 
         if (!this.captures.isEmpty() && undoManager != null)
         {

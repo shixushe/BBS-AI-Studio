@@ -52,10 +52,13 @@ public class AiPreviewState
     /** 结构性特效请求（粒子回放等）——预览不执行，入框时创建 */
     private List<mchorse.bbs_mod.ai.plan.AnimationPlan.Fx> fx = new ArrayList<>();
 
-    /** 上一次 AI 入框的痕迹：每条通道写到哪个 tick 为止——下次入框时把
+    /** 上一次 AI 入框的痕迹：每条通道写到哪个 tick 为止——下次预览时把
      * 超出新计划范围的旧键清掉（旧动画比新计划长的"尾巴"），否则残键
      * 会一直留在时间轴上，看起来像幽灵帧没消失 */
     private final Map<String, Float> footprint = new java.util.HashMap<>();
+
+    /** begin() 时清掉的旧残留键数 */
+    private int trimmedCount;
 
     public Map<String, Float> getFootprint()
     {
@@ -86,10 +89,17 @@ public class AiPreviewState
         this.ticks.clear();
         this.entries.clear();
         this.captures.clear();
+        this.trimmedCount = 0;
 
         if (plan != null && !plan.isEmpty())
         {
             this.captures.addAll(FrameCommitter.applyPreview(plan, diff));
+
+            /* 预览即替换：上一次 AI 入框的残留键（超出新计划范围的部分）
+             * 立刻清掉——否则旧内容（比如旧版走路留下的 y 上下键）会在
+             * 新预览里继续播放，看起来像"新动画还在上下跳"。回滚快照在
+             * applyPreview 前已拍好，丢弃仍能完整还原旧状态 */
+            this.trimmedCount = this.trimLastFootprint();
         }
 
         for (FrameDiff.Entry entry : diff.entries)
@@ -97,6 +107,86 @@ public class AiPreviewState
             this.ticks.add(entry.tick);
             this.entries.add(entry);
         }
+    }
+
+    /** 上一次 begin() 清掉的旧残留键数量（供对话回执） */
+    public int getTrimmedCount()
+    {
+        return this.trimmedCount;
+    }
+
+    /** 把上次 AI 痕迹超出新计划范围的键删掉，返回删除数 */
+    private int trimLastFootprint()
+    {
+        if (this.footprint.isEmpty() || this.plan == null || this.replay == null)
+        {
+            return 0;
+        }
+
+        int removed = 0;
+        Map<String, Float> remaining = new java.util.HashMap<>(this.footprint);
+
+        for (FrameCommitter.ChannelWrite write : this.plan)
+        {
+            Float oldMax = remaining.get(write.trackId);
+
+            if (oldMax == null)
+            {
+                continue;
+            }
+
+            float newMax = -1F;
+
+            for (EditPatch.KeyWrite key : write.keys)
+            {
+                newMax = Math.max(newMax, key.tick);
+            }
+
+            mchorse.bbs_mod.utils.keyframes.KeyframeChannel<?> channel = write.channel;
+
+            for (int i = channel.getKeyframes().size() - 1; i >= 0; i--)
+            {
+                float tick = channel.getKeyframes().get(i).getTick();
+
+                if (tick > newMax && tick <= oldMax)
+                {
+                    channel.remove(i);
+                    removed++;
+                }
+            }
+
+            remaining.remove(write.trackId);
+        }
+
+        /* 上次碰过、这次没碰的通道：旧键整个都是残留 */
+        for (Map.Entry<String, Float> entry : remaining.entrySet())
+        {
+            try
+            {
+                mchorse.bbs_mod.utils.keyframes.KeyframeChannel<?> channel = this.replay.properties
+                    .get(mchorse.bbs_mod.film.replays.tracks.TrackId.parse(entry.getKey()));
+
+                if (channel == null)
+                {
+                    continue;
+                }
+
+                for (int i = channel.getKeyframes().size() - 1; i >= 0; i--)
+                {
+                    if (channel.getKeyframes().get(i).getTick() <= entry.getValue())
+                    {
+                        channel.remove(i);
+                        removed++;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                /* 未知通道键格式：保守跳过 */
+            }
+        }
+
+        return removed;
     }
 
     /**

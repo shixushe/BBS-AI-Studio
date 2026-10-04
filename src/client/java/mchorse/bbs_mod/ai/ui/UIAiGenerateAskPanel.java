@@ -70,7 +70,7 @@ public class UIAiGenerateAskPanel extends UIOverlayPanel
         this.ground = new UIToggle(L10n.lang("bbs.ui.ai.ask_generate.ground"), true, (t) -> {});
         this.ground.h(UIConstants.CONTROL_HEIGHT);
 
-        this.snap = new UIToggle(L10n.lang("bbs.ui.ai.ask_generate.snap"), true, (t) -> {});
+        this.snap = new UIToggle(L10n.lang("bbs.ui.ai.ask_generate.snap"), false, (t) -> {});
         this.snap.h(UIConstants.CONTROL_HEIGHT);
 
         UIButton go = new UIButton(L10n.lang("bbs.ui.ai.ask_generate.go"), (b) ->

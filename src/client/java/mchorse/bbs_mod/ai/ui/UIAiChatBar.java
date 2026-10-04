@@ -75,7 +75,7 @@ public class UIAiChatBar extends UIElement
     private boolean groundDetect = true;
 
     /** 贴地移动：行走位移沿地形起伏、遇墙截断（询问面板可关） */
-    private boolean lastSnap = true;
+    private boolean lastSnap = false;
 
     public UIAiChatBar(UIFilmPanel panel)
     {
@@ -232,12 +232,12 @@ public class UIAiChatBar extends UIElement
 
     public void executeGenerate(String script)
     {
-        this.executeGenerate(script, 1, true, true);
+        this.executeGenerate(script, 1, true, false);
     }
 
     public void executeGenerate(String script, int amplitudeIndex, boolean groundDetect)
     {
-        this.executeGenerate(script, amplitudeIndex, groundDetect, true);
+        this.executeGenerate(script, amplitudeIndex, groundDetect, false);
     }
 
     public void executeGenerate(String script, int amplitudeIndex, boolean groundDetect, boolean groundSnap)
@@ -596,6 +596,13 @@ public class UIAiChatBar extends UIElement
                         continue;
                     }
 
+                    /* 走路段内不写任何下沉键：LLM 偶尔把 compress/land 当步态
+                     * 的 down/up 相位塞进走路计划，那就是"走路上下跳" */
+                    if (firstWalk >= 0 && pose.tick >= firstWalk && pose.tick <= lastWalk)
+                    {
+                        continue;
+                    }
+
                     boolean walk = mchorse.bbs_mod.ai.pose.PoseLibrary.isWalk(pose.pose);
                     FrameCommitter.ChannelWrite sinkWrite = null;
 
@@ -616,33 +623,27 @@ public class UIAiChatBar extends UIElement
                     }
 
                     /* 贴地移动：每个 y 键取所在位置的地表高度（世界坐标），
-                     * 加回键空间与世界空间的竖直偏移；起点异常时退回平面 */
-                    double[] lowPos = this.travelPos(wx, wz, dirX, dirZ, travel, firstWalk, lastWalk, pose.tick);
-                    double lowBase = this.lastSnap && startFree
-                        ? this.groundYAt(lowPos[0], lowPos[1], wy) + anchorDY : baseY;
+                     * 加回键空间与世界空间的竖直偏移；起点异常时退回平面。
+                     * 单点跳变超过 ±2 格（树顶/屋顶的高度图突变）不跟随 */
+                    double lowBase = baseY;
+
+                    if (this.lastSnap && startFree)
+                    {
+                        double[] lowPos = this.travelPos(wx, wz, dirX, dirZ, travel, firstWalk, lastWalk, pose.tick);
+
+                        lowBase = this.clampGround(this.groundYAt(lowPos[0], lowPos[1], wy), wy) + anchorDY;
+                    }
 
                     EditPatch.KeyWrite down = new EditPatch.KeyWrite();
 
                     down.tick = pose.tick;
                     down.value = (float) (lowBase + sink);
-                    down.interpolation = walk ? "cubic_inout" : "cubic_out";
+                    down.interpolation = "cubic_out";
                     sinkWrite.keys.add(down);
 
                     EditPatch.KeyWrite up = new EditPatch.KeyWrite();
 
-                    if (walk)
-                    {
-                        /* 步态节奏：低点在触地拍，高点在到下一拍的半程（重力势能
-                         * 在 passing 位最高）。后续拍会写自己的低点，中点回升键
-                         * 让 y 呈 low-high-low 起伏而非每拍一蹲一弹 */
-                        int nextTick = i + 1 < poses.size() ? poses.get(i + 1).tick : pose.tick + 8;
-
-                        up.tick = Math.min(totalTick, pose.tick + Math.max(2, (nextTick - pose.tick) / 2));
-                    }
-                    else
-                    {
-                        up.tick = Math.min(totalTick, pose.tick + 6);
-                    }
+                    up.tick = Math.min(totalTick, pose.tick + 6);
 
                     double upBase = baseY;
 
@@ -650,7 +651,7 @@ public class UIAiChatBar extends UIElement
                     {
                         double[] upPos = this.travelPos(wx, wz, dirX, dirZ, travel, firstWalk, lastWalk, up.tick);
 
-                        upBase = this.groundYAt(upPos[0], upPos[1], wy) + anchorDY;
+                        upBase = this.clampGround(this.groundYAt(upPos[0], upPos[1], wy), wy) + anchorDY;
                     }
 
                     up.value = (float) upBase;
@@ -745,6 +746,14 @@ public class UIAiChatBar extends UIElement
         /* 空 diff 由 applyPreview 在真实应用时填充——预填会双倍计数 */
         AiPreviewState.get().begin(replay, writes, new FrameDiff());
         AiPreviewState.get().setFx(generated.fx);
+
+        if (AiPreviewState.get().getTrimmedCount() > 0)
+        {
+            this.history.log(AiChatMessage.Role.SYSTEM, "已清理上次 AI 的残留键 "
+                + AiPreviewState.get().getTrimmedCount() + " 个（重新生成即替换旧内容）");
+            this.history.refresh();
+        }
+
         /* 预览键已真实落通道：只刷新时间轴，绝不路由跳面板 */
         AiFilmBridge.notifyTimeline(AiPreviewState.get().getDiff());
         this.ghostOnionOn();
@@ -901,12 +910,11 @@ public class UIAiChatBar extends UIElement
             return;
         }
 
-        /* 预览阶段键已真实写入——入框只负责把预览前快照包成一个撤销条目 */
+        /* 预览阶段键已真实写入（旧残留键已在 begin 时清掉）——入框只负责
+         * 把预览前快照包成一个撤销条目；特效回放是入框时才创建的，
+         * 上一次的 ai 分类回放在这里移除（新计划若带特效会重建） */
         java.util.List<AnimationPlan.Fx> pendingFx = new ArrayList<>(state.getFx());
 
-        /* 替换旧 AI 内容：上次入框的键尾巴（比这次长的部分）与特效回放先清掉，
-         * 否则旧动画残键和一堆旧粒子回放会一直留着——看起来像幽灵帧没消失 */
-        int trimmed = this.trimLastFootprint(state);
         int removedFx = this.removeOldAiReplays();
 
         FrameDiff diff = state.confirm(this.panel.getUndoHandler().getUndoManager());
@@ -1003,98 +1011,12 @@ public class UIAiChatBar extends UIElement
          * to take it back, per the undo contract */
         this.history.log(AiChatMessage.Role.ASSISTANT, L10n.lang("bbs.ui.ai.bar.committed").format(diff.changedKeyCount()).get());
 
-        if (trimmed > 0)
-        {
-            this.history.log(AiChatMessage.Role.SYSTEM, "已清理上次 AI 的残留键 " + trimmed + " 个（重新生成替换旧内容）");
-        }
-
         if (removedFx > 0)
         {
             this.history.log(AiChatMessage.Role.SYSTEM, "已移除上次 AI 的特效回放 " + removedFx + " 个（新生成会重建）");
         }
 
         this.history.refresh();
-    }
-
-    /** 上次 AI 计划比这次长的部分：把超出新计划范围的旧键删掉（返回删除数） */
-    private int trimLastFootprint(AiPreviewState state)
-    {
-        Map<String, Float> last = state.getFootprint();
-
-        if (last.isEmpty() || state.getPlan() == null)
-        {
-            return 0;
-        }
-
-        int removed = 0;
-
-        for (FrameCommitter.ChannelWrite write : state.getPlan())
-        {
-            Float oldMax = last.get(write.trackId);
-
-            if (oldMax == null)
-            {
-                continue;
-            }
-
-            float newMax = -1F;
-
-            for (EditPatch.KeyWrite key : write.keys)
-            {
-                newMax = Math.max(newMax, key.tick);
-            }
-
-            /* 预览已写入新键：删掉旧尾巴 (newMax, oldMax] */
-            mchorse.bbs_mod.utils.keyframes.KeyframeChannel<?> channel = write.channel;
-
-            for (int i = channel.getKeyframes().size() - 1; i >= 0; i--)
-            {
-                float tick = channel.getKeyframes().get(i).getTick();
-
-                if (tick > newMax && tick <= oldMax)
-                {
-                    channel.remove(i);
-                    removed++;
-                }
-            }
-
-            last.remove(write.trackId);
-        }
-
-        /* 上次碰过、这次没碰的通道：旧键整个都是残留 */
-        Replay replay = this.panel.replayEditor == null ? null : this.panel.replayEditor.getReplay();
-
-        if (replay != null)
-        {
-            for (Map.Entry<String, Float> entry : last.entrySet())
-            {
-                try
-                {
-                    var rawChannel = replay.properties.get(mchorse.bbs_mod.film.replays.tracks.TrackId.parse(entry.getKey()));
-                    mchorse.bbs_mod.utils.keyframes.KeyframeChannel<?> channel = rawChannel;
-
-                    if (channel == null)
-                    {
-                        continue;
-                    }
-
-                    for (int i = channel.getKeyframes().size() - 1; i >= 0; i--)
-                    {
-                        if (channel.getKeyframes().get(i).getTick() <= entry.getValue())
-                        {
-                            channel.remove(i);
-                            removed++;
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    /* 未知通道键格式：保守跳过 */
-                }
-            }
-        }
-
-        return removed;
     }
 
     /** 删掉上次 AI 入框创建的特效回放（category=ai），返回删除数 */
@@ -1162,6 +1084,13 @@ public class UIAiChatBar extends UIElement
         frac = Math.max(0D, Math.min(1D, frac));
 
         return new double[] {x0 + dirX * travel * frac, z0 + dirZ * travel * frac};
+    }
+
+    /** 贴地采样防跳变：与起脚面差超过 ±2 格的高度图突变（树冠/屋顶）
+     * 不跟随，钳回起脚面附近 */
+    private double clampGround(double groundY, double feetY)
+    {
+        return Math.max(feetY - 2D, Math.min(feetY + 2D, groundY));
     }
 
     /** 贴地：采样 (x,z) 的地表高度（世界坐标，与回放键一致）；无世界时回退 fallback */

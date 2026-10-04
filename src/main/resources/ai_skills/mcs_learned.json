@@ -1,0 +1,314 @@
+{
+ "松本城天守": {
+  "style": "chinese",
+  "palette": [
+   {
+    "block": "minecraft:stone_brick_stairs",
+    "count": 29
+   },
+   {
+    "block": "minecraft:smooth_quartz_stairs",
+    "count": 16
+   },
+   {
+    "block": "minecraft:dark_oak_fence",
+    "count": 15
+   },
+   {
+    "block": "minecraft:deepslate_tile_stairs",
+    "count": 14
+   },
+   {
+    "block": "minecraft:dark_oak_stairs",
+    "count": 10
+   },
+   {
+    "block": "minecraft:dark_oak_trapdoor",
+    "count": 10
+   },
+   {
+    "block": "minecraft:dark_oak_door",
+    "count": 10
+   },
+   {
+    "block": "minecraft:spruce_fence_gate",
+    "count": 8
+   },
+   {
+    "block": "minecraft:spruce_door",
+    "count": 8
+   },
+   {
+    "block": "minecraft:cobblestone_wall",
+    "count": 7
+   },
+   {
+    "block": "minecraft:campfire",
+    "count": 7
+   },
+   {
+    "block": "minecraft:spruce_fence",
+    "count": 6
+   }
+  ],
+  "palette_count": 12
+ },
+ "云澜塔": {
+  "style": "chinese",
+  "palette": [
+   {
+    "block": "minecraft:campfire",
+    "count": 272
+   },
+   {
+    "block": "minecraft:oak_trapdoor",
+    "count": 16
+   },
+   {
+    "block": "minecraft:birch_door",
+    "count": 16
+   },
+   {
+    "block": "minecraft:spruce_fence",
+    "count": 15
+   },
+   {
+    "block": "minecraft:spruce_trapdoor",
+    "count": 12
+   },
+   {
+    "block": "minecraft:spruce_stairs",
+    "count": 8
+   },
+   {
+    "block": "minecraft:bamboo_trapdoor",
+    "count": 8
+   },
+   {
+    "block": "minecraft:birch_fence",
+    "count": 7
+   },
+   {
+    "block": "minecraft:oak_stairs",
+    "count": 4
+   },
+   {
+    "block": "minecraft:birch_fence_gate",
+    "count": 4
+   },
+   {
+    "block": "minecraft:jack_o_lantern",
+    "count": 4
+   },
+   {
+    "block": "minecraft:deepslate_tile_stairs",
+    "count": 4
+   }
+  ],
+  "palette_count": 13
+ },
+ "祈年殿": {
+  "style": "chinese",
+  "palette": [
+   {
+    "block": "minecraft:warped_stairs",
+    "count": 16
+   },
+   {
+    "block": "minecraft:prismarine_wall",
+    "count": 16
+   },
+   {
+    "block": "minecraft:granite_wall",
+    "count": 13
+   },
+   {
+    "block": "minecraft:oak_stairs",
+    "count": 11
+   },
+   {
+    "block": "minecraft:oak_trapdoor",
+    "count": 11
+   },
+   {
+    "block": "minecraft:red_stained_glass_pane",
+    "count": 8
+   },
+   {
+    "block": "minecraft:cobbled_deepslate_wall",
+    "count": 8
+   },
+   {
+    "block": "minecraft:smooth_quartz_stairs",
+    "count": 4
+   },
+   {
+    "block": "minecraft:acacia_fence_gate",
+    "count": 4
+   },
+   {
+    "block": "minecraft:lime_glazed_terracotta",
+    "count": 4
+   },
+   {
+    "block": "minecraft:light_blue_glazed_terracotta",
+    "count": 4
+   },
+   {
+    "block": "minecraft:yellow_glazed_terracotta",
+    "count": 4
+   }
+  ],
+  "palette_count": 12
+ },
+ "中世纪粮仓": {
+  "style": "medieval",
+  "palette": [
+   {
+    "block": "minecraft:oak_stairs",
+    "count": 11
+   },
+   {
+    "block": "minecraft:cobblestone_stairs",
+    "count": 8
+   },
+   {
+    "block": "minecraft:stone_brick_stairs",
+    "count": 8
+   },
+   {
+    "block": "minecraft:oak_door",
+    "count": 6
+   },
+   {
+    "block": "minecraft:oak_fence",
+    "count": 5
+   },
+   {
+    "block": "minecraft:wall_torch",
+    "count": 4
+   },
+   {
+    "block": "minecraft:oak_fence_gate",
+    "count": 4
+   },
+   {
+    "block": "minecraft:nether_brick_stairs",
+    "count": 4
+   },
+   {
+    "block": "minecraft:cobblestone_slab",
+    "count": 3
+   },
+   {
+    "block": "minecraft:oak_slab",
+    "count": 3
+   },
+   {
+    "block": "minecraft:stone_brick_slab",
+    "count": 3
+   },
+   {
+    "block": "minecraft:brick_slab",
+    "count": 2
+   }
+  ],
+  "palette_count": 13
+ },
+ "多彩海滨别墅": {
+  "style": "modern",
+  "palette": [
+   {
+    "block": "minecraft:campfire",
+    "count": 23
+   },
+   {
+    "block": "minecraft:sandstone_stairs",
+    "count": 16
+   },
+   {
+    "block": "minecraft:spruce_fence",
+    "count": 14
+   },
+   {
+    "block": "minecraft:jungle_fence",
+    "count": 14
+   },
+   {
+    "block": "minecraft:oak_fence",
+    "count": 12
+   },
+   {
+    "block": "minecraft:spruce_trapdoor",
+    "count": 11
+   },
+   {
+    "block": "minecraft:oak_stairs",
+    "count": 11
+   },
+   {
+    "block": "minecraft:red_sandstone_stairs",
+    "count": 9
+   },
+   {
+    "block": "minecraft:acacia_stairs",
+    "count": 8
+   },
+   {
+    "block": "minecraft:warped_stairs",
+    "count": 8
+   },
+   {
+    "block": "minecraft:waxed_cut_copper_stairs",
+    "count": 7
+   },
+   {
+    "block": "minecraft:jungle_stairs",
+    "count": 6
+   }
+  ],
+  "palette_count": 13
+ },
+ "小镇市政厅": {
+  "style": "modern",
+  "palette": [
+   {
+    "block": "minecraft:diorite_wall",
+    "count": 15
+   },
+   {
+    "block": "minecraft:spruce_trapdoor",
+    "count": 13
+   },
+   {
+    "block": "minecraft:oxidized_cut_copper_stairs",
+    "count": 13
+   },
+   {
+    "block": "minecraft:waxed_weathered_cut_copper_stairs",
+    "count": 12
+   },
+   {
+    "block": "minecraft:spruce_fence",
+    "count": 11
+   },
+   {
+    "block": "minecraft:dark_oak_stairs",
+    "count": 9
+   },
+   {
+    "block": "minecraft:polished_andesite_stairs",
+    "count": 8
+   },
+   {
+    "block": "minecraft:spruce_stairs",
+    "count": 8
+   },
+   {
+    "block": "minecraft:dark_oak_trapdoor",
+    "count": 8
+   }
+  ],
+  "palette_count": 9
+ }
+}

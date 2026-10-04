@@ -1130,3 +1130,25 @@ Misode 生成器、BSP 房间细分论文均可参考。
 
 **设计原则 + 负面规则 + 学习参考 + 风格匹配 + 群系调色板 + 少样本**
 六层叠加，全部注入建筑生成提示词。
+
+## 五十六、第四十七轮（2026-10-03，MCS 投影工坊爬取 + 调色板技能注入）
+
+用户指出：从投影工坊爬取高质量投影文件学习。
+
+**MCS 蓝图站(mcstool.com)爬取**：
+- API 端点：/api/v1/blueprints?category=architecture → 24 个建筑蓝图
+- 下载端点：/api/v1/blueprints/{id}/versions/1/download → .litematic 文件
+- 下载 6 个高价值投影（松本城天守/云澜塔/祈年殿/中世纪粮仓/多彩海滨别墅/
+  小镇市政厅），解析 .litematic NBT 提取方块调色板
+- 清洗：过滤实体属性/装备/牌子等噪音，只保留建筑方块
+
+**提示词注入**：按风格匹配（chinese/medieval/modern），发「中式寺庙」时
+注入「真实玩家选材参考（松本城天守）：dark_prismarine_wall campfire
+smooth_quartz_stairs dark_oak_fence …」——LLM 用真实玩家验证过的选材。
+
+**投影工坊局限性**：MCS 站 API 不提供逐方块坐标（需 Litematica mod 客户
+端解析 .litematic 文件才能拿完整结构），当前提取的是调色板级别（哪些方
+块+比例），结构级蒸馏需要用户提供 .litematic 文件或用 mod 导出。
+
+**注意**：MCS 投影版权为作者所有（attribution 字段标注 original/repost），
+本方案只提取材质选择规律（事实性数据），不复制结构几何。

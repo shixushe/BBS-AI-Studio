@@ -325,6 +325,40 @@ public class UIStructureAiPanel extends UIDashboardPanel
             }
 
             String biomeRef = mchorse.bbs_mod.ai.AiBiomeSkills.summary();
+
+            /* MCS 玩家投影调色板：按风格匹配真实玩家选材 */
+            String mcsPalette = "";
+            var mcsData = mchorse.bbs_mod.ai.AiBuildSkills.loadSkill("mcs_learned.json");
+
+            if (mcsData != null)
+            {
+                String loweredTheme = theme == null ? "" : theme.toLowerCase();
+
+                for (var titleKey : mcsData.keySet())
+                {
+                    var entry = mcsData.getAsJsonObject(titleKey);
+                    String entryStyle = entry.has("style") ? entry.get("style").getAsString() : "";
+
+                    /* 风格匹配：chinese 匹配中式/寺庙/东方, medieval 匹配中世纪/城堡 */
+                    boolean styleMatch =
+                        (entryStyle.equals("chinese") && (loweredTheme.contains("中式") || loweredTheme.contains("东方") || loweredTheme.contains("寺庙") || loweredTheme.contains("塔")))
+                        || (entryStyle.equals("medieval") && (loweredTheme.contains("中世纪") || loweredTheme.contains("城堡") || loweredTheme.contains("粮仓")))
+                        || (entryStyle.equals("modern") && (loweredTheme.contains("现代") || loweredTheme.contains("城市") || loweredTheme.contains("市政")));
+
+                    if (styleMatch)
+                    {
+                        mcsPalette = "\n\n真实玩家选材参考（" + titleKey + "）: ";
+                        var pal = entry.getAsJsonArray("palette");
+
+                        for (var pi : pal)
+                        {
+                            mcsPalette += pi.getAsJsonObject().get("block").getAsString() + " ";
+                        }
+
+                        break;
+                    }
+                }
+            }
             String principles = mchorse.bbs_mod.ai.AiBuildSkills.designPrinciples();
 
             /* 已学习的建筑参考（notre_dame）：材质比例+密度+比例参数 */
@@ -353,7 +387,7 @@ public class UIStructureAiPanel extends UIDashboardPanel
 
             AiChatRequest request = new AiChatRequest(
                 L10n.lang("bbs.ui.ai.structure.build_system").get(),
-                L10n.lang("bbs.ui.ai.structure.build_prompt").format(theme).get() + principles + styleHint + fewShot + biomeRef + learnedRef);
+                L10n.lang("bbs.ui.ai.structure.build_prompt").format(theme).get() + principles + styleHint + fewShot + biomeRef + learnedRef + mcsPalette);
 
         request.temperature(0.6F);
         /* 0 = the field is omitted, so the provider's own output cap applies */

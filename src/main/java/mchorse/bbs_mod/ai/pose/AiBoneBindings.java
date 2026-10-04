@@ -73,7 +73,8 @@ public class AiBoneBindings
         eyes.put("left_eyebrow", "左眉毛");
         eyes.put("right_eyebrow", "右眉毛");
 
-        for (String id : new String[] {"slim_eyes", "thick_eyes"})
+        for (String id : new String[] {"star人物模型细胳膊 自带眼睛", "star人物模型粗胳膊 自带眼睛",
+            "slim_eyes", "thick_eyes"})
         {
             BUILTIN_DEFAULTS.put(id, eyes);
         }
@@ -92,7 +93,11 @@ public class AiBoneBindings
         core.put("right_knee", "right_knee");
         core.put("headwear", "headwear");
 
-        for (String id : new String[] {"slim_gapless", "slim_female", "slim_weld", "slim_3d",
+        for (String id : new String[] {"star人物模型细胳膊 弯曲处缝隙优化", "star人物模型细胳膊 女性",
+            "star人物模型细胳膊 弯曲处焊接", "star人物模型细胳膊  3D 弯曲缝隙优化",
+            "star人物模型粗胳膊 弯曲处缝隙优化", "star人物模型粗胳膊 弯曲处焊接",
+            "star人物模型粗胳膊  3D 弯曲缝隙优化",
+            "slim_gapless", "slim_female", "slim_weld", "slim_3d",
             "thick_gapless", "thick_weld", "thick_3d"})
         {
             BUILTIN_DEFAULTS.put(id, core);

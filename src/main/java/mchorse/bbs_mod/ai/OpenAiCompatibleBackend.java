@@ -109,7 +109,10 @@ public class OpenAiCompatibleBackend implements AiTextBackend
                 .timeout(Duration.ofMillis(AiSettings.timeoutMs.get()))
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + apiKey)
-                .POST(HttpRequest.BodyPublishers.ofString(DataToString.toString(body, true)))
+                .POST(HttpRequest.BodyPublishers.ofString(
+                    DataToString.toString(body, true)
+                        .replace("\r\n", "\n")
+                        .replace("\r", "\n")))
                 .build();
         }
         catch (Exception e)

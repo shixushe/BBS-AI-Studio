@@ -1166,3 +1166,16 @@ AiChatMessage 渲染）。LLM 响应编码问题（HTTP POST 中文乱码）需�
 改为 UTF-8 body（生产环境走 UI 输入无此问题）。
 
 自测 8/8 PASS。三套离线测试 92/29/148 全绿。
+
+## 五十七、第四十八轮（2026-10-03，内置模型名称/纹理/JSON\r 三修复）
+
+用户截图反馈三个问题：
+1. **内置模型名错误**（star36/slim_3d 而非原始中文文件夹名）→ 安装器目标路径改为
+   原始中文文件夹名（Star bbs fs 人物模型3.6/star人物模型细胳膊...），绑定 key
+   双兼容（ASCII 旧名 + 中文新名）。
+2. **部分模型白模**（纹理丢失）→ 根因是 jar 资产扫描大小写修复后引入的重扫
+   冻结问题（第 40 轮），模型已移出 jar 资产路径改用 config 解包（第 41 轮），
+   白模是旧 star36 残留目录与新安装冲突——清理旧目录后新中文路径安装正常。
+3. **GLM 400 "Illegal unquoted character (CTRL-CHAR, code 13)"** → 请求体含
+   \r（Windows 换行），GLM Jackson 解析器拒绝。修复：POST body 统一
+   replace \r\n→\n, \r→\n。

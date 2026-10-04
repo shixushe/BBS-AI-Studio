@@ -18,9 +18,18 @@ import java.util.List;
 public class AiBuiltinModels
 {
     /** 变体 → 随包文件清单（纹理名为作者原文件名，引用保持相对一致）。 */
+    /** 原始中文文件夹名（与模型 bbs.json 引用一致）。 */
     private static final String[][] VARIANTS = {
-        {"slim_gapless"}, {"slim_eyes"}, {"slim_female"}, {"slim_weld"}, {"slim_3d"},
-        {"thick_gapless"}, {"thick_eyes"}, {"thick_weld"}, {"thick_3d"}, {"eye_rig"}
+        {"star人物模型细胳膊 弯曲处缝隙优化"},
+        {"star人物模型细胳膊 自带眼睛"},
+        {"star人物模型细胳膊 女性"},
+        {"star人物模型细胳膊 弯曲处焊接"},
+        {"star人物模型细胳膊  3D 弯曲缝隙优化"},
+        {"star人物模型粗胳膊 弯曲处缝隙优化"},
+        {"star人物模型粗胳膊 自带眼睛"},
+        {"star人物模型粗胳膊 弯曲处焊接"},
+        {"star人物模型粗胳膊  3D 弯曲缝隙优化"},
+        {"star bbs 眼睛模型"}
     };
 
     private static final String[] COMMON_FILES = {
@@ -34,7 +43,7 @@ public class AiBuiltinModels
         try
         {
             File base = new File(MinecraftClient.getInstance().runDirectory,
-                "config/bbs/assets/models/star36");
+                "config/bbs/assets/models/Star bbs fs  人物模型3.6");
 
             int copied = 0;
 

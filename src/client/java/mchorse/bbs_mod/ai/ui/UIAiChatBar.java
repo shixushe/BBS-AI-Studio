@@ -67,6 +67,13 @@ public class UIAiChatBar extends UIElement
 
     private boolean busy;
 
+    /** 走路家族姿势：吃步态重心节奏（触地低、半程高），并触发 x/z 行走位移 */
+    private static final java.util.Set<String> WALK_POSES = java.util.Set.of(
+        "walk_step", "walk_step_b", "sad_walk", "normal_walk", "energetic_walk");
+
+    /** 原版步行速度：4.317 格/秒 ÷ 20 tick/秒 */
+    private static final double WALK_SPEED = 0.216D;
+
     /** Change count already reported to the transcript, so the preview entry logs once per result. */
     private int lastLoggedCount = -1;
 
@@ -493,7 +500,11 @@ public class UIAiChatBar extends UIElement
             /* 整只 Pose 写进 pose 属性轨道——用户看得见、可编辑的那条 */
             writes = mchorse.bbs_mod.ai.pose.PoseSolver.toPoseTrackWrites(poses, boneEnds, replay.properties, replay.form.get());
 
-            /* 地面识别：蹲/压缩/落地拍在 y 通道插重心下沉键（幅度来自 ROOT_Y），保证脚贴地 */
+            /* 地面识别 + 行走位移：
+             * 蹲/压缩/落地拍在 y 通道插重心下沉键（幅度来自 ROOT_Y），保证脚贴地；
+             * 走路家族（walk_step/walk_step_b）改成步态节奏——触地拍低位、两拍中点
+             * 回升，形成自然的重心起伏，而不是每拍一蹲一弹的原地蹦跳；
+             * 同时沿角色初始朝向写 x/z 线性键（原版步速 0.215 格/tick），人物真正前进 */
             if (this.groundDetect)
             {
                 KeyframeChannel<Double> yChannel = replay.keyframes.y;
@@ -503,8 +514,9 @@ public class UIAiChatBar extends UIElement
                 int sinkKeys = 0;
                 int totalTick = Math.max(1, generated.totalTicks);
 
-                for (mchorse.bbs_mod.ai.pose.PoseSolver.KeyPose pose : poses)
+                for (int i = 0; i < poses.size(); i++)
                 {
+                    mchorse.bbs_mod.ai.pose.PoseSolver.KeyPose pose = poses.get(i);
                     float sink = mchorse.bbs_mod.ai.pose.PoseLibrary.ROOT_Y.getOrDefault(pose.pose, 0F);
 
                     if (sink == 0F)
@@ -512,6 +524,7 @@ public class UIAiChatBar extends UIElement
                         continue;
                     }
 
+                    boolean walk = WALK_POSES.contains(pose.pose);
                     FrameCommitter.ChannelWrite sinkWrite = null;
 
                     for (FrameCommitter.ChannelWrite write : writes)
@@ -534,12 +547,25 @@ public class UIAiChatBar extends UIElement
 
                     down.tick = pose.tick;
                     down.value = (float) (baseY + sink);
-                    down.interpolation = "cubic_out";
+                    down.interpolation = walk ? "cubic_inout" : "cubic_out";
                     sinkWrite.keys.add(down);
 
                     EditPatch.KeyWrite up = new EditPatch.KeyWrite();
 
-                    up.tick = Math.min(totalTick, pose.tick + 6);
+                    if (walk)
+                    {
+                        /* 步态节奏：低点在触地拍，高点在到下一拍的半程（重力势能
+                         * 在 passing 位最高）。后续拍会写自己的低点，中点回升键
+                         * 让 y 呈 low-high-low 起伏而非每拍一蹲一弹 */
+                        int nextTick = i + 1 < poses.size() ? poses.get(i + 1).tick : pose.tick + 8;
+
+                        up.tick = Math.min(totalTick, pose.tick + Math.max(2, (nextTick - pose.tick) / 2));
+                    }
+                    else
+                    {
+                        up.tick = Math.min(totalTick, pose.tick + 6);
+                    }
+
                     up.value = (float) baseY;
                     up.interpolation = "cubic_inout";
                     sinkWrite.keys.add(up);
@@ -547,11 +573,44 @@ public class UIAiChatBar extends UIElement
                     sinkKeys += 2;
                 }
 
-                if (sinkKeys > 0)
+                /* 行走位移：沿角色初始朝向匀速前进，走路段落真往前走 */
+                int firstWalk = -1;
+                int lastWalk = -1;
+
+                for (mchorse.bbs_mod.ai.pose.PoseSolver.KeyPose pose : poses)
+                {
+                    if (WALK_POSES.contains(pose.pose))
+                    {
+                        if (firstWalk < 0)
+                        {
+                            firstWalk = pose.tick;
+                        }
+
+                        lastWalk = pose.tick;
+                    }
+                }
+
+                double travel = 0D;
+
+                if (firstWalk >= 0 && lastWalk > firstWalk)
+                {
+                    double x0 = this.replayActorX(0);
+                    double z0 = this.replayActorZ(0);
+                    double yawRad = Math.toRadians(this.currentReplayDouble(replay.keyframes.yaw, 0));
+                    double dx = -Math.sin(yawRad);
+                    double dz = Math.cos(yawRad);
+
+                    travel = WALK_SPEED * (lastWalk - firstWalk);
+
+                    this.writeLinearMove(writes, replay.keyframes.x, "x", firstWalk, lastWalk, x0, x0 + dx * travel);
+                    this.writeLinearMove(writes, replay.keyframes.z, "z", firstWalk, lastWalk, z0, z0 + dz * travel);
+                }
+
+                if (sinkKeys > 0 || travel > 0D)
                 {
                     for (FrameCommitter.ChannelWrite write : writes)
                     {
-                        if (write.trackId.equals("y"))
+                        if (write.trackId.equals("y") && sinkKeys > 0)
                         {
                             write.keys.sort(java.util.Comparator.comparingDouble(k -> k.tick));
                         }
@@ -559,6 +618,12 @@ public class UIAiChatBar extends UIElement
 
                     thinking.addProcess("地面识别：蹲/落地重心键 +" + sinkKeys
                         + "（y 通道，基线 " + String.format("%.2f", baseY) + "）");
+
+                    if (travel > 0D)
+                    {
+                        thinking.addProcess("行走位移：沿朝向前进 " + String.format("%.1f", travel)
+                            + " 格（x/z 线性键，原版步速）");
+                    }
                 }
             }
 
@@ -884,6 +949,43 @@ public class UIAiChatBar extends UIElement
         Replay r = this.panel.replayEditor.getReplay();
 
         return this.currentReplayDouble(r == null ? null : r.keyframes.z, tick);
+    }
+
+    /** 行走位移：在 x/z 通道插两端线性键（起点 a、终点 b），中间匀速 */
+    private void writeLinearMove(List<FrameCommitter.ChannelWrite> writes, KeyframeChannel<Double> channel,
+        String trackId, int fromTick, int toTick, double a, double b)
+    {
+        FrameCommitter.ChannelWrite write = null;
+
+        for (FrameCommitter.ChannelWrite existing : writes)
+        {
+            if (existing.trackId.equals(trackId))
+            {
+                write = existing;
+
+                break;
+            }
+        }
+
+        if (write == null)
+        {
+            write = new FrameCommitter.ChannelWrite(trackId, channel, 0F);
+            writes.add(write);
+        }
+
+        EditPatch.KeyWrite start = new EditPatch.KeyWrite();
+
+        start.tick = fromTick;
+        start.value = (float) a;
+        start.interpolation = "linear";
+        write.keys.add(start);
+
+        EditPatch.KeyWrite end = new EditPatch.KeyWrite();
+
+        end.tick = toTick;
+        end.value = (float) b;
+        end.interpolation = "linear";
+        write.keys.add(end);
     }
 
     private double currentReplayDouble(KeyframeChannel<Double> channel, float tick)

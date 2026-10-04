@@ -83,6 +83,32 @@ public class PoseSolver
         public float[] values = new float[] {0F, 0F, 0F};
     }
 
+    /** X 轴镜像的骨骼名：left_/right_（含中文 左/右）前缀互换，其余原样 */
+    private static String mirroredBone(String bone)
+    {
+        if (bone.startsWith("left_"))
+        {
+            return "right_" + bone.substring(5);
+        }
+
+        if (bone.startsWith("right_"))
+        {
+            return "left_" + bone.substring(6);
+        }
+
+        if (bone.startsWith("左"))
+        {
+            return "右" + bone.substring(1);
+        }
+
+        if (bone.startsWith("右"))
+        {
+            return "左" + bone.substring(1);
+        }
+
+        return bone;
+    }
+
     /**
      * Solve blocking poses for a plan against a user-confirmed bone map.
      *
@@ -155,6 +181,10 @@ public class PoseSolver
             }
         }
 
+        /* @作者姿势的出现计数：同一姿势套用多次时做差异化（隔次镜像 +
+         * 逐骨骼微变），套用归套用，不做复读机 */
+        java.util.Map<String, Integer> skillSeen = new java.util.HashMap<>();
+
         for (AnimationPlan.Beat beat : expanded)
         {
             KeyPose pose = new KeyPose();
@@ -173,25 +203,50 @@ public class PoseSolver
             /* @ 技能姿势：作者姿态整只替换，不吃幅度 */
             if (beat.pose.startsWith("@"))
             {
-                mchorse.bbs_mod.utils.pose.Pose skill = skillPoses.get(beat.pose);
+                /* 技能表的键不带 @（AiSkillLibrary 以姿势名原样为键）——
+                 * 这里必须剥前缀再查，否则所有 @姿势都静默退化成空姿势 */
+                mchorse.bbs_mod.utils.pose.Pose skill = skillPoses.get(beat.pose.substring(1));
+
+                if (skill == null)
+                {
+                    skill = skillPoses.get(beat.pose);
+                }
 
                 if (skill != null)
                 {
+                    /* 曲线运用：进入作者姿势的到达默认走 S 曲线（LLM 给了
+                     * elastic/overshoot/snap 等意图时照旧） */
+                    if ("linear".equals(pose.intent) || "hold".equals(pose.intent))
+                    {
+                        pose.intent = "ease_in_out";
+                    }
+
+                    /* 差异化：第 2、4、6 次出现整只镜像（左右交换 + Y/Z 轴
+                     * 取反），每次再叠逐骨骼微变——同一姿势摆两遍也不复读 */
+                    int seen = skillSeen.merge(beat.pose, 1, Integer::sum);
+                    boolean mirror = seen % 2 == 0;
+
                     for (Map.Entry<String, mchorse.bbs_mod.utils.pose.PoseTransform> entry : skill.transforms.entrySet())
                     {
                         BoneChannel channel = new BoneChannel();
 
-                        channel.bone = entry.getKey();
+                        channel.bone = mirror ? mirroredBone(entry.getKey()) : entry.getKey();
+
+                        float jx = mirror ? -1F : 1F;
+                        float jy = 1F + 0.05F * ((seen - 1) % 3 - 1) * (0.6F + 0.4F * Math.abs(entry.getKey().hashCode() % 7) / 7F);
+
                         channel.x = entry.getValue().rotate.x;
-                        channel.y = entry.getValue().rotate.y;
-                        channel.z = entry.getValue().rotate.z;
+                        channel.y = entry.getValue().rotate.y * jy;
+                        channel.z = entry.getValue().rotate.z * jx;
 
                         /* 作者姿势完整套用：旋转 + 缩放 + 平移（t）——作者靠
                          * 平移摆造型（蹲下前倾、坐姿沉胯），丢 t 就走样 */
                         channel.values = new float[] {
                             channel.x, channel.y, channel.z,
                             entry.getValue().scale.x, entry.getValue().scale.y, entry.getValue().scale.z,
-                            entry.getValue().translate.x, entry.getValue().translate.y, entry.getValue().translate.z
+                            entry.getValue().translate.x * jx,
+                            entry.getValue().translate.y * jy,
+                            entry.getValue().translate.z * jx
                         };
                         pose.channels.add(channel);
                     }

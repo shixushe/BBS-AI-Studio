@@ -189,6 +189,10 @@ public class PoseSolverTest
         at.rotate.set(0.4F, 0F, 0F);
         at.translate.set(0F, -0.04F, 1.05F);
 
+        mchorse.bbs_mod.utils.pose.PoseTransform armR = authored.getOrCreate("right_arm");
+
+        armR.rotate.set(0F, 0.5F, 0.2F);
+
         AnimationPlan skillPlan;
 
         try
@@ -210,10 +214,12 @@ public class PoseSolverTest
         List<PoseSolver.KeyPose> skillPoses = PoseSolver.solve(skillPlan, bones,
             1F, java.util.Map.of("@蹲下", authored));
 
-        PoseSolver.BoneChannel skillChannel = skillPoses.get(0).channels.get(0);
+        PoseSolver.BoneChannel skillChannel = skillPoses.get(0).channels.stream()
+            .filter(c -> c.bone.equals("body")).findFirst().orElse(null);
 
-        equal(9, skillChannel.values.length, "authored pose channel carries rot+scale+translate");
-        equal(1.05F, skillChannel.values[8], "author translate Z survives into the channel");
+        check(skillChannel != null, "authored body channel present");
+        equal(9, skillChannel == null ? 0 : skillChannel.values.length, "authored pose channel carries rot+scale+translate");
+        equal(1.05F, skillChannel == null ? 0F : skillChannel.values[8], "author translate Z survives into the channel");
 
         FormProperties skillProps = new FormProperties("skillTrack");
         List<FrameCommitter.ChannelWrite> skillWrites =
@@ -223,6 +229,45 @@ public class PoseSolverTest
 
         equal(1.05F, skillPose.transforms.get("body").translate.z, "pose track writes author translate");
         equal(0.4F, skillPose.transforms.get("body").rotate.x, "pose track keeps authored rotation");
+
+        /* 差异化：同一作者姿势第二次出现整只镜像（左右互换），且不再走
+         * linear——进入姿势的到达升级为 S 曲线 */
+        AnimationPlan repeatPlan;
+
+        try
+        {
+            repeatPlan = AnimationPlan.parse("""
+                {
+                  "version": 1, "fps": 20, "total_ticks": 40,
+                  "beats": [
+                    { "index": 0, "tick": 0, "phase": "hold", "pose": "@挥手姿势1", "spacing": 0, "intents": ["hold"] },
+                    { "index": 1, "tick": 20, "phase": "hold", "pose": "@挥手姿势1", "spacing": 20, "intents": ["hold"] }
+                  ]
+                }
+                """);
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        List<PoseSolver.KeyPose> repeats = PoseSolver.solve(repeatPlan, bones,
+            1F, java.util.Map.of("@挥手姿势1", authored));
+
+        equal(2, repeats.size(), "repeated @pose solves twice");
+        equal("ease_in_out", repeats.get(0).intent, "arrival into authored pose uses S curve by default");
+
+        PoseSolver.BoneChannel firstWave = repeats.get(0).channels.stream()
+            .filter(c -> c.bone.equals("right_arm")).findFirst().orElse(null);
+        PoseSolver.BoneChannel secondWave = repeats.get(1).channels.stream()
+            .filter(c -> c.bone.equals("left_arm")).findFirst().orElse(null);
+
+        check(firstWave != null, "first occurrence keeps authored sides");
+        check(secondWave != null, "second occurrence is mirrored (left/right swapped)");
+        check(firstWave != null && secondWave != null
+            && Math.abs(firstWave.x - secondWave.x) < 0.0001F
+            && Math.abs(firstWave.y + secondWave.y) > 0.0001F,
+            "mirror negates Y rotation while keeping X");
 
         /* Two-ended writes: same bone on root and part end fans out to both */
         FormProperties properties = new FormProperties("properties");

@@ -140,6 +140,38 @@ public class PoseSolverTest
         check(ghostPoses.get(1).channels.size() > 0, "@wave falls back to base wave channels");
         equal(-0.18F, ghostPoses.get(2).rootY, "stripped @compress keeps its rootY offset");
 
+        /* 步态展开：相邻走路拍自动插 walk_pass 过渡帧，走路拍升级平滑插值，
+         * 且走路不再带 y 起伏（ROOT_Y 无 walk 条目） */
+        AnimationPlan gaitPlan;
+
+        try
+        {
+            gaitPlan = AnimationPlan.parse("""
+                {
+                  "version": 1, "fps": 20, "total_ticks": 24,
+                  "beats": [
+                    { "index": 0, "tick": 0, "phase": "contact", "pose": "walk_step", "spacing": 0, "intents": ["hold"] },
+                    { "index": 1, "tick": 12, "phase": "contact", "pose": "walk_step_b", "spacing": 12, "intents": ["linear"] },
+                    { "index": 2, "tick": 24, "phase": "contact", "pose": "walk_step", "spacing": 12, "intents": ["hold"] }
+                  ]
+                }
+                """);
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        List<PoseSolver.KeyPose> gait = PoseSolver.solve(gaitPlan, bones);
+
+        equal(5, gait.size(), "two walk contacts expand with pass frames between");
+        equal("walk_pass", gait.get(1).pose, "pass frame inserted after first contact");
+        equal(6, gait.get(1).tick, "pass frame sits at the midpoint");
+        equal("ease_in_out", gait.get(1).intent, "pass frame uses smooth curve");
+        equal("ease_in_out", gait.get(2).intent, "linear walk beat upgraded to smooth");
+        equal(0F, gait.get(0).rootY, "walking carries no vertical bob (user request)");
+        check(gait.get(1).channels.size() >= 8, "pass frame animates the full walk rig");
+
         /* Two-ended writes: same bone on root and part end fans out to both */
         FormProperties properties = new FormProperties("properties");
         PoseSolver.KeyPose pose = new PoseSolver.KeyPose();

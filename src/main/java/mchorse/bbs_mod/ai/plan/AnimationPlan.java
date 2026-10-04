@@ -29,7 +29,7 @@ public class AnimationPlan
     public static final List<String> PHASES = List.of("contact", "down", "passing", "up", "anticipation", "hold", "follow_through");
 
     /** Poses the plan may reference; extensible only from this file. */
-    public static final List<String> POSES = List.of("crouch", "compress", "rise", "fall", "punch", "kick", "idle", "turn", "walk_step", "land", "reach", "point", "blink", "walk_step_b", "wave", "cheer", "bow", "sit", "run", "sad_walk", "normal_walk", "energetic_walk");
+    public static final List<String> POSES = List.of("crouch", "compress", "rise", "fall", "punch", "kick", "idle", "turn", "walk_step", "land", "reach", "point", "blink", "walk_step_b", "wave", "cheer", "bow", "sit", "run", "sad_walk", "normal_walk", "energetic_walk", "walk_pass");
 
     public int fps = 20;
 

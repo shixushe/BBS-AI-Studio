@@ -35,13 +35,23 @@ public class PoseLibrary
      * 每个姿态的根重心偏移（方块）：蹲/落地类压低重心让脚贴地。
      * 仅当地面识别开启且检测到地面时应用。
      */
+    /* 走路家族不再配重心下沉——用户明确要求"走路不需要上下"，
+     * 只保留真正的垂直动作（蹲/压缩/落地） */
     public static final Map<String, Float> ROOT_Y = Map.of(
         "crouch", -0.45F,
         "compress", -0.18F,
-        "land", -0.22F,
-        "walk_step", -0.07F,
-        "walk_step_b", -0.07F
+        "land", -0.22F
     );
+
+    /** 原版步行速度：4.317 格/秒 ÷ 20 tick/秒（行走位移用） */
+    public static final double WALK_SPEED = 0.216D;
+
+    /** 走路家族（步态过渡帧插入与位移检测共用） */
+    public static boolean isWalk(String pose)
+    {
+        return "walk_step".equals(pose) || "walk_step_b".equals(pose)
+            || "sad_walk".equals(pose) || "normal_walk".equals(pose) || "energetic_walk".equals(pose);
+    }
 
     private static final Map<String, Map<String, float[]>> POSES = Map.ofEntries(
         Map.entry("idle", Map.of()),
@@ -71,6 +81,21 @@ public class PoseLibrary
             Map.entry("right_elbow", new float[] {-10F, 0F, 0F}),
             Map.entry("head", new float[] {1F, 2F, 0.1F}),
             Map.entry("body", new float[] {2.5F, -6F, -0.2F})
+        )),
+        /* 步态过渡帧（passing 位）：双腿近并、膝盖微屈、手臂摆到中线。
+         * 只有左右两个极端姿势来回跳是步态生硬的根源——作者动画每个
+         * 半步之间都有这一帧，solve() 在相邻走路拍之间自动插入 */
+        Map.entry("walk_pass", Map.ofEntries(
+            Map.entry("left_leg", new float[] {3F, 0.3F, 0.2F}),
+            Map.entry("right_leg", new float[] {-4F, 0F, 0F}),
+            Map.entry("left_knee", new float[] {14F, 0F, 0F}),
+            Map.entry("right_knee", new float[] {12F, 0F, 0F}),
+            Map.entry("left_arm", new float[] {-6F, 4F, -2F}),
+            Map.entry("left_elbow", new float[] {-9F, 0F, 0F}),
+            Map.entry("right_arm", new float[] {6F, -4F, 3F}),
+            Map.entry("right_elbow", new float[] {-10F, 0F, 0F}),
+            Map.entry("head", new float[] {0.5F, 1F, 0F}),
+            Map.entry("body", new float[] {2F, 0F, 0.2F})
         )),
         Map.entry("crouch", Map.of(
             "body", new float[] {19F, 0F, 0F},

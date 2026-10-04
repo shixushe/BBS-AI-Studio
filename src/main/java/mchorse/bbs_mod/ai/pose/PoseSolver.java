@@ -123,7 +123,38 @@ public class PoseSolver
 
         List<KeyPose> poses = new ArrayList<>();
 
-        for (AnimationPlan.Beat beat : plan.beats)
+        /* 步态展开：相邻走路拍之间插入 walk_pass 过渡帧（passing 位），
+         * 并把走路的线性插值升级为 S 曲线——只有左右两个极端姿势来回
+         * 跳 + 直线插值，是步态生硬的直接根源 */
+        List<AnimationPlan.Beat> expanded = new ArrayList<>();
+
+        for (int i = 0; i < plan.beats.size(); i++)
+        {
+            AnimationPlan.Beat cur = plan.beats.get(i);
+
+            expanded.add(cur);
+
+            if (i + 1 < plan.beats.size() && PoseLibrary.isWalk(cur.pose))
+            {
+                AnimationPlan.Beat next = plan.beats.get(i + 1);
+
+                if (PoseLibrary.isWalk(next.pose) && next.tick - cur.tick >= 4)
+                {
+                    AnimationPlan.Beat pass = new AnimationPlan.Beat();
+
+                    pass.index = -1;
+                    pass.tick = (cur.tick + next.tick) / 2;
+                    pass.phase = "passing";
+                    pass.pose = "walk_pass";
+                    pass.spacing = 0;
+                    pass.intents.add(mchorse.bbs_mod.ai.curve.PolishKind.EASE_IN_OUT);
+
+                    expanded.add(pass);
+                }
+            }
+        }
+
+        for (AnimationPlan.Beat beat : expanded)
         {
             KeyPose pose = new KeyPose();
 
@@ -131,6 +162,12 @@ public class PoseSolver
             pose.phase = beat.phase;
             pose.pose = beat.pose;
             pose.intent = beat.intents == null || beat.intents.isEmpty() ? "linear" : beat.intents.get(0).name().toLowerCase();
+
+            /* 走路家族默认平滑曲线：linear 的来回切换观感生硬 */
+            if (PoseLibrary.isWalk(beat.pose) && "linear".equals(pose.intent))
+            {
+                pose.intent = "ease_in_out";
+            }
 
             /* @ 技能姿势：作者姿态整只替换，不吃幅度 */
             if (beat.pose.startsWith("@"))

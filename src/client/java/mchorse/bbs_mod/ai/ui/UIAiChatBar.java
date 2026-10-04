@@ -67,13 +67,6 @@ public class UIAiChatBar extends UIElement
 
     private boolean busy;
 
-    /** 走路家族姿势：吃步态重心节奏（触地低、半程高），并触发 x/z 行走位移 */
-    private static final java.util.Set<String> WALK_POSES = java.util.Set.of(
-        "walk_step", "walk_step_b", "sad_walk", "normal_walk", "energetic_walk");
-
-    /** 原版步行速度：4.317 格/秒 ÷ 20 tick/秒 */
-    private static final double WALK_SPEED = 0.216D;
-
     /** Change count already reported to the transcript, so the preview entry logs once per result. */
     private int lastLoggedCount = -1;
 
@@ -530,7 +523,7 @@ public class UIAiChatBar extends UIElement
 
                 for (mchorse.bbs_mod.ai.pose.PoseSolver.KeyPose pose : poses)
                 {
-                    if (WALK_POSES.contains(pose.pose))
+                    if (mchorse.bbs_mod.ai.pose.PoseLibrary.isWalk(pose.pose))
                     {
                         if (firstWalk < 0)
                         {
@@ -569,7 +562,7 @@ public class UIAiChatBar extends UIElement
 
                 if (firstWalk >= 0 && lastWalk > firstWalk)
                 {
-                    double raw = WALK_SPEED * (lastWalk - firstWalk);
+                    double raw = mchorse.bbs_mod.ai.pose.PoseLibrary.WALK_SPEED * (lastWalk - firstWalk);
 
                     if (startFree)
                     {
@@ -603,7 +596,7 @@ public class UIAiChatBar extends UIElement
                         continue;
                     }
 
-                    boolean walk = WALK_POSES.contains(pose.pose);
+                    boolean walk = mchorse.bbs_mod.ai.pose.PoseLibrary.isWalk(pose.pose);
                     FrameCommitter.ChannelWrite sinkWrite = null;
 
                     for (FrameCommitter.ChannelWrite write : writes)

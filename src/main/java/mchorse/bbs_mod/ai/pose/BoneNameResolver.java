@@ -27,11 +27,15 @@ public class BoneNameResolver
         Map<String, List<String>> map = new java.util.LinkedHashMap<>();
 
         map.put("head", List.of("head", "neck", "headtop", "头", "头部", "脑袋"));
-        map.put("body", List.of("body", "torso", "chest", "spine", "bodylower", "torsolower", "bodyupper", "身体", "躯干", "上身"));
+        map.put("body", List.of("body", "chest", "spine", "bodyupper", "身体", "躯干", "上身", "torso", "torsolower", "bodylower"));
         map.put("left_arm", List.of("leftarm", "armleft", "larm", "arml", "左臂", "左手", "左胳膊", "左上臂"));
         map.put("right_arm", List.of("rightarm", "armright", "rarm", "armr", "右臂", "右手", "右胳膊", "右上臂"));
         map.put("left_leg", List.of("leftleg", "legleft", "lleg", "legl", "左腿", "左脚", "左足", "左大腿"));
         map.put("right_leg", List.of("rightleg", "legright", "rleg", "legr", "右腿", "右脚", "右足", "右大腿"));
+        /* 深度适配：骨盆与上半身独立驱动（Star 3.6 的 torso/torso_lower），
+         * 没有这两根骨骼的模型按可选骨骼静默跳过 */
+        map.put("torso", List.of("torso", "chest", "spine", "上半身", "胸"));
+        map.put("torso_lower", List.of("torsolower", "bodylower", "pelvis", "骨盆", "下身", "下躯干"));
         map.put("left_eye", List.of("lefteye", "eyeleft", "leye", "左眼", "左眼球", "左眼瞳", "瞳左", "左瞳"));
         map.put("right_eye", List.of("righteye", "eyeright", "reye", "右眼", "右眼球", "右眼瞳", "瞳右", "右瞳"));
         map.put("left_elbow", List.of("leftelbow", "elbowleft", "左肘", "左手肘"));
@@ -136,6 +140,10 @@ public class BoneNameResolver
             else
             {
                 result.resolved.put(generic, best);
+
+                /* 占用去重：这根实际骨骼已被认领，后续 generic 不再抢
+                 * （body 先认领 body，torso 泛骨骼才能独立驱动 torso） */
+                normalized.remove(best.actual);
             }
         }
 

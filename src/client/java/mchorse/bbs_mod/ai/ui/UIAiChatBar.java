@@ -289,7 +289,17 @@ public class UIAiChatBar extends UIElement
 
             system += "\n\n该模型自带 " + skillPoses.size() + " 个预设姿势（beat.pose 用 \"@名字\" 直接引用，作者调好的成品姿势）:"
                 + intentTable
-                + "适合表达情绪与标志性动作；走跑跳等位移仍用姿态库。";
+                + "【硬性要求】挥手、鞠躬、坐下、思考、哭、害羞、睡觉、疑惑、抱胸、摊手、登场、赞美、搬东西、牵手、卖萌等表情/姿态类动作，"
+                + "必须直接用上面的 @作者姿势（一个 beat 定住 10-20 tick 即可），"
+                + "不要用 wave/bow/sit/cheer 这些程序化姿势名——它们只是给没有作者姿势的模型兜底的，"
+                + "套在自带作者姿势的模型上会丢失作者的动作细节。"
+                + "程序化姿势只保留给位移类动作：walk_step、walk_step_b、run、crouch、jump 类。";
+        }
+
+        if (!skillPoses.isEmpty())
+        {
+            /* 该模型有作者姿势：从程序化枚举里拿掉表情/姿态类，逼模型走 @姿势 */
+            system = system.replace("|wave|cheer|bow|sit", "").replace("wave|cheer|bow|sit|", "");
         }
 
         if (!caps.modBlocks.isEmpty())

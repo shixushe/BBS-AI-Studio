@@ -78,7 +78,8 @@ public class PoseSolver
         public float y;
         public float z;
 
-        /** Values straight from the library entry: rotation [0..2], optional scale [3..5]. */
+        /** Library entry: rotation [0..2], optional scale [3..5], optional
+         * translate [6..8] (作者姿势的 t 分量——蹲下/站姿等靠平移造型). */
         public float[] values = new float[] {0F, 0F, 0F};
     }
 
@@ -184,8 +185,14 @@ public class PoseSolver
                         channel.x = entry.getValue().rotate.x;
                         channel.y = entry.getValue().rotate.y;
                         channel.z = entry.getValue().rotate.z;
-                        channel.values = new float[] {channel.x, channel.y, channel.z,
-                            entry.getValue().scale.x, entry.getValue().scale.y, entry.getValue().scale.z};
+
+                        /* 作者姿势完整套用：旋转 + 缩放 + 平移（t）——作者靠
+                         * 平移摆造型（蹲下前倾、坐姿沉胯），丢 t 就走样 */
+                        channel.values = new float[] {
+                            channel.x, channel.y, channel.z,
+                            entry.getValue().scale.x, entry.getValue().scale.y, entry.getValue().scale.z,
+                            entry.getValue().translate.x, entry.getValue().translate.y, entry.getValue().translate.z
+                        };
                         pose.channels.add(channel);
                     }
 
@@ -239,6 +246,40 @@ public class PoseSolver
             }
 
             poses.add(pose);
+        }
+
+        /* 步幅变化：交替给每一步 ±6% 的能量差（作者步态本身左右不对称），
+         * 打破"每步一模一样"的机械感——只缩放旋转，不碰缩放/平移分量 */
+        float[] strideEnergy = {1.0F, 0.94F, 1.06F, 0.97F};
+        int stride = 0;
+
+        for (KeyPose pose : poses)
+        {
+            if (!PoseLibrary.isWalk(pose.pose) && !"walk_pass".equals(pose.pose))
+            {
+                continue;
+            }
+
+            float factor = strideEnergy[stride % strideEnergy.length];
+
+            if (!"walk_pass".equals(pose.pose))
+            {
+                stride++;
+            }
+
+            for (BoneChannel channel : pose.channels)
+            {
+                channel.x *= factor;
+                channel.y *= factor;
+                channel.z *= factor;
+
+                if (channel.values.length >= 3)
+                {
+                    channel.values[0] *= factor;
+                    channel.values[1] *= factor;
+                    channel.values[2] *= factor;
+                }
+            }
         }
 
         return poses;
@@ -421,6 +462,12 @@ public class PoseSolver
                     {
                         transform.scale.set(channelData.values[3], channelData.values[4], channelData.values[5]);
                     }
+
+                    /* 作者姿势的平移分量（t）——造型的一部分 */
+                    if (channelData.values.length >= 9)
+                    {
+                        transform.translate.set(channelData.values[6], channelData.values[7], channelData.values[8]);
+                    }
                 }
 
                 EditPatch.KeyWrite key = new EditPatch.KeyWrite();
@@ -499,10 +546,15 @@ public class PoseSolver
                     transform.rotate.set(channel.x, channel.y, channel.z);
 
                     /* Six-float channels carry scale after rotation - the blink
-                     * pose squashes eye bones on Y */
+                     * pose squashes eye bones on Y; nine-float adds translate */
                     if (channel.values.length >= 6)
                     {
                         transform.scale.set(channel.values[3], channel.values[4], channel.values[5]);
+                    }
+
+                    if (channel.values.length >= 9)
+                    {
+                        transform.translate.set(channel.values[6], channel.values[7], channel.values[8]);
                     }
 
                     key.poseValue = transform;

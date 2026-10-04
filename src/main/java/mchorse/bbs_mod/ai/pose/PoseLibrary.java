@@ -28,7 +28,8 @@ public class PoseLibrary
         "left_elbow", "right_elbow",
         "left_knee", "right_knee",
         "headwear",
-        "left_eyebrow", "right_eyebrow"
+        "left_eyebrow", "right_eyebrow",
+        "torso", "torso_lower"
     );
 
     /**
@@ -56,7 +57,8 @@ public class PoseLibrary
     private static final Map<String, Map<String, float[]>> POSES = Map.ofEntries(
         Map.entry("idle", Map.of()),
         /* 走路左右两步：LLM 交替使用才有步态 */
-        /* 走1（平静）t=0：作者真实关键帧蒸馏（10 骨骼含躯干扭转/肘/膝） */
+        /* 走1（平静）t=0：作者真实关键帧蒸馏（10 骨骼含躯干扭转/肘/膝）+
+         * 骨盆/上半身反旋（模型有而未动的关节，深度适配） */
         Map.entry("walk_step", Map.ofEntries(
             Map.entry("left_leg", new float[] {16.2F, 0.7F, 0.3F}),
             Map.entry("right_leg", new float[] {-16F, 0F, 0F}),
@@ -67,9 +69,11 @@ public class PoseLibrary
             Map.entry("right_arm", new float[] {18F, -5.4F, 5.4F}),
             Map.entry("right_elbow", new float[] {-12F, 0F, 0F}),
             Map.entry("head", new float[] {0F, 0F, -0.1F}),
-            Map.entry("body", new float[] {2F, 6F, 0.6F})
+            Map.entry("body", new float[] {2F, 6F, 0.6F}),
+            Map.entry("torso_lower", new float[] {2F, -5F, 0F}),
+            Map.entry("torso", new float[] {-1F, -2F, 0F})
         )),
-        /* 走1（平静）t=0.5：右脚前（镜像步态） */
+        /* 走1（平静）t=0.5：右脚前（镜像步态）+ 骨盆反向 */
         Map.entry("walk_step_b", Map.ofEntries(
             Map.entry("left_leg", new float[] {-21.8F, 0.7F, 0.3F}),
             Map.entry("right_leg", new float[] {23F, 0F, 0F}),
@@ -80,7 +84,9 @@ public class PoseLibrary
             Map.entry("right_arm", new float[] {-18F, -5.4F, 5.4F}),
             Map.entry("right_elbow", new float[] {-10F, 0F, 0F}),
             Map.entry("head", new float[] {1F, 2F, 0.1F}),
-            Map.entry("body", new float[] {2.5F, -6F, -0.2F})
+            Map.entry("body", new float[] {2.5F, -6F, -0.2F}),
+            Map.entry("torso_lower", new float[] {2F, 5F, 0F}),
+            Map.entry("torso", new float[] {-1F, 2F, 0F})
         )),
         /* 步态过渡帧（passing 位）：双腿近并、膝盖微屈、手臂摆到中线。
          * 只有左右两个极端姿势来回跳是步态生硬的根源——作者动画每个
@@ -95,7 +101,9 @@ public class PoseLibrary
             Map.entry("right_arm", new float[] {6F, -4F, 3F}),
             Map.entry("right_elbow", new float[] {-10F, 0F, 0F}),
             Map.entry("head", new float[] {0.5F, 1F, 0F}),
-            Map.entry("body", new float[] {2F, 0F, 0.2F})
+            Map.entry("body", new float[] {2F, 0F, 0.2F}),
+            Map.entry("torso_lower", new float[] {1.5F, 0F, 0F}),
+            Map.entry("torso", new float[] {-0.5F, 0F, 0F})
         )),
         Map.entry("crouch", Map.of(
             "body", new float[] {19F, 0F, 0F},

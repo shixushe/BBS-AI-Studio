@@ -172,6 +172,58 @@ public class PoseSolverTest
         equal(0F, gait.get(0).rootY, "walking carries no vertical bob (user request)");
         check(gait.get(1).channels.size() >= 8, "pass frame animates the full walk rig");
 
+        /* 步幅变化：相邻两步的能量不同（打破机械重复），torso/骨盆已入步态 */
+        PoseSolver.BoneChannel leg0 = gait.get(0).channels.stream()
+            .filter(c -> c.bone.equals("left_leg")).findFirst().orElse(null);
+        PoseSolver.BoneChannel leg1 = gait.get(2).channels.stream()
+            .filter(c -> c.bone.equals("left_leg")).findFirst().orElse(null);
+        check(gait.get(0).channels.stream().anyMatch(c -> c.bone.equals("torso_lower")),
+            "walk animates the pelvis (deep model adaptation)");
+        check(leg0 != null && leg1 != null && Math.abs(leg0.x - leg1.x) > 0.0001F,
+            "consecutive strides differ in energy (no mechanical repetition)");
+
+        /* 作者姿势平移携带：@技能姿势的 t 分量完整落到通道与轨道值 */
+        mchorse.bbs_mod.utils.pose.Pose authored = new mchorse.bbs_mod.utils.pose.Pose();
+        mchorse.bbs_mod.utils.pose.PoseTransform at = authored.getOrCreate("body");
+
+        at.rotate.set(0.4F, 0F, 0F);
+        at.translate.set(0F, -0.04F, 1.05F);
+
+        AnimationPlan skillPlan;
+
+        try
+        {
+            skillPlan = AnimationPlan.parse("""
+                {
+                  "version": 1, "fps": 20, "total_ticks": 10,
+                  "beats": [
+                    { "index": 0, "tick": 0, "phase": "hold", "pose": "@蹲下", "spacing": 0, "intents": ["hold"] }
+                  ]
+                }
+                """);
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        List<PoseSolver.KeyPose> skillPoses = PoseSolver.solve(skillPlan, bones,
+            1F, java.util.Map.of("@蹲下", authored));
+
+        PoseSolver.BoneChannel skillChannel = skillPoses.get(0).channels.get(0);
+
+        equal(9, skillChannel.values.length, "authored pose channel carries rot+scale+translate");
+        equal(1.05F, skillChannel.values[8], "author translate Z survives into the channel");
+
+        FormProperties skillProps = new FormProperties("skillTrack");
+        List<FrameCommitter.ChannelWrite> skillWrites =
+            PoseSolver.toPoseTrackWrites(skillPoses, java.util.Map.of(), skillProps, null);
+        EditPatch.KeyWrite skillKey = skillWrites.get(0).keys.get(0);
+        mchorse.bbs_mod.utils.pose.Pose skillPose = (mchorse.bbs_mod.utils.pose.Pose) skillKey.fullValue;
+
+        equal(1.05F, skillPose.transforms.get("body").translate.z, "pose track writes author translate");
+        equal(0.4F, skillPose.transforms.get("body").rotate.x, "pose track keeps authored rotation");
+
         /* Two-ended writes: same bone on root and part end fans out to both */
         FormProperties properties = new FormProperties("properties");
         PoseSolver.KeyPose pose = new PoseSolver.KeyPose();

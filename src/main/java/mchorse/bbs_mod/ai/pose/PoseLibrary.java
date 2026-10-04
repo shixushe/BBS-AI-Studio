@@ -156,12 +156,43 @@ public class PoseLibrary
             "right_arm", new float[] {0F, 0F, -8F},
             "left_elbow", new float[] {0F, 0F, 0F}
         )),
-        Map.entry("sit", Map.of(
-            "left_leg", new float[] {-88F, 0F, 0F},
-            "right_leg", new float[] {-88F, 0F, 0F},
-            "left_knee", new float[] {85F, 0F, 0F},
-            "right_knee", new float[] {85F, 0F, 0F},
-            "body", new float[] {4F, 0F, 0F}
+        /* 走2（垂头丧气）：头下垂、肘弯、躯干前倾 5°（作者值） */
+        Map.entry("sad_walk", Map.ofEntries(
+            Map.entry("head", new float[] {1F, 0F, 0F}),
+            Map.entry("left_arm", new float[] {-18F, 5.5F, -3.2F}),
+            Map.entry("left_elbow", new float[] {-23F, 0F, 0F}),
+            Map.entry("left_knee", new float[] {1.8F, 0F, 0F}),
+            Map.entry("left_leg", new float[] {16.2F, 0.7F, 0.3F}),
+            Map.entry("right_arm", new float[] {-18F, -5.4F, 2.5F}),
+            Map.entry("right_elbow", new float[] {-26F, 0F, 0F}),
+            Map.entry("right_knee", new float[] {33.6F, 0F, 0F}),
+            Map.entry("right_leg", new float[] {-18F, 0F, 0F}),
+            Map.entry("body", new float[] {5F, -6F, 0.6F})
+        )),
+        /* 走3（普通）：大幅摆动 ±25-42°（作者值） */
+        Map.entry("normal_walk", Map.ofEntries(
+            Map.entry("left_leg", new float[] {42.5F, 5F, 0F}),
+            Map.entry("right_leg", new float[] {-25F, 0F, 0F}),
+            Map.entry("left_arm", new float[] {-20F, 0F, 0F}),
+            Map.entry("right_arm", new float[] {20F, 0F, 2F}),
+            Map.entry("body", new float[] {6F, -4F, 0F})
+        )),
+        /* 走4（活力）：最大幅度 ±69°（作者值） */
+        Map.entry("energetic_walk", Map.ofEntries(
+            Map.entry("left_leg", new float[] {69.1F, 5.6F, 1.7F}),
+            Map.entry("right_leg", new float[] {-39.8F, -8.8F, -1.8F}),
+            Map.entry("left_arm", new float[] {-43.7F, -8.7F, -4.8F}),
+            Map.entry("right_arm", new float[] {41.9F, 7.1F, 4.8F}),
+            Map.entry("head", new float[] {-4.8F, 3.3F, -1.3F}),
+            Map.entry("body", new float[] {6F, 0F, 0F})
+        )),
+        /* 坐姿：双膝 85° 反屈（poses.json 作者值） */
+        Map.entry("sit", Map.ofEntries(
+            Map.entry("left_leg", new float[] {-88F, 0F, 0F}),
+            Map.entry("right_leg", new float[] {-88F, 0F, 0F}),
+            Map.entry("left_knee", new float[] {85F, 0F, 0F}),
+            Map.entry("right_knee", new float[] {85F, 0F, 0F}),
+            Map.entry("body", new float[] {4F, 0F, 0F})
         )),
         /* 奔跑 t=0：作者真实关键帧（含 torso/anchor，带躯干前倾 + 膝弯 65°） */
         Map.entry("run", Map.ofEntries(

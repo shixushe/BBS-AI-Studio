@@ -1,68 +1,296 @@
 {
- "description": "Star 3.6 作者动画蒸馏的运动质量参数（走1平静/奔跑 提取）",
- "walk_cycle": {
-  "source": "走1（平静）",
-  "duration_seconds": 1,
-  "keyframes_per_cycle": 7,
-  "leg_swing_deg": [
-   16.2,
-   -22
-  ],
-  "arm_counter_swing_deg": [
-   18,
-   -18
-  ],
-  "knee_bend_deg": [
-   18,
-   7
-  ],
-  "torso_twist_y_deg": [
-   6,
-   -6
-  ],
-  "torso_lean_x_deg": 2,
-  "head_bob_deg": [
-   0,
-   1
-  ]
+ "gaits": {
+  "sad_walk": {
+   "source": "1走2（垂头丧气）",
+   "duration_s": 1.0,
+   "bones": 12,
+   "leg_swing": [
+    -24,
+    16
+   ],
+   "knee_bend": [
+    2,
+    34
+   ],
+   "arm_counter": [
+    -18,
+    18
+   ],
+   "elbow_bend": [
+    -26,
+    -2
+   ],
+   "torso_lean": 5,
+   "torso_twist": [
+    -6,
+    6
+   ],
+   "head": "下垂 1°",
+   "bounce": 0.4,
+   "mood": "垂头丧气"
+  },
+  "calm_walk": {
+   "source": "走1（平静）",
+   "duration_s": 1.0,
+   "bones": 10,
+   "leg_swing": [
+    -22,
+    23
+   ],
+   "knee_bend": [
+    2,
+    34
+   ],
+   "arm_counter": [
+    -18,
+    18
+   ],
+   "elbow_bend": [
+    -23,
+    -2
+   ],
+   "torso_twist": [
+    -6,
+    6
+   ],
+   "head_bob": [
+    -0.1,
+    0.1
+   ],
+   "bounce": 0.2,
+   "mood": "平静自然"
+  },
+  "normal_walk": {
+   "source": "1走3（普通）",
+   "duration_s": 0.8,
+   "bones": 7,
+   "leg_swing": [
+    -25,
+    42.5
+   ],
+   "arm_counter": [
+    -20,
+    20
+   ],
+   "torso_twist": [
+    -4,
+    4
+   ],
+   "torso_lean": [
+    1,
+    6
+   ],
+   "leg_bounce": 3.0,
+   "mood": "普通步速"
+  },
+  "energetic_walk": {
+   "source": "1走4（活力）",
+   "duration_s": 0.74,
+   "bones": 7,
+   "leg_swing": [
+    -40,
+    69
+   ],
+   "arm_counter": [
+    -44,
+    42
+   ],
+   "torso_lean": [
+    3,
+    6
+   ],
+   "torso_twist": [
+    -4,
+    4
+   ],
+   "head_pitch": [
+    -11.6,
+    -4.8
+   ],
+   "bounce": 5.2,
+   "mood": "活力充沛"
+  },
+  "detailed_walk": {
+   "source": "走",
+   "duration_s": 4.0,
+   "keyframes": 101,
+   "bones": 12,
+   "leg_swing": [
+    -25,
+    10
+   ],
+   "knee_bend": [
+    0,
+    70
+   ],
+   "arm_counter": [
+    -15,
+    10
+   ],
+   "elbow": [
+    -12.5,
+    0
+   ],
+   "torso_twist": [
+    -7.5,
+    7.5
+   ],
+   "head_yaw": [
+    -5,
+    15
+   ],
+   "mood": "高精度多圈循环"
+  },
+  "walk2": {
+   "source": "走2",
+   "duration_s": 1.25,
+   "bones": 12,
+   "leg_swing": [
+    -27.5,
+    17.5
+   ],
+   "knee_bend": [
+    0,
+    57.5
+   ],
+   "arm_counter": [
+    -17.5,
+    20
+   ],
+   "elbow_bend": [
+    -20,
+    2.5
+   ],
+   "torso_twist": [
+    -5,
+    5
+   ],
+   "leg_bounce": 1.1,
+   "mood": "走2"
+  }
  },
- "run_cycle": {
-  "source": "奔跑",
-  "duration_seconds": 1,
-  "keyframes_per_cycle": 5,
-  "leg_swing_deg": [
-   15,
-   -30,
-   -45
-  ],
-  "knee_bend_deg": [
-   0,
-   65
-  ],
-  "arm_swing_deg": [
-   -12,
-   30
-  ],
-  "elbow_bend_deg": [
-   -42.5,
-   -7.5
-  ],
-  "torso_lean_x_deg": 15,
-  "torso_twist_y_deg": [
-   5,
-   0
-  ],
-  "head_stabilize_deg": [
-   -7.5,
-   -10
-  ]
+ "runs": {
+  "slow_run": {
+   "source": "奔跑",
+   "duration_s": 1.0,
+   "bones": 12,
+   "leg_swing": [
+    -45,
+    27.5
+   ],
+   "knee_bend": [
+    0,
+    67.5
+   ],
+   "arm_counter": [
+    -37.7,
+    34.8
+   ],
+   "elbow_bend": [
+    -67.5,
+    1.2
+   ],
+   "torso_lean": [
+    10,
+    15
+   ],
+   "torso_twist": [
+    -7.4,
+    7.5
+   ],
+   "torso_lower_twist": [
+    -5,
+    10
+   ],
+   "head_yaw": [
+    -12.5,
+    7.5
+   ],
+   "bounce": 1.0
+  },
+  "fast_run": {
+   "source": "跑步【厕所C提供】",
+   "duration_s": 0.42,
+   "keyframes": 148,
+   "bones": 11,
+   "leg_swing": [
+    -83,
+    26
+   ],
+   "knee_bend": [
+    0,
+    103
+   ],
+   "arm_counter": [
+    -73,
+    40
+   ],
+   "elbow_bend": [
+    -86,
+    -55
+   ],
+   "torso_lean": [
+    15.9,
+    20.9
+   ],
+   "torso_twist": [
+    -23,
+    23
+   ],
+   "head_pitch": [
+    -42.4,
+    -34.5
+   ],
+   "bounce": 2.0,
+   "mood": "极速奔跑"
+  }
  },
- "quality_rules": [
-  "膝弯只出现在摆动腿（支撑腿伸直）",
-  "手臂与腿反相（右手前=左脚前）",
-  "走路时手臂直臂摆动；跑步时肘弯 42°",
-  "躯干 Y 轴反扭跟随步伐节奏",
-  "跑步时躯干前倾 15°（vs 走路 2°）",
-  "头部保持稳定（眼望前方，不随步伐晃动）"
+ "idle": {
+  "talk_idle": {
+   "source": "0说话用idle",
+   "duration_s": 3.0,
+   "bones": 6,
+   "arm_bob": 0.25,
+   "leg_bob": 0.1,
+   "torso_bob": 0.35,
+   "use": "说话时的自然摆动"
+  },
+  "breathing": {
+   "source": "FA风格呼吸动画",
+   "duration_s": 2.86,
+   "bones": 8,
+   "head_pitch": [
+    -2.5,
+    0
+   ],
+   "arm_z": [
+    -5,
+    -3
+   ],
+   "knee": [
+    -4,
+    2
+   ],
+   "leg_y": [
+    -3,
+    3
+   ],
+   "torso_pitch": [
+    0,
+    2.5
+   ],
+   "torso_bob": 0.25,
+   "use": "站立呼吸起伏（缓慢周期 2.86s）"
+  }
+ },
+ "motion_rules": [
+  "腿摆幅度与能量等级成正比: 平静±20° → 普通±35° → 活力±55° → 跑步±55° → 快跑±55°",
+  "膝弯在摆动腿达到峰值(34-103°),支撑腿接近 0°",
+  "手臂与同侧腿反相(右臂前=左脚前),幅度约为腿摆的 60-80%",
+  "走路时手臂基本伸直(elbow 0 到 -26°);跑步时肘弯常驻 -55 到 -86°",
+  "躯干 Y 轴扭转与步伐同步(±4-23°),X 轴前倾与速度成正比(平静 2° → 快跑 21°)",
+  "头部做反向微调稳定视线(走路 ±2°,快跑 ±23° 补偿躯干扭转)",
+  "垂直弹跳(重力回弹)幅度: 平静 0.2 → 活力 5.2 → 奔跑 1.0 → 快跑 2.0",
+  "呼吸 idle 周期 2.86s, 头/臂/膝各 ±2-5° 的微小起伏"
  ]
 }

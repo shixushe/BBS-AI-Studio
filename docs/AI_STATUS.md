@@ -1098,3 +1098,12 @@ Misode 生成器、BSP 房间细分论文均可参考。
 - **motion_patterns.json** 技能资源：提炼的运动质量规则（膝弯只出现在摆
   动腿/手臂腿反相/走路直臂跑步屈肘 42°/躯干反扭跟随步伐/跑步前倾 15°/
   头部稳定）注入系统提示词，LLM 按规律生成更真实的关键拍参数。
+
+## 五十四（续）、第四十五轮补（walk_step 10 骨骼替换 + sad/normal/energetic/sit + sit 去重）
+
+- walk_step/walk_step_b 替换为作者走1平静 t=0/t=0.5 的 10 骨骼值
+  （含 head/body/left_elbow/right_elbow/left_knee/right_knee——此前只有
+  6 骨骼无头/躯干/肘/膝）；
+- 新增 sad_walk（垂头丧气） / normal_walk（普通大幅） / energetic_walk（活力大幅）
+  三档步态（作者值）；sit 去重。
+- 全套测试 92/29/148 全绿，已部署。

@@ -1,5 +1,6 @@
 package mchorse.bbs_mod.ai;
 
+import mchorse.bbs_mod.ai.commit.EditPatch;
 import mchorse.bbs_mod.ai.commit.FrameCommitter;
 import mchorse.bbs_mod.ai.plan.AnimationPlan;
 import mchorse.bbs_mod.ai.pose.BoneNameResolver;
@@ -389,6 +390,45 @@ public class PoseSolverTest
         {
             check(e.getMessage().contains("unresolved"), "unresolved error names the problem");
         }
+
+        /* 整只 Pose 轨道的单位契约：solve() 产出的通道值已是弧度，
+         * toPoseTrackWrites 必须原样落键——再 toRadians 一次会把 16° 的
+         * 抬腿压成 0.28°（腿部"没动作"回归） */
+        FormProperties trackProps = new FormProperties("poseTrack");
+        List<FrameCommitter.ChannelWrite> trackWrites =
+            PoseSolver.toPoseTrackWrites(poses, java.util.Map.of(), trackProps, null);
+
+        check(!trackWrites.isEmpty(), "pose track write produced");
+        FrameCommitter.ChannelWrite track = trackWrites.get(0);
+
+        PoseSolver.KeyPose punch = poses.get(2);
+        EditPatch.KeyWrite punchKey = track.keys.stream()
+            .filter(k -> k.tick == punch.tick).findFirst().orElse(null);
+
+        check(punchKey != null, "punch beat key exists on the pose track");
+        mchorse.bbs_mod.utils.pose.Pose punchPose =
+            punchKey == null ? null : (mchorse.bbs_mod.utils.pose.Pose) punchKey.fullValue;
+
+        check(punchPose != null, "punch beat key carries a whole Pose");
+        int matched = 0;
+
+        for (PoseSolver.BoneChannel channel : punch.channels)
+        {
+            mchorse.bbs_mod.utils.pose.PoseTransform transform = punchPose == null
+                ? null : punchPose.transforms.get(channel.bone);
+
+            if (transform == null)
+            {
+                continue;
+            }
+
+            matched++;
+            equal(channel.x, transform.rotate.x, "pose track keeps radian X for " + channel.bone);
+            equal(channel.y, transform.rotate.y, "pose track keeps radian Y for " + channel.bone);
+            equal(channel.z, transform.rotate.z, "pose track keeps radian Z for " + channel.bone);
+        }
+
+        check(matched >= 4, "punch pose carries its solved bones (" + matched + ")");
     }
 
     private static void poseWritesThroughCommit()

@@ -376,11 +376,9 @@ public class PoseSolver
 
                     mchorse.bbs_mod.utils.pose.PoseTransform transform = value.getOrCreate(channelData.bone);
 
-                    /* 库姿态存角度，Pose 期望弧度 */
-                    transform.rotate.set(
-                        (float) Math.toRadians(channelData.x),
-                        (float) Math.toRadians(channelData.y),
-                        (float) Math.toRadians(channelData.z));
+                    /* channelData 已是弧度（solve() 里转过一次）——这里不能
+                     * 再 toRadians，否则 16° 的抬腿只剩 0.28°，等于没动 */
+                    transform.rotate.set(channelData.x, channelData.y, channelData.z);
 
                     if (channelData.values.length >= 6)
                     {

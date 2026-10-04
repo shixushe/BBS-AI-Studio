@@ -543,6 +543,107 @@ public class AiDebugServer
                         return sb.toString();
                     }
 
+                    if (op.equals("poseDump"))
+                    {
+                        var dashboard = mchorse.bbs_mod.BBSModClient.getDashboard();
+                        var panel = dashboard.getPanels().panel;
+
+                        if (!(panel instanceof mchorse.bbs_mod.ui.film.UIFilmPanel filmPanel) || filmPanel.getData() == null)
+                        {
+                            return "no film open";
+                        }
+
+                        var film = filmPanel.getData();
+                        StringBuilder sb = new StringBuilder();
+                        int dumpIndex = map == null ? 0 : map.getInt("replay");
+
+                        var replay = film.replays.getList().isEmpty() ? null : film.replays.getList()
+                            .get(Math.min(dumpIndex, film.replays.getList().size() - 1));
+
+                        if (replay == null || !(replay.form.get() instanceof mchorse.bbs_mod.forms.forms.ModelForm modelForm))
+                        {
+                            return "no model replay at index " + dumpIndex;
+                        }
+
+                        /* 模型骨骼归属：每根骨骼在哪些表单端 */
+                        var boneEnds = mchorse.bbs_mod.ai.AiFormWalker.collectBoneEnds(modelForm);
+
+                        sb.append("model=").append(modelForm.model.get()).append(" bones=");
+                        sb.append(boneEnds.size()).append("\n");
+
+                        for (var entry : boneEnds.entrySet())
+                        {
+                            sb.append("  ").append(entry.getKey()).append(" -> ");
+
+                            boolean first = true;
+
+                            for (String end : entry.getValue())
+                            {
+                                if (!first)
+                                {
+                                    sb.append(",");
+                                }
+
+                                sb.append(end.isEmpty() ? "root" : end);
+                                first = false;
+                            }
+
+                            sb.append("\n");
+                        }
+
+                        /* 已存的 pose 轨道：每个表单端一条，列前 3 个键的骨骼与角度 */
+                        for (String end : new java.util.LinkedHashSet<>(boneEnds.values().stream()
+                            .flatMap(java.util.List::stream).collect(java.util.stream.Collectors.toList())))
+                        {
+                            var trackId = mchorse.bbs_mod.film.replays.tracks.TrackId.property(end,
+                                mchorse.bbs_mod.film.replays.FormProperties.POSE_PROPERTY);
+                            mchorse.bbs_mod.utils.keyframes.KeyframeChannel<mchorse.bbs_mod.utils.pose.Pose> channel =
+                                replay.properties.get(trackId);
+
+                            sb.append("pose[").append(end.isEmpty() ? "root" : end).append("] ")
+                                .append(channel == null ? "ABSENT" : "keys=" + channel.getKeyframes().size()).append("\n");
+
+                            if (channel == null)
+                            {
+                                continue;
+                            }
+
+                            int shown = 0;
+
+                            for (var keyframe : channel.getKeyframes())
+                            {
+                                if (shown++ >= 3)
+                                {
+                                    break;
+                                }
+
+                                mchorse.bbs_mod.utils.pose.Pose pose = keyframe.getValue();
+
+                                sb.append("  @").append(keyframe.getTick()).append(": ");
+
+                                int bones = 0;
+
+                                for (var t : pose.transforms.entrySet())
+                                {
+                                    if (bones++ > 0)
+                                    {
+                                        sb.append(", ");
+                                    }
+
+                                    sb.append(t.getKey()).append("(")
+                                        .append(String.format("%.0f,%.0f,%.0f",
+                                            Math.toDegrees(t.getValue().rotate.x),
+                                            Math.toDegrees(t.getValue().rotate.y),
+                                            Math.toDegrees(t.getValue().rotate.z))).append(")");
+                                }
+
+                                sb.append("\n");
+                            }
+                        }
+
+                        return sb.toString();
+                    }
+
                     return "unknown op " + op;
                 }
                 catch (Exception e)

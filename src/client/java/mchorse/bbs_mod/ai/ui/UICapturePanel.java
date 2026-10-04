@@ -121,23 +121,26 @@ public class UICapturePanel extends UIDashboardPanel
 
         y += 1F;
         UILabel outputHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.output"), "");
-        outputHeader.relative(this).x(0).y(1F, -(AiUi.HEADER + m * 4 + row * 3 + AiUi.BAR + AiUi.TASKBAR)).w(1F).h(AiUi.HEADER);
 
-        y = 0;
-        this.path.relative(this).x(m).y(1F, -(AiUi.HEADER + m * 3 + row * 2 + AiUi.BAR + AiUi.TASKBAR)).w(1F, -m * 2).h(row);
+        /* 底部堆叠链（从底往上）：bottom → skillTips → tips → status → path → outputHeader */
+        int bottomChain = AiUi.BAR + AiUi.TASKBAR;
+        int skillTipsY = bottomChain + 4;
+        int tipsY = skillTipsY + UIConstants.CONTROL_HEIGHT * 3 + 4;
+        int statusY = tipsY + UIConstants.CONTROL_HEIGHT * 2 + 4;
+        int pathY = statusY + row + 4;
+        int outputHeaderY = pathY + row + 4;
 
-        this.status.relative(this).x(m).y(1F, -(AiUi.HEADER + m * 2 + row + AiUi.BAR + AiUi.TASKBAR)).w(1F, -m * 2).h(row);
+        outputHeader.relative(this).x(0).y(1F, -outputHeaderY).w(1F).h(AiUi.HEADER);
+        this.path.relative(this).x(m).y(1F, -pathY).w(1F, -m * 2).h(row);
+        this.status.relative(this).x(m).y(1F, -statusY).w(1F, -m * 2).h(row);
 
         UILabel tips = UI.label(L10n.lang("bbs.ui.ai.capture.tips"), UIConstants.CONTROL_HEIGHT * 2);
-
         tips.color(Colors.LIGHTER_GRAY, false);
-        tips.relative(this).x(m).y(1F, -(row + AiUi.BAR + AiUi.TASKBAR)).w(1F, -m * 2).h(UIConstants.CONTROL_HEIGHT * 2);
+        tips.relative(this).x(m).y(1F, -tipsY).w(1F, -m * 2).h(UIConstants.CONTROL_HEIGHT * 2);
 
         UILabel skillTips = UI.label(L10n.lang("bbs.ui.ai.capture.skill_tip"), UIConstants.CONTROL_HEIGHT * 3);
-
         skillTips.color(mchorse.bbs_mod.utils.colors.Colors.LIGHTER_GRAY, false);
-        skillTips.relative(this).x(m).y(1F, -(row + AiUi.BAR + AiUi.TASKBAR + UIConstants.CONTROL_HEIGHT * 2))
-            .w(1F, -m * 2).h(UIConstants.CONTROL_HEIGHT * 3);
+        skillTips.relative(this).x(m).y(1F, -skillTipsY).w(1F, -m * 2).h(UIConstants.CONTROL_HEIGHT * 3);
 
         UIElement bottom = UI.row(m, send, new UILabel(IKey.EMPTY));
 

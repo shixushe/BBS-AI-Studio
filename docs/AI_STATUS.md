@@ -1179,3 +1179,16 @@ AiChatMessage 渲染）。LLM 响应编码问题（HTTP POST 中文乱码）需�
 3. **GLM 400 "Illegal unquoted character (CTRL-CHAR, code 13)"** → 请求体含
    \r（Windows 换行），GLM Jackson 解析器拒绝。修复：POST body 统一
    replace \r\n→\n, \r→\n。
+
+## 五十八、第四十九轮（2026-10-03，采集面板文字重叠修复）
+
+用户截图反馈采集面板底部多条文字重叠（skillTips/status/path/outputHeader
+挤在同一区域）。
+
+根因：各元素 Y 偏移独立计算（有的用 HEADER+m*4+row*3，有的用 row+BAR），
+导致碰巧落在同一像素区域。
+
+修复：统一用「底部堆叠链」——从底往上声明变量
+bottomChain → skillTipsY → tipsY → statusY → pathY → outputHeaderY，
+每个元素在前一个元素顶端 + 4px 间隔。所有 Y 偏移从同一链条派生，
+不可能重叠。

@@ -563,5 +563,20 @@ public class UIAiPanel extends UIDashboardPanel
         AiUi.topEdge(context, this.area.x, this.area.y, this.area.w);
 
         super.render(context);
+
+        /* 分区分隔线（对话|方案板|节拍） */
+        int c = mchorse.bbs_mod.utils.colors.Colors.setA(mchorse.bbs_mod.utils.colors.Colors.LIGHTER_GRAY, 0.2F);
+        int x1 = this.area.x + 4, x2 = this.area.ex() - 4;
+        int h = this.area.h;
+
+        for (float frac : new float[] {0.14F, 0.36F})
+        {
+            int ly = this.area.y + (int) (h * frac);
+            context.batcher.box(x1, ly, x2, ly + 1, c);
+        }
+
+        /* 方案板|节拍 竖分线 */
+        int vx = this.area.x + (int) (this.area.w * 0.55F);
+        context.batcher.box(vx, this.area.y + (int) (h * 0.36F), vx + 1, this.area.y + (int) (h * 0.92F), c);
     }
 }

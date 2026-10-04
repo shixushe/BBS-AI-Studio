@@ -1192,3 +1192,11 @@ AiChatMessage 渲染）。LLM 响应编码问题（HTTP POST 中文乱码）需�
 bottomChain → skillTipsY → tipsY → statusY → pathY → outputHeaderY，
 每个元素在前一个元素顶端 + 4px 间隔。所有 Y 偏移从同一链条派生，
 不可能重叠。
+
+## 五十七（续）、第四十八轮补（边框线分区：矩形边框替代水平线）
+
+用户要求：不是分割线，是边框线——类似窗口的分区，用矩形边框区分各功能区。
+
+采集面板 render 里画三个矩形边框（来源|帧预览|输出提示），每区一个
+border() 辅助方法画四边。UIContext import 修正（mchorse.ui.utils →
+mchorse.ui.framework）。

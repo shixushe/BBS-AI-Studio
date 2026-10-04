@@ -119,28 +119,27 @@ public class UICapturePanel extends UIDashboardPanel
         y += AiUi.HEADER + m;
         this.strip.relative(this).x(m).y(y).w(1F, -m * 2).h(1F, -(y + AiUi.HEADER + m * 5 + row * 4 + AiUi.BAR + AiUi.TASKBAR));
 
-        y += 1F;
+
+        /* ===== 以下从 strip 底端正向堆叠 ===== */
+        y += 200; /* strip 最小高度 */
         UILabel outputHeader = AiUi.header(L10n.lang("bbs.ui.ai.capture.output"), "");
+        outputHeader.relative(this).x(0).y(y).w(1F).h(AiUi.HEADER);
 
-        /* 底部堆叠链（从底往上）：bottom → skillTips → tips → status → path → outputHeader */
-        int bottomChain = AiUi.BAR + AiUi.TASKBAR;
-        int skillTipsY = bottomChain + 4;
-        int tipsY = skillTipsY + UIConstants.CONTROL_HEIGHT * 3 + 4;
-        int statusY = tipsY + UIConstants.CONTROL_HEIGHT * 2 + 4;
-        int pathY = statusY + row + 4;
-        int outputHeaderY = pathY + row + 4;
+        y += AiUi.HEADER;
+        this.path.relative(this).x(m).y(y).w(1F, -m * 2).h(row);
 
-        outputHeader.relative(this).x(0).y(1F, -outputHeaderY).w(1F).h(AiUi.HEADER);
-        this.path.relative(this).x(m).y(1F, -pathY).w(1F, -m * 2).h(row);
-        this.status.relative(this).x(m).y(1F, -statusY).w(1F, -m * 2).h(row);
+        y += row + 2;
+        this.status.relative(this).x(m).y(y).w(1F, -m * 2).h(row);
 
+        y += row + 2;
         UILabel tips = UI.label(L10n.lang("bbs.ui.ai.capture.tips"), UIConstants.CONTROL_HEIGHT * 2);
         tips.color(Colors.LIGHTER_GRAY, false);
-        tips.relative(this).x(m).y(1F, -tipsY).w(1F, -m * 2).h(UIConstants.CONTROL_HEIGHT * 2);
+        tips.relative(this).x(m).y(y).w(1F, -m * 2).h(UIConstants.CONTROL_HEIGHT * 2);
 
+        y += UIConstants.CONTROL_HEIGHT * 2 + 4;
         UILabel skillTips = UI.label(L10n.lang("bbs.ui.ai.capture.skill_tip"), UIConstants.CONTROL_HEIGHT * 3);
         skillTips.color(mchorse.bbs_mod.utils.colors.Colors.LIGHTER_GRAY, false);
-        skillTips.relative(this).x(m).y(1F, -skillTipsY).w(1F, -m * 2).h(UIConstants.CONTROL_HEIGHT * 3);
+        skillTips.relative(this).x(m).y(y).w(1F, -m * 2).h(UIConstants.CONTROL_HEIGHT * 3);
 
         UIElement bottom = UI.row(m, send, new UILabel(IKey.EMPTY));
 
@@ -170,6 +169,27 @@ public class UICapturePanel extends UIDashboardPanel
         AiUi.topEdge(context, this.area.x, this.area.y, this.area.w);
 
         super.render(context);
+
+        /* 分区边框：来源 | 帧预览 | 输出提示 */
+        int bc = BORDER_COLOR;
+        int bx = this.area.x + 2, bw = this.area.w - 4;
+        int bh = this.area.h;
+
+        this.border(context, bx, this.area.y, bw, (int) (bh * 0.16F));
+        this.border(context, bx, this.area.y + (int) (bh * 0.16F), bw, (int) (bh * 0.34F));
+        this.border(context, bx, this.area.y + (int) (bh * 0.50F), bw, (int) (bh * 0.45F));
+    }
+
+    private static final int BORDER_COLOR = mchorse.bbs_mod.utils.colors.Colors.setA(
+        mchorse.bbs_mod.utils.colors.Colors.LIGHTER_GRAY, 0.2F);
+
+    private void border(UIContext context, int x, int y, int w, int h)
+    {
+        int bc = BORDER_COLOR;
+        context.batcher.box(x, y, x + w, y + 1, bc);
+        context.batcher.box(x, y + h - 1, x + w, y + h, bc);
+        context.batcher.box(x, y, x + 1, y + h, bc);
+        context.batcher.box(x + w - 1, y, x + w, y + h, bc);
     }
 
     /** Start a scene capture from the film editor's playhead over the given length. */

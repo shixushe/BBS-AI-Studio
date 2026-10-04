@@ -75,7 +75,7 @@ public class UIAiChatBar extends UIElement
     private boolean groundDetect = true;
 
     /** 贴地移动：行走位移沿地形起伏、遇墙截断（询问面板可关） */
-    private boolean lastSnap = false;
+    private boolean lastSnap = true;
 
     public UIAiChatBar(UIFilmPanel panel)
     {
@@ -232,12 +232,12 @@ public class UIAiChatBar extends UIElement
 
     public void executeGenerate(String script)
     {
-        this.executeGenerate(script, 1, true, false);
+        this.executeGenerate(script, 1, true, true);
     }
 
     public void executeGenerate(String script, int amplitudeIndex, boolean groundDetect)
     {
-        this.executeGenerate(script, amplitudeIndex, groundDetect, false);
+        this.executeGenerate(script, amplitudeIndex, groundDetect, true);
     }
 
     public void executeGenerate(String script, int amplitudeIndex, boolean groundDetect, boolean groundSnap)
@@ -554,11 +554,19 @@ public class UIAiChatBar extends UIElement
                 double wz = worldAnchor == null ? z0 : worldAnchor.getZ();
                 double anchorDY = baseY - wy;
 
-                /* 起点自检：演员出生位置本身被方块包裹（电影世界对齐异常，
-                 * 比如嵌在虚空基岩里）时，碰撞/地表采样全部不可信——本次
-                 * 放弃截断与贴地，按电影空间平面行走，绝不误报"前方碰壁" */
+                /* 碰壁截断自检：演员出生位置本身被方块包裹（电影世界对齐
+                 * 异常，比如嵌在虚空基岩里）时，碰撞采样不可信——本次放弃
+                 * 截断，按电影空间直行，绝不误报"前方碰壁"。贴地不受此限：
+                 * 渐进式跟随（见下）恰好能把嵌在虚空里的演员逐键抬回地表 */
                 net.minecraft.world.World snapWorld = this.worldOrNull();
                 boolean startFree = snapWorld != null && !this.bodyBlocked(snapWorld, wx, wy, wz);
+
+                /* 贴地链：从起脚位置的地表高度起步，每个 y 键最多升降 ±2 格
+                 * 渐进跟随——嵌在虚空/地下的演员逐键抬回地表，树冠、屋顶的
+                 * 高度图突变（一跳十几格）被挡在门外 */
+                double prevGround = this.lastSnap
+                    ? Math.max(wy - 2D, Math.min(wy + 2D, this.groundYAt(wx, wz, wy)))
+                    : wy;
 
                 if (firstWalk >= 0 && lastWalk > firstWalk)
                 {
@@ -590,20 +598,24 @@ public class UIAiChatBar extends UIElement
                 {
                     mchorse.bbs_mod.ai.pose.PoseSolver.KeyPose pose = poses.get(i);
                     float sink = mchorse.bbs_mod.ai.pose.PoseLibrary.ROOT_Y.getOrDefault(pose.pose, 0F);
-
-                    if (sink == 0F)
-                    {
-                        continue;
-                    }
+                    boolean inWalkSpan = firstWalk >= 0 && pose.tick >= firstWalk && pose.tick <= lastWalk;
+                    boolean walkSnapKey = this.lastSnap && inWalkSpan
+                        && (mchorse.bbs_mod.ai.pose.PoseLibrary.isWalk(pose.pose) || "walk_pass".equals(pose.pose));
 
                     /* 走路段内不写任何下沉键：LLM 偶尔把 compress/land 当步态
                      * 的 down/up 相位塞进走路计划，那就是"走路上下跳" */
-                    if (firstWalk >= 0 && pose.tick >= firstWalk && pose.tick <= lastWalk)
+                    if (sink != 0F && inWalkSpan)
                     {
                         continue;
                     }
 
-                    boolean walk = mchorse.bbs_mod.ai.pose.PoseLibrary.isWalk(pose.pose);
+                    /* 贴地开启时走路拍（含过渡帧）写地表跟随键——沿地形渐进
+                     * 走，没有起伏节奏；贴地关闭或非走路拍且无下沉则不碰 y */
+                    if (sink == 0F && !walkSnapKey)
+                    {
+                        continue;
+                    }
+
                     FrameCommitter.ChannelWrite sinkWrite = null;
 
                     for (FrameCommitter.ChannelWrite write : writes)
@@ -622,24 +634,32 @@ public class UIAiChatBar extends UIElement
                         writes.add(sinkWrite);
                     }
 
-                    /* 贴地移动：每个 y 键取所在位置的地表高度（世界坐标），
-                     * 加回键空间与世界空间的竖直偏移；起点异常时退回平面。
-                     * 单点跳变超过 ±2 格（树顶/屋顶的高度图突变）不跟随 */
+                    /* 贴地链：每个 y 键沿所在位置的地表高度（世界坐标，逐键
+                     * ±2 渐进）走，加回键空间与世界空间的竖直偏移 */
                     double lowBase = baseY;
 
-                    if (this.lastSnap && startFree)
+                    if (this.lastSnap)
                     {
                         double[] lowPos = this.travelPos(wx, wz, dirX, dirZ, travel, firstWalk, lastWalk, pose.tick);
 
-                        lowBase = this.clampGround(this.groundYAt(lowPos[0], lowPos[1], wy), wy) + anchorDY;
+                        prevGround = this.stepGround(this.groundYAt(lowPos[0], lowPos[1], wy), prevGround);
+                        lowBase = prevGround + anchorDY;
                     }
 
                     EditPatch.KeyWrite down = new EditPatch.KeyWrite();
 
                     down.tick = pose.tick;
                     down.value = (float) (lowBase + sink);
-                    down.interpolation = "cubic_out";
+                    down.interpolation = walkSnapKey ? "cubic_inout" : "cubic_out";
                     sinkWrite.keys.add(down);
+
+                    sinkKeys++;
+
+                    if (walkSnapKey)
+                    {
+                        /* 走路贴地键：一拍一键，地表在哪 y 就在哪——无起伏 */
+                        continue;
+                    }
 
                     EditPatch.KeyWrite up = new EditPatch.KeyWrite();
 
@@ -647,18 +667,19 @@ public class UIAiChatBar extends UIElement
 
                     double upBase = baseY;
 
-                    if (this.lastSnap && startFree)
+                    if (this.lastSnap)
                     {
                         double[] upPos = this.travelPos(wx, wz, dirX, dirZ, travel, firstWalk, lastWalk, up.tick);
 
-                        upBase = this.clampGround(this.groundYAt(upPos[0], upPos[1], wy), wy) + anchorDY;
+                        prevGround = this.stepGround(this.groundYAt(upPos[0], upPos[1], wy), prevGround);
+                        upBase = prevGround + anchorDY;
                     }
 
                     up.value = (float) upBase;
                     up.interpolation = "cubic_inout";
                     sinkWrite.keys.add(up);
 
-                    sinkKeys += 2;
+                    sinkKeys++;
                 }
 
                 if (sinkKeys > 0 || travel > 0D)
@@ -671,10 +692,9 @@ public class UIAiChatBar extends UIElement
                         }
                     }
 
-                    thinking.addProcess("地面识别：蹲/落地重心键 +" + sinkKeys
+                    thinking.addProcess("地面识别：贴地/重心键 +" + sinkKeys
                         + "（y 通道，基线 " + String.format("%.2f", baseY)
-                        + (this.lastSnap && startFree ? "，贴地采样" : "")
-                        + (this.lastSnap && !startFree ? "，世界基准异常按平面" : "") + "）");
+                        + (this.lastSnap ? "，贴地跟随（逐键 ±2 渐进）" : "") + "）");
 
                     if (travel > 0D)
                     {
@@ -1086,14 +1106,16 @@ public class UIAiChatBar extends UIElement
         return new double[] {x0 + dirX * travel * frac, z0 + dirZ * travel * frac};
     }
 
-    /** 贴地采样防跳变：与起脚面差超过 ±2 格的高度图突变（树冠/屋顶）
-     * 不跟随，钳回起脚面附近 */
-    private double clampGround(double groundY, double feetY)
+    /** 贴地链的单步：地表采样相对上一个键最多升降 ±2 格——既能把嵌在
+     * 虚空/地下的演员逐键抬回地表，又挡住树冠/屋顶的高度图突变 */
+    private double stepGround(double groundY, double prevGround)
     {
-        return Math.max(feetY - 2D, Math.min(feetY + 2D, groundY));
+        return Math.max(prevGround - 2D, Math.min(prevGround + 2D, groundY));
     }
 
-    /** 贴地：采样 (x,z) 的地表高度（世界坐标，与回放键一致）；无世界时回退 fallback */
+    /** 贴地：采样 (x,z) 的站立面。不用 getTopY 高度图——实测在某些世界
+     * 里比真实地表低好几格；改为从脚面向下局部扫描，找最上面的带碰撞
+     * 方块，其顶面即站立面；无世界时回退 fallback */
     private double groundYAt(double x, double z, double fallback)
     {
         try
@@ -1105,8 +1127,20 @@ public class UIAiChatBar extends UIElement
                 return fallback;
             }
 
-            return client.world.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,
-                (int) Math.floor(x), (int) Math.floor(z));
+            net.minecraft.util.math.BlockPos feet =
+                net.minecraft.util.math.BlockPos.ofFloored(x, fallback, z);
+
+            for (int dy = 1; dy >= -5; dy--)
+            {
+                net.minecraft.util.math.BlockPos pos = feet.add(0, dy, 0);
+
+                if (!client.world.getBlockState(pos).getCollisionShape(client.world, pos).isEmpty())
+                {
+                    return pos.getY() + 1;
+                }
+            }
+
+            return fallback;
         }
         catch (Exception e)
         {

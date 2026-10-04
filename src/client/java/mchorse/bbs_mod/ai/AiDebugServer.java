@@ -639,10 +639,44 @@ public class AiDebugServer
                                         .append("\n");
                                 }
 
-                                sb.append("  topY=").append(client.world.getTopY(
+                                sb.append("  topY(heightmap)=").append(client.world.getTopY(
                                         net.minecraft.world.Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,
                                         (int) Math.floor(px), (int) Math.floor(pz)))
                                     .append("\n");
+
+                                /* 与 groundYAt 相同的局部扫描：脚下 1 格向下 6 格找碰撞面 */
+                                var col = net.minecraft.util.math.BlockPos.ofFloored(px, py, pz);
+
+                                for (int dy = 1; dy >= -5; dy--)
+                                {
+                                    var scan = col.add(0, dy, 0);
+
+                                    if (!client.world.getBlockState(scan).getCollisionShape(client.world, scan).isEmpty())
+                                    {
+                                        sb.append("  scanGround=").append(scan.getY() + 1).append("\n");
+
+                                        break;
+                                    }
+                                }
+
+                                /* y 通道键值：验证走路贴地是否贴住地表、有无跳动 */
+                                var yCh = replay.keyframes.y;
+
+                                sb.append("  yKeys=");
+
+                                int shownY = 0;
+
+                                for (var yk : yCh.getKeyframes())
+                                {
+                                    if (shownY++ >= 12)
+                                    {
+                                        break;
+                                    }
+
+                                    sb.append(yk.getTick()).append(":").append(String.format("%.2f", yk.getValue())).append(" ");
+                                }
+
+                                sb.append("\n");
                             }
                             else
                             {

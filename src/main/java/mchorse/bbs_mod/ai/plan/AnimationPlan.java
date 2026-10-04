@@ -69,9 +69,24 @@ public class AnimationPlan
      * Parse and validate a plan from the model's raw JSON reply. Throws a
      * PARSE {@link AiException} with the first violation spelled out.
      */
+    /** 模型爱把方案包进 markdown 围栏或前后说明文字——截取第一个 { 到
+     * 最后一个 } 再解析，围栏/废话不再导致整次生成报废 */
+    static String stripToJsonObject(String raw)
+    {
+        if (raw == null)
+        {
+            return null;
+        }
+
+        int start = raw.indexOf('{');
+        int end = raw.lastIndexOf('}');
+
+        return start >= 0 && end > start ? raw.substring(start, end + 1) : raw;
+    }
+
     public static AnimationPlan parse(String json) throws AiException
     {
-        MapType map = DataToString.mapFromString(json);
+        MapType map = DataToString.mapFromString(stripToJsonObject(json));
 
         if (map == null)
         {

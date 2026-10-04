@@ -174,11 +174,19 @@ public class PoseSolver
 
                 float scale = entry.getValue().length >= 6 ? 1F : amplitude; /* 眨眼的缩放分量不吃幅度 */
 
+                /* PoseLibrary 存角度，PoseTransform 期望弧度——在此转换 */
+                float deg = (float) Math.PI / 180F;
+
                 channel.bone = resolution.actual;
-                channel.x = entry.getValue()[0] * scale;
-                channel.y = entry.getValue()[1] * scale;
-                channel.z = entry.getValue()[2] * scale;
-                channel.values = entry.getValue();
+                channel.x = entry.getValue()[0] * scale * deg;
+                channel.y = entry.getValue()[1] * scale * deg;
+                channel.z = entry.getValue()[2] * scale * deg;
+                channel.values = new float[] {
+                    channel.x, channel.y, channel.z,
+                    entry.getValue().length >= 6 ? entry.getValue()[3] : 1F,
+                    entry.getValue().length >= 6 ? entry.getValue()[4] : 1F,
+                    entry.getValue().length >= 6 ? entry.getValue()[5] : 1F
+                };
                 pose.channels.add(channel);
             }
 
@@ -357,10 +365,16 @@ public class PoseSolver
 
                     mchorse.bbs_mod.utils.pose.PoseTransform transform = value.getOrCreate(channelData.bone);
 
-                    transform.rotate.set(channelData.x, channelData.y, channelData.z);
-                    transform.scale.set(channelData.values.length >= 6 ? channelData.values[3] : 1F,
-                        channelData.values.length >= 6 ? channelData.values[4] : 1F,
-                        channelData.values.length >= 6 ? channelData.values[5] : 1F);
+                    /* 库姿态存角度，Pose 期望弧度 */
+                    transform.rotate.set(
+                        (float) Math.toRadians(channelData.x),
+                        (float) Math.toRadians(channelData.y),
+                        (float) Math.toRadians(channelData.z));
+
+                    if (channelData.values.length >= 6)
+                    {
+                        transform.scale.set(channelData.values[3], channelData.values[4], channelData.values[5]);
+                    }
                 }
 
                 EditPatch.KeyWrite key = new EditPatch.KeyWrite();

@@ -1691,6 +1691,17 @@ public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSu
     @Override
     public void render(UIContext context)
     {
+        /* AI 对话栏边框 */
+        int bc = mchorse.bbs_mod.utils.colors.Colors.setA(mchorse.bbs_mod.utils.colors.Colors.LIGHTER_GRAY, 0.2F);
+
+        if (this.editArea != null && this.aiChatBar != null && this.aiChatBar.isVisible())
+        {
+            var ea = this.editArea.area;
+            int halfY = ea.y + ea.h / 2;
+
+            context.batcher.box(ea.x, halfY, ea.x + ea.w, halfY + 1, bc);
+        }
+
         if (this.lastTime == 0)
         {
             this.lastTime = System.currentTimeMillis();

@@ -564,19 +564,29 @@ public class UIAiPanel extends UIDashboardPanel
 
         super.render(context);
 
-        /* 分区分隔线（对话|方案板|节拍） */
-        int c = mchorse.bbs_mod.utils.colors.Colors.setA(mchorse.bbs_mod.utils.colors.Colors.LIGHTER_GRAY, 0.2F);
-        int x1 = this.area.x + 4, x2 = this.area.ex() - 4;
-        int h = this.area.h;
+        /* 分区边框 */
+        int bc = mchorse.bbs_mod.utils.colors.Colors.setA(mchorse.bbs_mod.utils.colors.Colors.LIGHTER_GRAY, 0.2F);
+        int ax = this.area.x + 2, aw = this.area.w - 4;
+        int ay = this.area.y, ah = this.area.h;
 
-        for (float frac : new float[] {0.14F, 0.36F})
-        {
-            int ly = this.area.y + (int) (h * frac);
-            context.batcher.box(x1, ly, x2, ly + 1, c);
-        }
+        /* 对话区（顶部 0~14%） */
+        this.border(context, ax, ay, aw, (int) (ah * 0.14F), bc);
 
-        /* 方案板|节拍 竖分线 */
-        int vx = this.area.x + (int) (this.area.w * 0.55F);
-        context.batcher.box(vx, this.area.y + (int) (h * 0.36F), vx + 1, this.area.y + (int) (h * 0.92F), c);
+        /* 方案板|节拍（14%~92%）竖分线 */
+        int midX = ax + (int) (aw * 0.55F);
+        int zoneY = ay + (int) (ah * 0.14F);
+        int zoneH = (int) (ah * 0.78F);
+
+        this.border(context, ax, zoneY, (int) (aw * 0.55F), zoneH, bc);
+        this.border(context, ax + (int) (aw * 0.55F), zoneY, (int) (aw * 0.45F), zoneH, bc);
+        context.batcher.box(midX, zoneY, midX + 1, zoneY + zoneH, bc);
+    }
+
+    private void border(UIContext context, int x, int y, int w, int h, int c)
+    {
+        context.batcher.box(x, y, x + w, y + 1, c);
+        context.batcher.box(x, y + h - 1, x + w, y + h, c);
+        context.batcher.box(x, y, x + 1, y + h, c);
+        context.batcher.box(x + w - 1, y, x + w, y + h, c);
     }
 }

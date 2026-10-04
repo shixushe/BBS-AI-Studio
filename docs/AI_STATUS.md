@@ -1200,3 +1200,20 @@ bottomChain → skillTipsY → tipsY → statusY → pathY → outputHeaderY，
 采集面板 render 里画三个矩形边框（来源|帧预览|输出提示），每区一个
 border() 辅助方法画四边。UIContext import 修正（mchorse.ui.utils →
 mchorse.ui.framework）。
+
+## 五十九、第四十九轮（2026-10-03，鬼畜根因修复：弧度/角度单位不匹配 + 双段身体）
+
+**鬼畜真凶找到了**：姿态库存角度（walk_step left_leg=16.2°），但
+PoseTransform.rotate 期望弧度（0.283 rad）。差 57 倍——所有姿势旋转
+都被放大 57 倍，导致疯狂旋转鬼畜。
+
+修复：
+- toPoseTrackWrites 整只 Pose 写入时做 Math.toRadians 转换
+- solve() 逐骨骼通道路径同样做弧度转换
+- 缩放分量（眨眼 Y 压缩）不做弧度转换
+
+**双段身体**：torso_lower 作为独立骨骼加入 walk_step/walk_step_b/run/crouch
+姿态——上身(body)和下身(torso_lower)独立旋转，脊柱弯曲更自然。
+作者动画中 torso 和 torso_lower 反相扭曲（±6°~±10°）的规律已编码。
+
+**测试**：三套全绿（92/29/148）。

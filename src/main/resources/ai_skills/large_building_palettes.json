@@ -1,0 +1,1309 @@
+{
+ "buildings": [
+  {
+   "name": "shipwreck/with_mast",
+   "size": [
+    9,
+    21,
+    28
+   ],
+   "blocks": 144,
+   "density": 0.027,
+   "palette": [
+    {
+     "block": "minecraft:chest",
+     "count": 24,
+     "ratio": 0.167
+    },
+    {
+     "block": "minecraft:spruce_trapdoor",
+     "count": 12,
+     "ratio": 0.083
+    },
+    {
+     "block": "minecraft:oak_trapdoor",
+     "count": 8,
+     "ratio": 0.056
+    },
+    {
+     "block": "minecraft:structure_block",
+     "count": 8,
+     "ratio": 0.056
+    },
+    {
+     "block": "minecraft:dark_oak_trapdoor",
+     "count": 8,
+     "ratio": 0.056
+    },
+    {
+     "block": "minecraft:spruce_planks",
+     "count": 6,
+     "ratio": 0.042
+    },
+    {
+     "block": "minecraft:spruce_fence",
+     "count": 6,
+     "ratio": 0.042
+    },
+    {
+     "block": "minecraft:spruce_slab",
+     "count": 6,
+     "ratio": 0.042
+    },
+    {
+     "block": "minecraft:spruce_log",
+     "count": 6,
+     "ratio": 0.042
+    },
+    {
+     "block": "minecraft:spruce_door",
+     "count": 6,
+     "ratio": 0.042
+    },
+    {
+     "block": "minecraft:oak_log",
+     "count": 4,
+     "ratio": 0.028
+    },
+    {
+     "block": "minecraft:oak_door",
+     "count": 4,
+     "ratio": 0.028
+    },
+    {
+     "block": "minecraft:jungle_trapdoor",
+     "count": 4,
+     "ratio": 0.028
+    },
+    {
+     "block": "minecraft:dark_oak_log",
+     "count": 4,
+     "ratio": 0.028
+    },
+    {
+     "block": "minecraft:dark_oak_door",
+     "count": 4,
+     "ratio": 0.028
+    }
+   ]
+  },
+  {
+   "name": "shipwreck/rightsideup_full",
+   "size": [
+    9,
+    9,
+    28
+   ],
+   "blocks": 136,
+   "density": 0.06,
+   "palette": [
+    {
+     "block": "minecraft:chest",
+     "count": 24,
+     "ratio": 0.176
+    },
+    {
+     "block": "minecraft:spruce_trapdoor",
+     "count": 12,
+     "ratio": 0.088
+    },
+    {
+     "block": "minecraft:oak_trapdoor",
+     "count": 8,
+     "ratio": 0.059
+    },
+    {
+     "block": "minecraft:structure_block",
+     "count": 8,
+     "ratio": 0.059
+    },
+    {
+     "block": "minecraft:dark_oak_trapdoor",
+     "count": 8,
+     "ratio": 0.059
+    },
+    {
+     "block": "minecraft:spruce_planks",
+     "count": 6,
+     "ratio": 0.044
+    },
+    {
+     "block": "minecraft:spruce_fence",
+     "count": 6,
+     "ratio": 0.044
+    },
+    {
+     "block": "minecraft:spruce_slab",
+     "count": 6,
+     "ratio": 0.044
+    },
+    {
+     "block": "minecraft:spruce_door",
+     "count": 6,
+     "ratio": 0.044
+    },
+    {
+     "block": "minecraft:oak_door",
+     "count": 4,
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:jungle_trapdoor",
+     "count": 4,
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:dark_oak_door",
+     "count": 4,
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:oak_planks",
+     "count": 3,
+     "ratio": 0.022
+    },
+    {
+     "block": "minecraft:oak_slab",
+     "count": 3,
+     "ratio": 0.022
+    },
+    {
+     "block": "minecraft:oak_fence",
+     "count": 3,
+     "ratio": 0.022
+    }
+   ]
+  },
+  {
+   "name": "shipwreck/with_mast_degraded",
+   "size": [
+    9,
+    21,
+    28
+   ],
+   "blocks": 136,
+   "density": 0.026,
+   "palette": [
+    {
+     "block": "minecraft:chest",
+     "count": 24,
+     "ratio": 0.176
+    },
+    {
+     "block": "minecraft:spruce_trapdoor",
+     "count": 12,
+     "ratio": 0.088
+    },
+    {
+     "block": "minecraft:oak_trapdoor",
+     "count": 8,
+     "ratio": 0.059
+    },
+    {
+     "block": "minecraft:structure_block",
+     "count": 8,
+     "ratio": 0.059
+    },
+    {
+     "block": "minecraft:dark_oak_trapdoor",
+     "count": 8,
+     "ratio": 0.059
+    },
+    {
+     "block": "minecraft:spruce_planks",
+     "count": 6,
+     "ratio": 0.044
+    },
+    {
+     "block": "minecraft:spruce_fence",
+     "count": 6,
+     "ratio": 0.044
+    },
+    {
+     "block": "minecraft:spruce_slab",
+     "count": 6,
+     "ratio": 0.044
+    },
+    {
+     "block": "minecraft:spruce_door",
+     "count": 6,
+     "ratio": 0.044
+    },
+    {
+     "block": "minecraft:oak_door",
+     "count": 4,
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:jungle_trapdoor",
+     "count": 4,
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:dark_oak_door",
+     "count": 4,
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:oak_planks",
+     "count": 3,
+     "ratio": 0.022
+    },
+    {
+     "block": "minecraft:oak_slab",
+     "count": 3,
+     "ratio": 0.022
+    },
+    {
+     "block": "minecraft:oak_fence",
+     "count": 3,
+     "ratio": 0.022
+    }
+   ]
+  },
+  {
+   "name": "shipwreck/rightsideup_full_degraded",
+   "size": [
+    9,
+    9,
+    28
+   ],
+   "blocks": 128,
+   "density": 0.056,
+   "palette": [
+    {
+     "block": "minecraft:chest",
+     "count": 24,
+     "ratio": 0.188
+    },
+    {
+     "block": "minecraft:spruce_trapdoor",
+     "count": 9,
+     "ratio": 0.07
+    },
+    {
+     "block": "minecraft:structure_block",
+     "count": 8,
+     "ratio": 0.062
+    },
+    {
+     "block": "minecraft:spruce_planks",
+     "count": 6,
+     "ratio": 0.047
+    },
+    {
+     "block": "minecraft:spruce_fence",
+     "count": 6,
+     "ratio": 0.047
+    },
+    {
+     "block": "minecraft:oak_trapdoor",
+     "count": 6,
+     "ratio": 0.047
+    },
+    {
+     "block": "minecraft:spruce_slab",
+     "count": 6,
+     "ratio": 0.047
+    },
+    {
+     "block": "minecraft:dark_oak_trapdoor",
+     "count": 6,
+     "ratio": 0.047
+    },
+    {
+     "block": "minecraft:spruce_door",
+     "count": 6,
+     "ratio": 0.047
+    },
+    {
+     "block": "minecraft:oak_door",
+     "count": 4,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:dark_oak_door",
+     "count": 4,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:oak_planks",
+     "count": 3,
+     "ratio": 0.023
+    },
+    {
+     "block": "minecraft:oak_slab",
+     "count": 3,
+     "ratio": 0.023
+    },
+    {
+     "block": "minecraft:oak_fence",
+     "count": 3,
+     "ratio": 0.023
+    },
+    {
+     "block": "minecraft:jungle_planks",
+     "count": 3,
+     "ratio": 0.023
+    }
+   ]
+  },
+  {
+   "name": "shipwreck/upsidedown_full",
+   "size": [
+    9,
+    9,
+    28
+   ],
+   "blocks": 120,
+   "density": 0.053,
+   "palette": [
+    {
+     "block": "minecraft:chest",
+     "count": 24,
+     "ratio": 0.2
+    },
+    {
+     "block": "minecraft:spruce_trapdoor",
+     "count": 12,
+     "ratio": 0.1
+    },
+    {
+     "block": "minecraft:oak_trapdoor",
+     "count": 8,
+     "ratio": 0.067
+    },
+    {
+     "block": "minecraft:structure_block",
+     "count": 8,
+     "ratio": 0.067
+    },
+    {
+     "block": "minecraft:dark_oak_trapdoor",
+     "count": 8,
+     "ratio": 0.067
+    },
+    {
+     "block": "minecraft:spruce_planks",
+     "count": 6,
+     "ratio": 0.05
+    },
+    {
+     "block": "minecraft:spruce_fence",
+     "count": 6,
+     "ratio": 0.05
+    },
+    {
+     "block": "minecraft:spruce_slab",
+     "count": 6,
+     "ratio": 0.05
+    },
+    {
+     "block": "minecraft:jungle_trapdoor",
+     "count": 4,
+     "ratio": 0.033
+    },
+    {
+     "block": "minecraft:oak_planks",
+     "count": 3,
+     "ratio": 0.025
+    },
+    {
+     "block": "minecraft:oak_slab",
+     "count": 3,
+     "ratio": 0.025
+    },
+    {
+     "block": "minecraft:oak_fence",
+     "count": 3,
+     "ratio": 0.025
+    },
+    {
+     "block": "minecraft:jungle_planks",
+     "count": 3,
+     "ratio": 0.025
+    },
+    {
+     "block": "minecraft:jungle_slab",
+     "count": 3,
+     "ratio": 0.025
+    },
+    {
+     "block": "minecraft:jungle_fence",
+     "count": 3,
+     "ratio": 0.025
+    }
+   ]
+  },
+  {
+   "name": "shipwreck/upsidedown_full_degraded",
+   "size": [
+    9,
+    9,
+    28
+   ],
+   "blocks": 120,
+   "density": 0.053,
+   "palette": [
+    {
+     "block": "minecraft:chest",
+     "count": 24,
+     "ratio": 0.2
+    },
+    {
+     "block": "minecraft:spruce_trapdoor",
+     "count": 12,
+     "ratio": 0.1
+    },
+    {
+     "block": "minecraft:oak_trapdoor",
+     "count": 8,
+     "ratio": 0.067
+    },
+    {
+     "block": "minecraft:structure_block",
+     "count": 8,
+     "ratio": 0.067
+    },
+    {
+     "block": "minecraft:dark_oak_trapdoor",
+     "count": 8,
+     "ratio": 0.067
+    },
+    {
+     "block": "minecraft:spruce_planks",
+     "count": 6,
+     "ratio": 0.05
+    },
+    {
+     "block": "minecraft:spruce_fence",
+     "count": 6,
+     "ratio": 0.05
+    },
+    {
+     "block": "minecraft:spruce_slab",
+     "count": 6,
+     "ratio": 0.05
+    },
+    {
+     "block": "minecraft:jungle_trapdoor",
+     "count": 4,
+     "ratio": 0.033
+    },
+    {
+     "block": "minecraft:oak_planks",
+     "count": 3,
+     "ratio": 0.025
+    },
+    {
+     "block": "minecraft:oak_slab",
+     "count": 3,
+     "ratio": 0.025
+    },
+    {
+     "block": "minecraft:oak_fence",
+     "count": 3,
+     "ratio": 0.025
+    },
+    {
+     "block": "minecraft:jungle_planks",
+     "count": 3,
+     "ratio": 0.025
+    },
+    {
+     "block": "minecraft:jungle_slab",
+     "count": 3,
+     "ratio": 0.025
+    },
+    {
+     "block": "minecraft:jungle_fence",
+     "count": 3,
+     "ratio": 0.025
+    }
+   ]
+  },
+  {
+   "name": "shipwreck/rightsideup_backhalf",
+   "size": [
+    9,
+    9,
+    16
+   ],
+   "blocks": 112,
+   "density": 0.086,
+   "palette": [
+    {
+     "block": "minecraft:chest",
+     "count": 16,
+     "ratio": 0.143
+    },
+    {
+     "block": "minecraft:structure_block",
+     "count": 8,
+     "ratio": 0.071
+    },
+    {
+     "block": "minecraft:spruce_planks",
+     "count": 6,
+     "ratio": 0.054
+    },
+    {
+     "block": "minecraft:spruce_fence",
+     "count": 6,
+     "ratio": 0.054
+    },
+    {
+     "block": "minecraft:spruce_slab",
+     "count": 6,
+     "ratio": 0.054
+    },
+    {
+     "block": "minecraft:spruce_door",
+     "count": 6,
+     "ratio": 0.054
+    },
+    {
+     "block": "minecraft:spruce_trapdoor",
+     "count": 6,
+     "ratio": 0.054
+    },
+    {
+     "block": "minecraft:oak_door",
+     "count": 4,
+     "ratio": 0.036
+    },
+    {
+     "block": "minecraft:oak_trapdoor",
+     "count": 4,
+     "ratio": 0.036
+    },
+    {
+     "block": "minecraft:dark_oak_door",
+     "count": 4,
+     "ratio": 0.036
+    },
+    {
+     "block": "minecraft:dark_oak_trapdoor",
+     "count": 4,
+     "ratio": 0.036
+    },
+    {
+     "block": "minecraft:oak_planks",
+     "count": 3,
+     "ratio": 0.027
+    },
+    {
+     "block": "minecraft:oak_slab",
+     "count": 3,
+     "ratio": 0.027
+    },
+    {
+     "block": "minecraft:oak_fence",
+     "count": 3,
+     "ratio": 0.027
+    },
+    {
+     "block": "minecraft:jungle_planks",
+     "count": 3,
+     "ratio": 0.027
+    }
+   ]
+  },
+  {
+   "name": "shipwreck/rightsideup_backhalf_degraded",
+   "size": [
+    9,
+    9,
+    16
+   ],
+   "blocks": 104,
+   "density": 0.08,
+   "palette": [
+    {
+     "block": "minecraft:chest",
+     "count": 16,
+     "ratio": 0.154
+    },
+    {
+     "block": "minecraft:structure_block",
+     "count": 8,
+     "ratio": 0.077
+    },
+    {
+     "block": "minecraft:spruce_planks",
+     "count": 6,
+     "ratio": 0.058
+    },
+    {
+     "block": "minecraft:spruce_fence",
+     "count": 6,
+     "ratio": 0.058
+    },
+    {
+     "block": "minecraft:spruce_slab",
+     "count": 6,
+     "ratio": 0.058
+    },
+    {
+     "block": "minecraft:spruce_door",
+     "count": 6,
+     "ratio": 0.058
+    },
+    {
+     "block": "minecraft:oak_door",
+     "count": 4,
+     "ratio": 0.038
+    },
+    {
+     "block": "minecraft:dark_oak_door",
+     "count": 4,
+     "ratio": 0.038
+    },
+    {
+     "block": "minecraft:oak_planks",
+     "count": 3,
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:oak_slab",
+     "count": 3,
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:oak_fence",
+     "count": 3,
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:jungle_planks",
+     "count": 3,
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:jungle_slab",
+     "count": 3,
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:jungle_fence",
+     "count": 3,
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:dark_oak_planks",
+     "count": 3,
+     "ratio": 0.029
+    }
+   ]
+  },
+  {
+   "name": "ancient_city/city_center/city_center_2",
+   "size": [
+    18,
+    31,
+    41
+   ],
+   "blocks": 96,
+   "density": 0.004,
+   "palette": [
+    {
+     "block": "minecraft:redstone_wire",
+     "count": 28,
+     "ratio": 0.292
+    },
+    {
+     "block": "minecraft:glass_pane",
+     "count": 7,
+     "ratio": 0.073
+    },
+    {
+     "block": "minecraft:candle",
+     "count": 7,
+     "ratio": 0.073
+    },
+    {
+     "block": "minecraft:polished_deepslate_wall",
+     "count": 5,
+     "ratio": 0.052
+    },
+    {
+     "block": "minecraft:comparator",
+     "count": 5,
+     "ratio": 0.052
+    },
+    {
+     "block": "minecraft:repeater",
+     "count": 4,
+     "ratio": 0.042
+    },
+    {
+     "block": "minecraft:redstone_wall_torch",
+     "count": 4,
+     "ratio": 0.042
+    },
+    {
+     "block": "minecraft:sticky_piston",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:deepslate_brick_wall",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:redstone_lamp",
+     "count": 2,
+     "ratio": 0.021
+    },
+    {
+     "block": "minecraft:piston_head",
+     "count": 2,
+     "ratio": 0.021
+    },
+    {
+     "block": "minecraft:deepslate",
+     "count": 1,
+     "ratio": 0.01
+    },
+    {
+     "block": "minecraft:deepslate_bricks",
+     "count": 1,
+     "ratio": 0.01
+    },
+    {
+     "block": "minecraft:deepslate_tiles",
+     "count": 1,
+     "ratio": 0.01
+    },
+    {
+     "block": "minecraft:gray_wool",
+     "count": 1,
+     "ratio": 0.01
+    }
+   ]
+  },
+  {
+   "name": "shipwreck/rightsideup_fronthalf",
+   "size": [
+    9,
+    9,
+    24
+   ],
+   "blocks": 96,
+   "density": 0.049,
+   "palette": [
+    {
+     "block": "minecraft:spruce_trapdoor",
+     "count": 12,
+     "ratio": 0.125
+    },
+    {
+     "block": "minecraft:oak_trapdoor",
+     "count": 8,
+     "ratio": 0.083
+    },
+    {
+     "block": "minecraft:chest",
+     "count": 8,
+     "ratio": 0.083
+    },
+    {
+     "block": "minecraft:structure_block",
+     "count": 8,
+     "ratio": 0.083
+    },
+    {
+     "block": "minecraft:dark_oak_trapdoor",
+     "count": 8,
+     "ratio": 0.083
+    },
+    {
+     "block": "minecraft:spruce_planks",
+     "count": 6,
+     "ratio": 0.062
+    },
+    {
+     "block": "minecraft:spruce_door",
+     "count": 6,
+     "ratio": 0.062
+    },
+    {
+     "block": "minecraft:oak_door",
+     "count": 4,
+     "ratio": 0.042
+    },
+    {
+     "block": "minecraft:jungle_trapdoor",
+     "count": 4,
+     "ratio": 0.042
+    },
+    {
+     "block": "minecraft:dark_oak_door",
+     "count": 4,
+     "ratio": 0.042
+    },
+    {
+     "block": "minecraft:oak_planks",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:spruce_fence",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:jungle_planks",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:dark_oak_planks",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:spruce_log",
+     "count": 3,
+     "ratio": 0.031
+    }
+   ]
+  },
+  {
+   "name": "shipwreck/rightsideup_fronthalf_degraded",
+   "size": [
+    9,
+    9,
+    24
+   ],
+   "blocks": 96,
+   "density": 0.049,
+   "palette": [
+    {
+     "block": "minecraft:spruce_trapdoor",
+     "count": 12,
+     "ratio": 0.125
+    },
+    {
+     "block": "minecraft:oak_trapdoor",
+     "count": 8,
+     "ratio": 0.083
+    },
+    {
+     "block": "minecraft:chest",
+     "count": 8,
+     "ratio": 0.083
+    },
+    {
+     "block": "minecraft:structure_block",
+     "count": 8,
+     "ratio": 0.083
+    },
+    {
+     "block": "minecraft:dark_oak_trapdoor",
+     "count": 8,
+     "ratio": 0.083
+    },
+    {
+     "block": "minecraft:spruce_planks",
+     "count": 6,
+     "ratio": 0.062
+    },
+    {
+     "block": "minecraft:spruce_door",
+     "count": 6,
+     "ratio": 0.062
+    },
+    {
+     "block": "minecraft:oak_door",
+     "count": 4,
+     "ratio": 0.042
+    },
+    {
+     "block": "minecraft:jungle_trapdoor",
+     "count": 4,
+     "ratio": 0.042
+    },
+    {
+     "block": "minecraft:dark_oak_door",
+     "count": 4,
+     "ratio": 0.042
+    },
+    {
+     "block": "minecraft:oak_planks",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:spruce_fence",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:jungle_planks",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:dark_oak_planks",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:spruce_log",
+     "count": 3,
+     "ratio": 0.031
+    }
+   ]
+  },
+  {
+   "name": "shipwreck/upsidedown_backhalf",
+   "size": [
+    9,
+    9,
+    16
+   ],
+   "blocks": 96,
+   "density": 0.074,
+   "palette": [
+    {
+     "block": "minecraft:chest",
+     "count": 16,
+     "ratio": 0.167
+    },
+    {
+     "block": "minecraft:structure_block",
+     "count": 8,
+     "ratio": 0.083
+    },
+    {
+     "block": "minecraft:spruce_planks",
+     "count": 6,
+     "ratio": 0.062
+    },
+    {
+     "block": "minecraft:spruce_fence",
+     "count": 6,
+     "ratio": 0.062
+    },
+    {
+     "block": "minecraft:spruce_slab",
+     "count": 6,
+     "ratio": 0.062
+    },
+    {
+     "block": "minecraft:spruce_trapdoor",
+     "count": 6,
+     "ratio": 0.062
+    },
+    {
+     "block": "minecraft:oak_trapdoor",
+     "count": 4,
+     "ratio": 0.042
+    },
+    {
+     "block": "minecraft:dark_oak_trapdoor",
+     "count": 4,
+     "ratio": 0.042
+    },
+    {
+     "block": "minecraft:oak_planks",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:oak_slab",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:oak_fence",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:jungle_planks",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:jungle_slab",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:jungle_fence",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:dark_oak_planks",
+     "count": 3,
+     "ratio": 0.031
+    }
+   ]
+  },
+  {
+   "name": "shipwreck/upsidedown_backhalf_degraded",
+   "size": [
+    9,
+    9,
+    16
+   ],
+   "blocks": 96,
+   "density": 0.074,
+   "palette": [
+    {
+     "block": "minecraft:chest",
+     "count": 16,
+     "ratio": 0.167
+    },
+    {
+     "block": "minecraft:structure_block",
+     "count": 8,
+     "ratio": 0.083
+    },
+    {
+     "block": "minecraft:spruce_planks",
+     "count": 6,
+     "ratio": 0.062
+    },
+    {
+     "block": "minecraft:spruce_fence",
+     "count": 6,
+     "ratio": 0.062
+    },
+    {
+     "block": "minecraft:spruce_slab",
+     "count": 6,
+     "ratio": 0.062
+    },
+    {
+     "block": "minecraft:spruce_trapdoor",
+     "count": 6,
+     "ratio": 0.062
+    },
+    {
+     "block": "minecraft:oak_trapdoor",
+     "count": 4,
+     "ratio": 0.042
+    },
+    {
+     "block": "minecraft:dark_oak_trapdoor",
+     "count": 4,
+     "ratio": 0.042
+    },
+    {
+     "block": "minecraft:oak_planks",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:oak_slab",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:oak_fence",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:jungle_planks",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:jungle_slab",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:jungle_fence",
+     "count": 3,
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:dark_oak_planks",
+     "count": 3,
+     "ratio": 0.031
+    }
+   ]
+  },
+  {
+   "name": "ancient_city/city_center/city_center_3",
+   "size": [
+    18,
+    31,
+    41
+   ],
+   "blocks": 89,
+   "density": 0.004,
+   "palette": [
+    {
+     "block": "minecraft:redstone_wire",
+     "count": 21,
+     "ratio": 0.236
+    },
+    {
+     "block": "minecraft:glass_pane",
+     "count": 8,
+     "ratio": 0.09
+    },
+    {
+     "block": "minecraft:candle",
+     "count": 7,
+     "ratio": 0.079
+    },
+    {
+     "block": "minecraft:repeater",
+     "count": 6,
+     "ratio": 0.067
+    },
+    {
+     "block": "minecraft:redstone_wall_torch",
+     "count": 6,
+     "ratio": 0.067
+    },
+    {
+     "block": "minecraft:polished_deepslate_wall",
+     "count": 5,
+     "ratio": 0.056
+    },
+    {
+     "block": "minecraft:deepslate_brick_wall",
+     "count": 3,
+     "ratio": 0.034
+    },
+    {
+     "block": "minecraft:deepslate_tile_wall",
+     "count": 3,
+     "ratio": 0.034
+    },
+    {
+     "block": "minecraft:sticky_piston",
+     "count": 2,
+     "ratio": 0.022
+    },
+    {
+     "block": "minecraft:redstone_lamp",
+     "count": 2,
+     "ratio": 0.022
+    },
+    {
+     "block": "minecraft:redstone_torch",
+     "count": 2,
+     "ratio": 0.022
+    },
+    {
+     "block": "minecraft:comparator",
+     "count": 2,
+     "ratio": 0.022
+    },
+    {
+     "block": "minecraft:deepslate",
+     "count": 1,
+     "ratio": 0.011
+    },
+    {
+     "block": "minecraft:deepslate_bricks",
+     "count": 1,
+     "ratio": 0.011
+    },
+    {
+     "block": "minecraft:deepslate_tiles",
+     "count": 1,
+     "ratio": 0.011
+    }
+   ]
+  },
+  {
+   "name": "shipwreck/upsidedown_fronthalf",
+   "size": [
+    9,
+    9,
+    22
+   ],
+   "blocks": 88,
+   "density": 0.049,
+   "palette": [
+    {
+     "block": "minecraft:chest",
+     "count": 16,
+     "ratio": 0.182
+    },
+    {
+     "block": "minecraft:spruce_trapdoor",
+     "count": 12,
+     "ratio": 0.136
+    },
+    {
+     "block": "minecraft:oak_trapdoor",
+     "count": 8,
+     "ratio": 0.091
+    },
+    {
+     "block": "minecraft:structure_block",
+     "count": 8,
+     "ratio": 0.091
+    },
+    {
+     "block": "minecraft:dark_oak_trapdoor",
+     "count": 8,
+     "ratio": 0.091
+    },
+    {
+     "block": "minecraft:spruce_planks",
+     "count": 6,
+     "ratio": 0.068
+    },
+    {
+     "block": "minecraft:jungle_trapdoor",
+     "count": 4,
+     "ratio": 0.045
+    },
+    {
+     "block": "minecraft:oak_planks",
+     "count": 3,
+     "ratio": 0.034
+    },
+    {
+     "block": "minecraft:spruce_fence",
+     "count": 3,
+     "ratio": 0.034
+    },
+    {
+     "block": "minecraft:jungle_planks",
+     "count": 3,
+     "ratio": 0.034
+    },
+    {
+     "block": "minecraft:dark_oak_planks",
+     "count": 3,
+     "ratio": 0.034
+    },
+    {
+     "block": "minecraft:spruce_log",
+     "count": 3,
+     "ratio": 0.034
+    },
+    {
+     "block": "minecraft:oak_log",
+     "count": 2,
+     "ratio": 0.023
+    },
+    {
+     "block": "minecraft:dark_oak_log",
+     "count": 2,
+     "ratio": 0.023
+    },
+    {
+     "block": "minecraft:jungle_fence",
+     "count": 2,
+     "ratio": 0.023
+    }
+   ]
+  }
+ ]
+}

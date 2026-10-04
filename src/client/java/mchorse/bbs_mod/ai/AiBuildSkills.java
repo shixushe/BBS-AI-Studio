@@ -108,6 +108,81 @@ public class AiBuildSkills
         return null;
     }
 
+    /** 读取 ai_skills 下的 JSON 资源文件为 JsonObject。 */
+    public static com.google.gson.JsonObject loadSkill(String name)
+    {
+        try
+        {
+            InputStream stream = AiBuildSkills.class.getResourceAsStream("/ai_skills/" + name);
+
+            if (stream == null)
+            {
+                return null;
+            }
+
+            String json = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            stream.close();
+
+            return JsonParser.parseString(json).getAsJsonObject();
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
+    }
+
+    /**
+     * BuilderGPT 式设计原则+负面规则+命令语法注入。
+     * 确定性规则编码社区公认的建筑手法——深度、色阶、比例、纹理变化。
+     */
+    public static String designPrinciples()
+    {
+        StringBuilder sb = new StringBuilder();
+
+        var principles = loadSkill("building_principles.json");
+
+        if (principles != null)
+        {
+            sb.append("\n\n== 建筑设计规则 ==");
+
+            for (var sectionKey : principles.keySet())
+            {
+                var section = principles.getAsJsonObject(sectionKey);
+                sb.append("\n").append(section.get("rule").getAsString()).append(":");
+
+                if (section.has("techniques"))
+                {
+                    for (var t : section.getAsJsonArray("techniques"))
+                    {
+                        sb.append("\n  · ").append(t.getAsString());
+                    }
+                }
+
+                if (section.has("rules"))
+                {
+                    for (var t : section.getAsJsonArray("rules"))
+                    {
+                        sb.append("\n  · ").append(t.getAsString());
+                    }
+                }
+            }
+        }
+
+        var negatives = loadSkill("building_negatives.json");
+
+        if (negatives != null && negatives.has("never"))
+        {
+            sb.append("\n\n== 禁止 ==");
+
+            for (var n : negatives.getAsJsonArray("never"))
+            {
+                sb.append("\n  ✗ ").append(n.getAsString());
+            }
+        }
+
+        return sb.toString();
+    }
+
     public static synchronized List<Style> styles()
     {
         if (styles != null)

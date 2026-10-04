@@ -1107,3 +1107,26 @@ Misode 生成器、BSP 房间细分论文均可参考。
 - 新增 sad_walk（垂头丧气） / normal_walk（普通大幅） / energetic_walk（活力大幅）
   三档步态（作者值）；sit 去重。
 - 全套测试 92/29/148 全绿，已部署。
+
+## 五十五、第四十六轮（2026-10-03，建筑技能深度优化 + 巴黎圣母院学习）
+
+用户提供了巴黎圣母院 .schematic（102×195×247、354879 块、31 材质、
+7.2% 密度），解析后作为建筑参考注入：
+
+- **提取数据**：quartz_block 39.4% 墙体、stone_bricks 16.4% 骨架、
+  dirt 14.8% 地形、stone_brick_stairs 4.6% 阶梯、oak_planks 4.4%、
+  cobblestone 3.5%、white_terracotta 3.1%、cobblestone_wall 2.5%、
+  stained_glass 2.4% 玫瑰窗、coal_block 2.1% 屋顶装饰、glowstone 0.5%。
+- **比例分析**：宽高比 0.52（哥特式瘦高）、长高比 1.27、填充率 7.2%
+  （高度中空）、逐层密度曲线（地基 100% 实心→中空→飞扶壁回升）。
+- **skill 注入**：ai_skills/learned/notre_dame.json → 结构面板生成时
+  附加到系统提示词，包含尺寸/密度/宽高比/完整材质比例。
+- **通用 .schematic 解析器**（AiSchematicParser）：旧版数字 ID→现代
+  方块名映射，用户可丢 .schematic 到 config/bbs/assets/ai_schematics/
+  让 AI 自动学习。
+- **设计原则+负面规则**：ai_skills/building_principles.json（7 大类：
+  深度层叠/色阶渐进/比例/门窗节奏/纹理变化/屋顶/接地）+
+  building_negatives.json（8 条"禁止"）——注入结构面板生成提示词。
+
+**设计原则 + 负面规则 + 学习参考 + 风格匹配 + 群系调色板 + 少样本**
+六层叠加，全部注入建筑生成提示词。

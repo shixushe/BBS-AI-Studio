@@ -141,15 +141,15 @@
  ],
  "examples": [
   {
-   "theme": "中世纪铁匠铺",
-   "spec_note": "8×6×7 石砖壳+云杉骨架;南门;西墙炉+烟囱;灯笼×2",
+   "theme": "medieval watchtower",
+   "note": "8×20×8 石砖塔+雉堞+旗帜",
    "spec": {
-    "name": "smithy",
-    "title": "铁匠铺",
+    "name": "watchtower",
+    "title": "瞭望塔",
     "size": [
      8,
-     6,
-     7
+     20,
+     8
     ],
     "shell": {
      "from": [
@@ -159,12 +159,12 @@
      ],
      "to": [
       7,
-      4,
-      6
+      16,
+      7
      ],
-     "wall": "minecraft:stone_bricks",
-     "floor": "minecraft:cobblestone",
-     "roof_style": "gable",
+     "wall": "minecraft:cobblestone",
+     "floor": "minecraft:oak_planks",
+     "roof_style": "stepped",
      "roof": "minecraft:dark_oak_stairs",
      "trim": {
       "block": "minecraft:spruce_log"
@@ -174,6 +174,166 @@
      },
      "foundation": {
       "block": "minecraft:cobblestone",
+      "depth": 3
+     },
+     "windows_grid": {
+      "spacing": 3,
+      "floors": 4
+     },
+     "door": "south"
+    },
+    "floors": {
+     "count": 4,
+     "block": "minecraft:oak_planks"
+    },
+    "commands": [
+     {
+      "type": "fill",
+      "block": "minecraft:cobblestone_wall",
+      "from": [
+       0,
+       17,
+       0
+      ],
+      "to": [
+       7,
+       17,
+       7
+      ]
+     },
+     {
+      "type": "setblock",
+      "block": "minecraft:lantern",
+      "x": 3,
+      "y": 19,
+      "z": 3
+     },
+     {
+      "type": "setblock",
+      "block": "minecraft:ladder",
+      "x": 4,
+      "y": 1,
+      "z": 3
+     }
+    ]
+   }
+  },
+  {
+   "theme": "modern house",
+   "note": "12×8×10 白混凝土平顶+大横窗",
+   "spec": {
+    "name": "modern_house",
+    "title": "现代住宅",
+    "size": [
+     12,
+     8,
+     10
+    ],
+    "shell": {
+     "from": [
+      0,
+      0,
+      0
+     ],
+     "to": [
+      11,
+      6,
+      9
+     ],
+     "wall": "minecraft:white_concrete",
+     "floor": "minecraft:light_gray_concrete",
+     "roof_style": "flat",
+     "roof": "minecraft:gray_concrete",
+     "trim": {
+      "block": "minecraft:smooth_quartz"
+     },
+     "foundation": {
+      "block": "minecraft:light_gray_concrete",
+      "depth": 1
+     },
+     "windows_grid": {
+      "spacing": 4,
+      "floors": 1
+     },
+     "door": "south"
+    },
+    "floors": {
+     "count": 1,
+     "block": "minecraft:light_gray_concrete"
+    },
+    "commands": [
+     {
+      "type": "fill",
+      "block": "minecraft:glass_pane",
+      "from": [
+       2,
+       4,
+       0
+      ],
+      "to": [
+       9,
+       5,
+       0
+      ]
+     },
+     {
+      "type": "setblock",
+      "block": "minecraft:lantern",
+      "x": 5,
+      "y": 6,
+      "z": 4
+     },
+     {
+      "type": "fill",
+      "block": "minecraft:quartz_slab",
+      "from": [
+       2,
+       0,
+       10
+      ],
+      "to": [
+       9,
+       0,
+       11
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "theme": "asian temple",
+   "note": "9×14×9 平滑石+阶梯飞檐",
+   "spec": {
+    "name": "temple",
+    "title": "寺庙",
+    "size": [
+     9,
+     14,
+     9
+    ],
+    "shell": {
+     "from": [
+      0,
+      0,
+      0
+     ],
+     "to": [
+      8,
+      8,
+      8
+     ],
+     "wall": "minecraft:smooth_stone",
+     "floor": "minecraft:polished_andesite",
+     "roof_style": "stepped",
+     "roof": "minecraft:dark_prismarine_slab",
+     "trim": {
+      "block": "minecraft:dark_oak_log"
+     },
+     "pillars": {
+      "block": "minecraft:dark_oak_log"
+     },
+     "foundation": {
+      "block": "minecraft:stone_bricks",
       "depth": 2
      },
      "windows_grid": {
@@ -186,37 +346,30 @@
      {
       "type": "setblock",
       "block": "minecraft:lantern",
-      "x": 2,
-      "y": 4,
-      "z": 2
-     },
-     {
-      "type": "setblock",
-      "block": "minecraft:lantern",
-      "x": 5,
-      "y": 4,
-      "z": 2
+      "x": 4,
+      "y": 7,
+      "z": 4
      },
      {
       "type": "fill",
-      "block": "minecraft:blast_furnace",
+      "block": "minecraft:dark_oak_log",
       "from": [
-       1,
-       1,
-       6
+       0,
+       9,
+       0
       ],
       "to": [
-       1,
-       2,
-       6
+       8,
+       9,
+       8
       ]
      },
      {
       "type": "setblock",
-      "block": "minecraft:anvil",
-      "x": 5,
-      "y": 1,
-      "z": 5
+      "block": "minecraft:redstone_lamp",
+      "x": 4,
+      "y": 7,
+      "z": 4
      }
     ]
    }

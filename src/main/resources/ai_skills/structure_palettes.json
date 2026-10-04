@@ -1,0 +1,1318 @@
+{
+ "structures": {
+  "end_city/base_floor": {
+   "blocks": 5,
+   "size": [
+    3,
+    10,
+    4
+   ],
+   "palette": [
+    [
+     "minecraft:purpur_block",
+     1
+    ],
+    [
+     "minecraft:purpur_pillar",
+     1
+    ],
+    [
+     "minecraft:end_stone_bricks",
+     1
+    ],
+    [
+     "minecraft:magenta_stained_glass",
+     1
+    ],
+    [
+     "minecraft:structure_block",
+     1
+    ]
+   ]
+  },
+  "end_city/base_roof": {
+   "blocks": 2,
+   "size": [
+    3,
+    12,
+    2
+   ],
+   "palette": [
+    [
+     "minecraft:purpur_block",
+     1
+    ],
+    [
+     "minecraft:end_rod",
+     1
+    ]
+   ]
+  },
+  "end_city/bridge_end": {
+   "blocks": 5,
+   "size": [
+    3,
+    5,
+    6
+   ],
+   "palette": [
+    [
+     "minecraft:purpur_slab",
+     2
+    ],
+    [
+     "minecraft:purpur_block",
+     1
+    ],
+    [
+     "minecraft:purpur_pillar",
+     1
+    ],
+    [
+     "minecraft:end_rod",
+     1
+    ]
+   ]
+  },
+  "end_city/bridge_gentle_stairs": {
+   "blocks": 3,
+   "size": [
+    3,
+    5,
+    7
+   ],
+   "palette": [
+    [
+     "minecraft:purpur_pillar",
+     1
+    ],
+    [
+     "minecraft:purpur_block",
+     1
+    ],
+    [
+     "minecraft:purpur_slab",
+     1
+    ]
+   ]
+  },
+  "end_city/bridge_piece": {
+   "blocks": 2,
+   "size": [
+    3,
+    5,
+    6
+   ],
+   "palette": [
+    [
+     "minecraft:purpur_pillar",
+     1
+    ],
+    [
+     "minecraft:purpur_block",
+     1
+    ]
+   ]
+  },
+  "end_city/bridge_steep_stairs": {
+   "blocks": 2,
+   "size": [
+    3,
+    5,
+    7
+   ],
+   "palette": [
+    [
+     "minecraft:purpur_pillar",
+     1
+    ],
+    [
+     "minecraft:purpur_block",
+     1
+    ]
+   ]
+  },
+  "woodland_mansion/1x1_a1": {
+   "blocks": 7,
+   "size": [
+    3,
+    7,
+    8
+   ],
+   "palette": [
+    [
+     "minecraft:birch_planks",
+     1
+    ],
+    [
+     "minecraft:cobblestone",
+     1
+    ],
+    [
+     "minecraft:potted_oxeye_daisy",
+     1
+    ],
+    [
+     "minecraft:potted_blue_orchid",
+     1
+    ],
+    [
+     "minecraft:potted_allium",
+     1
+    ],
+    [
+     "minecraft:potted_azure_bluet",
+     1
+    ],
+    [
+     "minecraft:cobblestone_wall",
+     1
+    ]
+   ]
+  },
+  "woodland_mansion/1x1_a2": {
+   "blocks": 10,
+   "size": [
+    3,
+    7,
+    8
+   ],
+   "palette": [
+    [
+     "minecraft:rail",
+     4
+    ],
+    [
+     "minecraft:ladder",
+     3
+    ],
+    [
+     "minecraft:birch_planks",
+     1
+    ],
+    [
+     "minecraft:cobblestone",
+     1
+    ],
+    [
+     "minecraft:carved_pumpkin",
+     1
+    ]
+   ]
+  },
+  "woodland_mansion/1x1_a3": {
+   "blocks": 5,
+   "size": [
+    3,
+    7,
+    8
+   ],
+   "palette": [
+    [
+     "minecraft:birch_planks",
+     1
+    ],
+    [
+     "minecraft:cobblestone",
+     1
+    ],
+    [
+     "minecraft:oak_planks",
+     1
+    ],
+    [
+     "minecraft:potted_red_tulip",
+     1
+    ],
+    [
+     "minecraft:light_gray_carpet",
+     1
+    ]
+   ]
+  },
+  "woodland_mansion/1x1_a4": {
+   "blocks": 11,
+   "size": [
+    3,
+    7,
+    8
+   ],
+   "palette": [
+    [
+     "minecraft:oak_fence",
+     4
+    ],
+    [
+     "minecraft:dark_oak_log",
+     3
+    ],
+    [
+     "minecraft:birch_planks",
+     1
+    ],
+    [
+     "minecraft:gray_carpet",
+     1
+    ],
+    [
+     "minecraft:light_gray_carpet",
+     1
+    ],
+    [
+     "minecraft:structure_block",
+     1
+    ]
+   ]
+  },
+  "woodland_mansion/1x1_a5": {
+   "blocks": 5,
+   "size": [
+    3,
+    7,
+    8
+   ],
+   "palette": [
+    [
+     "minecraft:birch_planks",
+     1
+    ],
+    [
+     "minecraft:cobblestone",
+     1
+    ],
+    [
+     "minecraft:dark_oak_planks",
+     1
+    ],
+    [
+     "minecraft:cobblestone_slab",
+     1
+    ],
+    [
+     "minecraft:potted_white_tulip",
+     1
+    ]
+   ]
+  },
+  "woodland_mansion/1x1_as1": {
+   "blocks": 3,
+   "size": [
+    3,
+    7,
+    8
+   ],
+   "palette": [
+    [
+     "minecraft:birch_planks",
+     1
+    ],
+    [
+     "minecraft:cobblestone",
+     1
+    ],
+    [
+     "minecraft:structure_block",
+     1
+    ]
+   ]
+  },
+  "village_houses/desert_animal_pen_1": {
+   "blocks": 14,
+   "size": [
+    3,
+    10,
+    6
+   ],
+   "palette": [
+    [
+     "minecraft:sandstone_wall",
+     9
+    ],
+    [
+     "minecraft:cut_sandstone",
+     1
+    ],
+    [
+     "minecraft:grass_block",
+     1
+    ],
+    [
+     "minecraft:dirt",
+     1
+    ],
+    [
+     "minecraft:jungle_fence_gate",
+     1
+    ],
+    [
+     "minecraft:smooth_sandstone_slab",
+     1
+    ]
+   ]
+  },
+  "village_houses/desert_animal_pen_2": {
+   "blocks": 12,
+   "size": [
+    3,
+    10,
+    6
+   ],
+   "palette": [
+    [
+     "minecraft:sandstone_wall",
+     8
+    ],
+    [
+     "minecraft:cut_sandstone",
+     1
+    ],
+    [
+     "minecraft:grass_block",
+     1
+    ],
+    [
+     "minecraft:jungle_fence_gate",
+     1
+    ],
+    [
+     "minecraft:smooth_sandstone_slab",
+     1
+    ]
+   ]
+  },
+  "village_houses/desert_armorer_1": {
+   "blocks": 15,
+   "size": [
+    3,
+    7,
+    7
+   ],
+   "palette": [
+    [
+     "minecraft:wall_torch",
+     3
+    ],
+    [
+     "minecraft:smooth_sandstone_slab",
+     2
+    ],
+    [
+     "minecraft:jungle_door",
+     2
+    ],
+    [
+     "minecraft:sand",
+     1
+    ],
+    [
+     "minecraft:smooth_sandstone",
+     1
+    ],
+    [
+     "minecraft:cut_sandstone",
+     1
+    ],
+    [
+     "minecraft:granite",
+     1
+    ],
+    [
+     "minecraft:jungle_fence",
+     1
+    ],
+    [
+     "minecraft:stone_button",
+     1
+    ],
+    [
+     "minecraft:granite_wall",
+     1
+    ],
+    [
+     "minecraft:blast_furnace",
+     1
+    ]
+   ]
+  },
+  "village_houses/desert_butcher_shop_1": {
+   "blocks": 18,
+   "size": [
+    3,
+    8,
+    5
+   ],
+   "palette": [
+    [
+     "minecraft:sandstone_wall",
+     5
+    ],
+    [
+     "minecraft:jungle_door",
+     4
+    ],
+    [
+     "minecraft:cut_sandstone",
+     1
+    ],
+    [
+     "minecraft:smooth_sandstone",
+     1
+    ],
+    [
+     "minecraft:smooth_stone_slab",
+     1
+    ],
+    [
+     "minecraft:grass_block",
+     1
+    ],
+    [
+     "minecraft:terracotta",
+     1
+    ],
+    [
+     "minecraft:torch",
+     1
+    ],
+    [
+     "minecraft:smooth_sandstone_slab",
+     1
+    ],
+    [
+     "minecraft:wall_torch",
+     1
+    ],
+    [
+     "minecraft:smoker",
+     1
+    ]
+   ]
+  },
+  "village_houses/desert_cartographer_house_1": {
+   "blocks": 11,
+   "size": [
+    3,
+    7,
+    7
+   ],
+   "palette": [
+    [
+     "minecraft:jungle_door",
+     4
+    ],
+    [
+     "minecraft:wall_torch",
+     2
+    ],
+    [
+     "minecraft:smooth_sandstone",
+     1
+    ],
+    [
+     "minecraft:cut_sandstone",
+     1
+    ],
+    [
+     "minecraft:cartography_table",
+     1
+    ],
+    [
+     "minecraft:potted_cactus",
+     1
+    ],
+    [
+     "minecraft:smooth_sandstone_slab",
+     1
+    ]
+   ]
+  },
+  "village_houses/desert_farm_1": {
+   "blocks": 7,
+   "size": [
+    3,
+    5,
+    6
+   ],
+   "palette": [
+    [
+     "minecraft:wheat",
+     2
+    ],
+    [
+     "minecraft:cut_sandstone",
+     1
+    ],
+    [
+     "minecraft:dirt",
+     1
+    ],
+    [
+     "minecraft:farmland",
+     1
+    ],
+    [
+     "minecraft:water",
+     1
+    ],
+    [
+     "minecraft:composter",
+     1
+    ]
+   ]
+  },
+  "igloo/bottom": {
+   "blocks": 22,
+   "size": [
+    3,
+    7,
+    6
+   ],
+   "palette": [
+    [
+     "minecraft:wall_torch",
+     2
+    ],
+    [
+     "minecraft:stone",
+     1
+    ],
+    [
+     "minecraft:polished_andesite",
+     1
+    ],
+    [
+     "minecraft:stone_bricks",
+     1
+    ],
+    [
+     "minecraft:chiseled_stone_bricks",
+     1
+    ],
+    [
+     "minecraft:cracked_stone_bricks",
+     1
+    ],
+    [
+     "minecraft:infested_stone_bricks",
+     1
+    ],
+    [
+     "minecraft:infested_chiseled_stone_bricks",
+     1
+    ],
+    [
+     "minecraft:mossy_stone_bricks",
+     1
+    ],
+    [
+     "minecraft:infested_mossy_stone_bricks",
+     1
+    ],
+    [
+     "minecraft:red_carpet",
+     1
+    ],
+    [
+     "minecraft:iron_bars",
+     1
+    ]
+   ]
+  },
+  "igloo/middle": {
+   "blocks": 2,
+   "size": [
+    3,
+    3,
+    3
+   ],
+   "palette": [
+    [
+     "minecraft:stone_bricks",
+     1
+    ],
+    [
+     "minecraft:ladder",
+     1
+    ]
+   ]
+  },
+  "igloo/top": {
+   "blocks": 10,
+   "size": [
+    3,
+    7,
+    5
+   ],
+   "palette": [
+    [
+     "minecraft:red_bed",
+     2
+    ],
+    [
+     "minecraft:snow_block",
+     1
+    ],
+    [
+     "minecraft:ice",
+     1
+    ],
+    [
+     "minecraft:crafting_table",
+     1
+    ],
+    [
+     "minecraft:oak_trapdoor",
+     1
+    ],
+    [
+     "minecraft:redstone_torch",
+     1
+    ],
+    [
+     "minecraft:white_carpet",
+     1
+    ],
+    [
+     "minecraft:light_gray_carpet",
+     1
+    ],
+    [
+     "minecraft:furnace",
+     1
+    ]
+   ]
+  },
+  "shipwreck/rightsideup_backhalf": {
+   "blocks": 112,
+   "size": [
+    3,
+    9,
+    9
+   ],
+   "palette": [
+    [
+     "minecraft:chest",
+     16
+    ],
+    [
+     "minecraft:structure_block",
+     8
+    ],
+    [
+     "minecraft:spruce_planks",
+     6
+    ],
+    [
+     "minecraft:spruce_fence",
+     6
+    ],
+    [
+     "minecraft:spruce_slab",
+     6
+    ],
+    [
+     "minecraft:spruce_door",
+     6
+    ],
+    [
+     "minecraft:spruce_trapdoor",
+     6
+    ],
+    [
+     "minecraft:oak_door",
+     4
+    ],
+    [
+     "minecraft:oak_trapdoor",
+     4
+    ],
+    [
+     "minecraft:dark_oak_door",
+     4
+    ],
+    [
+     "minecraft:dark_oak_trapdoor",
+     4
+    ],
+    [
+     "minecraft:oak_planks",
+     3
+    ]
+   ]
+  },
+  "shipwreck/rightsideup_backhalf_degraded": {
+   "blocks": 104,
+   "size": [
+    3,
+    9,
+    9
+   ],
+   "palette": [
+    [
+     "minecraft:chest",
+     16
+    ],
+    [
+     "minecraft:structure_block",
+     8
+    ],
+    [
+     "minecraft:spruce_planks",
+     6
+    ],
+    [
+     "minecraft:spruce_fence",
+     6
+    ],
+    [
+     "minecraft:spruce_slab",
+     6
+    ],
+    [
+     "minecraft:spruce_door",
+     6
+    ],
+    [
+     "minecraft:oak_door",
+     4
+    ],
+    [
+     "minecraft:dark_oak_door",
+     4
+    ],
+    [
+     "minecraft:oak_planks",
+     3
+    ],
+    [
+     "minecraft:oak_slab",
+     3
+    ],
+    [
+     "minecraft:oak_fence",
+     3
+    ],
+    [
+     "minecraft:jungle_planks",
+     3
+    ]
+   ]
+  },
+  "shipwreck/rightsideup_fronthalf": {
+   "blocks": 96,
+   "size": [
+    3,
+    9,
+    9
+   ],
+   "palette": [
+    [
+     "minecraft:spruce_trapdoor",
+     12
+    ],
+    [
+     "minecraft:oak_trapdoor",
+     8
+    ],
+    [
+     "minecraft:chest",
+     8
+    ],
+    [
+     "minecraft:structure_block",
+     8
+    ],
+    [
+     "minecraft:dark_oak_trapdoor",
+     8
+    ],
+    [
+     "minecraft:spruce_planks",
+     6
+    ],
+    [
+     "minecraft:spruce_door",
+     6
+    ],
+    [
+     "minecraft:oak_door",
+     4
+    ],
+    [
+     "minecraft:jungle_trapdoor",
+     4
+    ],
+    [
+     "minecraft:dark_oak_door",
+     4
+    ],
+    [
+     "minecraft:oak_planks",
+     3
+    ],
+    [
+     "minecraft:spruce_fence",
+     3
+    ]
+   ]
+  },
+  "shipwreck/rightsideup_fronthalf_degraded": {
+   "blocks": 96,
+   "size": [
+    3,
+    9,
+    9
+   ],
+   "palette": [
+    [
+     "minecraft:spruce_trapdoor",
+     12
+    ],
+    [
+     "minecraft:oak_trapdoor",
+     8
+    ],
+    [
+     "minecraft:chest",
+     8
+    ],
+    [
+     "minecraft:structure_block",
+     8
+    ],
+    [
+     "minecraft:dark_oak_trapdoor",
+     8
+    ],
+    [
+     "minecraft:spruce_planks",
+     6
+    ],
+    [
+     "minecraft:spruce_door",
+     6
+    ],
+    [
+     "minecraft:oak_door",
+     4
+    ],
+    [
+     "minecraft:jungle_trapdoor",
+     4
+    ],
+    [
+     "minecraft:dark_oak_door",
+     4
+    ],
+    [
+     "minecraft:oak_planks",
+     3
+    ],
+    [
+     "minecraft:spruce_fence",
+     3
+    ]
+   ]
+  },
+  "shipwreck/rightsideup_full": {
+   "blocks": 136,
+   "size": [
+    3,
+    9,
+    9
+   ],
+   "palette": [
+    [
+     "minecraft:chest",
+     24
+    ],
+    [
+     "minecraft:spruce_trapdoor",
+     12
+    ],
+    [
+     "minecraft:oak_trapdoor",
+     8
+    ],
+    [
+     "minecraft:structure_block",
+     8
+    ],
+    [
+     "minecraft:dark_oak_trapdoor",
+     8
+    ],
+    [
+     "minecraft:spruce_planks",
+     6
+    ],
+    [
+     "minecraft:spruce_fence",
+     6
+    ],
+    [
+     "minecraft:spruce_slab",
+     6
+    ],
+    [
+     "minecraft:spruce_door",
+     6
+    ],
+    [
+     "minecraft:oak_door",
+     4
+    ],
+    [
+     "minecraft:jungle_trapdoor",
+     4
+    ],
+    [
+     "minecraft:dark_oak_door",
+     4
+    ]
+   ]
+  },
+  "shipwreck/rightsideup_full_degraded": {
+   "blocks": 128,
+   "size": [
+    3,
+    9,
+    9
+   ],
+   "palette": [
+    [
+     "minecraft:chest",
+     24
+    ],
+    [
+     "minecraft:spruce_trapdoor",
+     9
+    ],
+    [
+     "minecraft:structure_block",
+     8
+    ],
+    [
+     "minecraft:spruce_planks",
+     6
+    ],
+    [
+     "minecraft:spruce_fence",
+     6
+    ],
+    [
+     "minecraft:oak_trapdoor",
+     6
+    ],
+    [
+     "minecraft:spruce_slab",
+     6
+    ],
+    [
+     "minecraft:dark_oak_trapdoor",
+     6
+    ],
+    [
+     "minecraft:spruce_door",
+     6
+    ],
+    [
+     "minecraft:oak_door",
+     4
+    ],
+    [
+     "minecraft:dark_oak_door",
+     4
+    ],
+    [
+     "minecraft:oak_planks",
+     3
+    ]
+   ]
+  },
+  "ruined_portal/giant_portal_1": {
+   "blocks": 15,
+   "size": [
+    3,
+    11,
+    17
+   ],
+   "palette": [
+    [
+     "minecraft:iron_bars",
+     4
+    ],
+    [
+     "minecraft:stone_brick_slab",
+     3
+    ],
+    [
+     "minecraft:lava",
+     2
+    ],
+    [
+     "minecraft:netherrack",
+     1
+    ],
+    [
+     "minecraft:stone_bricks",
+     1
+    ],
+    [
+     "minecraft:obsidian",
+     1
+    ],
+    [
+     "minecraft:chiseled_stone_bricks",
+     1
+    ],
+    [
+     "minecraft:gold_block",
+     1
+    ],
+    [
+     "minecraft:chest",
+     1
+    ]
+   ]
+  },
+  "ruined_portal/giant_portal_2": {
+   "blocks": 13,
+   "size": [
+    3,
+    11,
+    16
+   ],
+   "palette": [
+    [
+     "minecraft:stone_brick_slab",
+     3
+    ],
+    [
+     "minecraft:iron_bars",
+     3
+    ],
+    [
+     "minecraft:netherrack",
+     1
+    ],
+    [
+     "minecraft:stone_bricks",
+     1
+    ],
+    [
+     "minecraft:obsidian",
+     1
+    ],
+    [
+     "minecraft:chiseled_stone_bricks",
+     1
+    ],
+    [
+     "minecraft:gold_block",
+     1
+    ],
+    [
+     "minecraft:lava",
+     1
+    ],
+    [
+     "minecraft:chest",
+     1
+    ]
+   ]
+  },
+  "ruined_portal/giant_portal_3": {
+   "blocks": 16,
+   "size": [
+    3,
+    16,
+    16
+   ],
+   "palette": [
+    [
+     "minecraft:iron_bars",
+     6
+    ],
+    [
+     "minecraft:stone_brick_slab",
+     2
+    ],
+    [
+     "minecraft:lava",
+     2
+    ],
+    [
+     "minecraft:netherrack",
+     1
+    ],
+    [
+     "minecraft:gold_block",
+     1
+    ],
+    [
+     "minecraft:obsidian",
+     1
+    ],
+    [
+     "minecraft:stone_bricks",
+     1
+    ],
+    [
+     "minecraft:chiseled_stone_bricks",
+     1
+    ],
+    [
+     "minecraft:chest",
+     1
+    ]
+   ]
+  },
+  "ruined_portal/portal_1": {
+   "blocks": 11,
+   "size": [
+    3,
+    6,
+    10
+   ],
+   "palette": [
+    [
+     "minecraft:stone_slab",
+     2
+    ],
+    [
+     "minecraft:netherrack",
+     1
+    ],
+    [
+     "minecraft:stone",
+     1
+    ],
+    [
+     "minecraft:stone_bricks",
+     1
+    ],
+    [
+     "minecraft:cracked_stone_bricks",
+     1
+    ],
+    [
+     "minecraft:obsidian",
+     1
+    ],
+    [
+     "minecraft:chiseled_stone_bricks",
+     1
+    ],
+    [
+     "minecraft:gold_block",
+     1
+    ],
+    [
+     "minecraft:stone_brick_slab",
+     1
+    ],
+    [
+     "minecraft:chest",
+     1
+    ]
+   ]
+  },
+  "ruined_portal/portal_10": {
+   "blocks": 9,
+   "size": [
+    3,
+    12,
+    8
+   ],
+   "palette": [
+    [
+     "minecraft:iron_bars",
+     2
+    ],
+    [
+     "minecraft:netherrack",
+     1
+    ],
+    [
+     "minecraft:stone_bricks",
+     1
+    ],
+    [
+     "minecraft:gold_block",
+     1
+    ],
+    [
+     "minecraft:obsidian",
+     1
+    ],
+    [
+     "minecraft:chiseled_stone_bricks",
+     1
+    ],
+    [
+     "minecraft:lava",
+     1
+    ],
+    [
+     "minecraft:chest",
+     1
+    ]
+   ]
+  },
+  "ruined_portal/portal_2": {
+   "blocks": 14,
+   "size": [
+    3,
+    9,
+    12
+   ],
+   "palette": [
+    [
+     "minecraft:smooth_stone_slab",
+     3
+    ],
+    [
+     "minecraft:stone_brick_slab",
+     2
+    ],
+    [
+     "minecraft:netherrack",
+     1
+    ],
+    [
+     "minecraft:stone_bricks",
+     1
+    ],
+    [
+     "minecraft:mossy_stone_bricks",
+     1
+    ],
+    [
+     "minecraft:obsidian",
+     1
+    ],
+    [
+     "minecraft:gold_block",
+     1
+    ],
+    [
+     "minecraft:chiseled_stone_bricks",
+     1
+    ],
+    [
+     "minecraft:lava",
+     1
+    ],
+    [
+     "minecraft:iron_bars",
+     1
+    ],
+    [
+     "minecraft:chest",
+     1
+    ]
+   ]
+  }
+ }
+}

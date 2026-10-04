@@ -1,0 +1,102 @@
+{
+ "name": "notre_dame_cathedral",
+ "title": "巴黎圣母院（哥特大教堂参考）",
+ "dimensions": {
+  "width": 102,
+  "height": 195,
+  "length": 247
+ },
+ "proportions": {
+  "aspect_w_h": 0.52,
+  "aspect_l_h": 1.27,
+  "density": 0.0722,
+  "hollowness": 0.9278
+ },
+ "palette": [
+  {
+   "block": "minecraft:quartz_block",
+   "ratio": 0.394
+  },
+  {
+   "block": "minecraft:stone_bricks",
+   "ratio": 0.164
+  },
+  {
+   "block": "minecraft:dirt",
+   "ratio": 0.148
+  },
+  {
+   "block": "minecraft:stone_brick_stairs",
+   "ratio": 0.046
+  },
+  {
+   "block": "minecraft:oak_planks",
+   "ratio": 0.044
+  },
+  {
+   "block": "minecraft:cobblestone",
+   "ratio": 0.035
+  },
+  {
+   "block": "minecraft:white_terracotta",
+   "ratio": 0.031
+  },
+  {
+   "block": "minecraft:cobblestone_wall",
+   "ratio": 0.025
+  },
+  {
+   "block": "minecraft:white_stained_glass",
+   "ratio": 0.024
+  },
+  {
+   "block": "minecraft:coal_block",
+   "ratio": 0.021
+  },
+  {
+   "block": "minecraft:stone_stairs",
+   "ratio": 0.014
+  },
+  {
+   "block": "minecraft:grass_block",
+   "ratio": 0.011
+  },
+  {
+   "block": "minecraft:oak_fence",
+   "ratio": 0.008
+  },
+  {
+   "block": "minecraft:white_wool",
+   "ratio": 0.007
+  },
+  {
+   "block": "minecraft:stone_slab",
+   "ratio": 0.007
+  },
+  {
+   "block": "minecraft:glowstone",
+   "ratio": 0.005
+  },
+  {
+   "block": "minecraft:white_carpet",
+   "ratio": 0.004
+  },
+  {
+   "block": "minecraft:torch",
+   "ratio": 0.002
+  }
+ ],
+ "layer_density_summary": {
+  "y0_y2": "地基 100% 实心（石头基座）",
+  "y3_y14": "墙体开始，密度从 23% 降到 5%（中空厅堂）",
+  "y15_y30": "飞扶壁和玫瑰窗区（密度回升）"
+ },
+ "quality_notes": [
+  "7.2% 填充率：哥特大教堂高度中空",
+  "石英主色 39%（墙体），石砖 16%（结构骨架）",
+  "染色玻璃 2.4%（大玫瑰窗），石砖楼梯 4.6%（阶梯走道）",
+  "煤矿块 2.1%（屋顶深色装饰）",
+  "发光石 0.5%（照明）",
+  "泥土 14.8%（地形填充，纯建筑不含此）"
+ ]
+}

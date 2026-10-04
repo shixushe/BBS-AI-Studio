@@ -1,0 +1,1646 @@
+{
+ "styles": {
+  "desert": {
+   "house_count": 28,
+   "avg_blocks_per_house": 15.1,
+   "avg_size": null,
+   "palette": [
+    {
+     "block": "minecraft:jungle_door",
+     "ratio": 0.132
+    },
+    {
+     "block": "minecraft:wall_torch",
+     "ratio": 0.111
+    },
+    {
+     "block": "minecraft:smooth_sandstone_slab",
+     "ratio": 0.085
+    },
+    {
+     "block": "minecraft:sandstone_wall",
+     "ratio": 0.083
+    },
+    {
+     "block": "minecraft:smooth_sandstone",
+     "ratio": 0.059
+    },
+    {
+     "block": "minecraft:cut_sandstone",
+     "ratio": 0.05
+    },
+    {
+     "block": "minecraft:sand",
+     "ratio": 0.047
+    },
+    {
+     "block": "minecraft:sandstone_slab",
+     "ratio": 0.04
+    },
+    {
+     "block": "minecraft:potted_cactus",
+     "ratio": 0.035
+    },
+    {
+     "block": "minecraft:wheat",
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:lime_bed",
+     "ratio": 0.024
+    },
+    {
+     "block": "minecraft:jungle_button",
+     "ratio": 0.024
+    },
+    {
+     "block": "minecraft:hay_block",
+     "ratio": 0.019
+    },
+    {
+     "block": "minecraft:green_bed",
+     "ratio": 0.019
+    },
+    {
+     "block": "minecraft:terracotta",
+     "ratio": 0.017
+    },
+    {
+     "block": "minecraft:chest",
+     "ratio": 0.017
+    },
+    {
+     "block": "minecraft:torch",
+     "ratio": 0.012
+    },
+    {
+     "block": "minecraft:water",
+     "ratio": 0.012
+    },
+    {
+     "block": "minecraft:barrel",
+     "ratio": 0.012
+    },
+    {
+     "block": "minecraft:white_glazed_terracotta",
+     "ratio": 0.012
+    }
+   ],
+   "examples": [
+    {
+     "file": "desert_animal_pen_1.nbt",
+     "size": null,
+     "blocks": 14,
+     "top": [
+      [
+       "minecraft:sandstone_wall",
+       9
+      ],
+      [
+       "minecraft:cut_sandstone",
+       1
+      ],
+      [
+       "minecraft:grass_block",
+       1
+      ],
+      [
+       "minecraft:dirt",
+       1
+      ],
+      [
+       "minecraft:jungle_fence_gate",
+       1
+      ],
+      [
+       "minecraft:smooth_sandstone_slab",
+       1
+      ]
+     ]
+    },
+    {
+     "file": "desert_animal_pen_2.nbt",
+     "size": null,
+     "blocks": 12,
+     "top": [
+      [
+       "minecraft:sandstone_wall",
+       8
+      ],
+      [
+       "minecraft:cut_sandstone",
+       1
+      ],
+      [
+       "minecraft:grass_block",
+       1
+      ],
+      [
+       "minecraft:jungle_fence_gate",
+       1
+      ],
+      [
+       "minecraft:smooth_sandstone_slab",
+       1
+      ]
+     ]
+    },
+    {
+     "file": "desert_armorer_1.nbt",
+     "size": null,
+     "blocks": 15,
+     "top": [
+      [
+       "minecraft:wall_torch",
+       3
+      ],
+      [
+       "minecraft:smooth_sandstone_slab",
+       2
+      ],
+      [
+       "minecraft:jungle_door",
+       2
+      ],
+      [
+       "minecraft:sand",
+       1
+      ],
+      [
+       "minecraft:smooth_sandstone",
+       1
+      ],
+      [
+       "minecraft:cut_sandstone",
+       1
+      ],
+      [
+       "minecraft:granite",
+       1
+      ],
+      [
+       "minecraft:jungle_fence",
+       1
+      ]
+     ]
+    }
+   ]
+  },
+  "end_city": {
+   "house_count": 20,
+   "avg_blocks_per_house": 6.1,
+   "avg_size": null,
+   "palette": [
+    {
+     "block": "minecraft:purpur_pillar",
+     "ratio": 0.213
+    },
+    {
+     "block": "minecraft:end_rod",
+     "ratio": 0.172
+    },
+    {
+     "block": "minecraft:purpur_block",
+     "ratio": 0.164
+    },
+    {
+     "block": "minecraft:purpur_slab",
+     "ratio": 0.148
+    },
+    {
+     "block": "minecraft:end_stone_bricks",
+     "ratio": 0.066
+    },
+    {
+     "block": "minecraft:magenta_stained_glass",
+     "ratio": 0.066
+    },
+    {
+     "block": "minecraft:structure_block",
+     "ratio": 0.057
+    },
+    {
+     "block": "minecraft:chest",
+     "ratio": 0.033
+    },
+    {
+     "block": "minecraft:magenta_wall_banner",
+     "ratio": 0.033
+    },
+    {
+     "block": "minecraft:ladder",
+     "ratio": 0.016
+    }
+   ],
+   "examples": [
+    {
+     "file": "base_floor.nbt",
+     "size": null,
+     "blocks": 5,
+     "top": [
+      [
+       "minecraft:purpur_block",
+       1
+      ],
+      [
+       "minecraft:purpur_pillar",
+       1
+      ],
+      [
+       "minecraft:end_stone_bricks",
+       1
+      ],
+      [
+       "minecraft:magenta_stained_glass",
+       1
+      ],
+      [
+       "minecraft:structure_block",
+       1
+      ]
+     ]
+    },
+    {
+     "file": "base_roof.nbt",
+     "size": null,
+     "blocks": 2,
+     "top": [
+      [
+       "minecraft:purpur_block",
+       1
+      ],
+      [
+       "minecraft:end_rod",
+       1
+      ]
+     ]
+    },
+    {
+     "file": "bridge_end.nbt",
+     "size": null,
+     "blocks": 5,
+     "top": [
+      [
+       "minecraft:purpur_slab",
+       2
+      ],
+      [
+       "minecraft:purpur_block",
+       1
+      ],
+      [
+       "minecraft:purpur_pillar",
+       1
+      ],
+      [
+       "minecraft:end_rod",
+       1
+      ]
+     ]
+    }
+   ]
+  },
+  "igloo": {
+   "house_count": 3,
+   "avg_blocks_per_house": 11.3,
+   "avg_size": null,
+   "palette": [
+    {
+     "block": "minecraft:stone_bricks",
+     "ratio": 0.059
+    },
+    {
+     "block": "minecraft:ladder",
+     "ratio": 0.059
+    },
+    {
+     "block": "minecraft:wall_torch",
+     "ratio": 0.059
+    },
+    {
+     "block": "minecraft:red_bed",
+     "ratio": 0.059
+    },
+    {
+     "block": "minecraft:stone",
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:polished_andesite",
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:chiseled_stone_bricks",
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:cracked_stone_bricks",
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:infested_stone_bricks",
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:infested_chiseled_stone_bricks",
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:mossy_stone_bricks",
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:infested_mossy_stone_bricks",
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:red_carpet",
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:iron_bars",
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:water_cauldron",
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:spruce_slab",
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:potted_cactus",
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:cobweb",
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:chest",
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:structure_block",
+     "ratio": 0.029
+    }
+   ],
+   "examples": [
+    {
+     "file": "bottom.nbt",
+     "size": null,
+     "blocks": 22,
+     "top": [
+      [
+       "minecraft:wall_torch",
+       2
+      ],
+      [
+       "minecraft:stone",
+       1
+      ],
+      [
+       "minecraft:polished_andesite",
+       1
+      ],
+      [
+       "minecraft:stone_bricks",
+       1
+      ],
+      [
+       "minecraft:chiseled_stone_bricks",
+       1
+      ],
+      [
+       "minecraft:cracked_stone_bricks",
+       1
+      ],
+      [
+       "minecraft:infested_stone_bricks",
+       1
+      ],
+      [
+       "minecraft:infested_chiseled_stone_bricks",
+       1
+      ]
+     ]
+    },
+    {
+     "file": "middle.nbt",
+     "size": null,
+     "blocks": 2,
+     "top": [
+      [
+       "minecraft:stone_bricks",
+       1
+      ],
+      [
+       "minecraft:ladder",
+       1
+      ]
+     ]
+    },
+    {
+     "file": "top.nbt",
+     "size": null,
+     "blocks": 10,
+     "top": [
+      [
+       "minecraft:red_bed",
+       2
+      ],
+      [
+       "minecraft:snow_block",
+       1
+      ],
+      [
+       "minecraft:ice",
+       1
+      ],
+      [
+       "minecraft:crafting_table",
+       1
+      ],
+      [
+       "minecraft:oak_trapdoor",
+       1
+      ],
+      [
+       "minecraft:redstone_torch",
+       1
+      ],
+      [
+       "minecraft:white_carpet",
+       1
+      ],
+      [
+       "minecraft:light_gray_carpet",
+       1
+      ]
+     ]
+    }
+   ]
+  },
+  "plains": {
+   "house_count": 36,
+   "avg_blocks_per_house": 18.2,
+   "avg_size": null,
+   "palette": [
+    {
+     "block": "minecraft:oak_fence",
+     "ratio": 0.122
+    },
+    {
+     "block": "minecraft:oak_door",
+     "ratio": 0.122
+    },
+    {
+     "block": "minecraft:wall_torch",
+     "ratio": 0.109
+    },
+    {
+     "block": "minecraft:oak_log",
+     "ratio": 0.095
+    },
+    {
+     "block": "minecraft:glass_pane",
+     "ratio": 0.073
+    },
+    {
+     "block": "minecraft:oak_planks",
+     "ratio": 0.043
+    },
+    {
+     "block": "minecraft:cobblestone",
+     "ratio": 0.041
+    },
+    {
+     "block": "minecraft:grass_block",
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:dirt",
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:white_bed",
+     "ratio": 0.028
+    },
+    {
+     "block": "minecraft:oak_slab",
+     "ratio": 0.021
+    },
+    {
+     "block": "minecraft:oak_trapdoor",
+     "ratio": 0.02
+    },
+    {
+     "block": "minecraft:torch",
+     "ratio": 0.017
+    },
+    {
+     "block": "minecraft:cobblestone_wall",
+     "ratio": 0.015
+    },
+    {
+     "block": "minecraft:dirt_path",
+     "ratio": 0.015
+    },
+    {
+     "block": "minecraft:wheat",
+     "ratio": 0.015
+    },
+    {
+     "block": "minecraft:yellow_bed",
+     "ratio": 0.015
+    },
+    {
+     "block": "minecraft:tall_grass",
+     "ratio": 0.012
+    },
+    {
+     "block": "minecraft:water",
+     "ratio": 0.011
+    },
+    {
+     "block": "minecraft:chest",
+     "ratio": 0.011
+    }
+   ],
+   "examples": [
+    {
+     "file": "plains_accessory_1.nbt",
+     "size": null,
+     "blocks": 8,
+     "top": [
+      [
+       "minecraft:oak_trapdoor",
+       4
+      ],
+      [
+       "minecraft:grass_block",
+       1
+      ],
+      [
+       "minecraft:poppy",
+       1
+      ],
+      [
+       "minecraft:oxeye_daisy",
+       1
+      ],
+      [
+       "minecraft:dandelion",
+       1
+      ]
+     ]
+    },
+    {
+     "file": "plains_animal_pen_1.nbt",
+     "size": null,
+     "blocks": 12,
+     "top": [
+      [
+       "minecraft:oak_fence",
+       6
+      ],
+      [
+       "minecraft:oak_fence_gate",
+       2
+      ],
+      [
+       "minecraft:grass_block",
+       1
+      ],
+      [
+       "minecraft:dirt",
+       1
+      ],
+      [
+       "minecraft:poppy",
+       1
+      ],
+      [
+       "minecraft:grass",
+       1
+      ]
+     ]
+    },
+    {
+     "file": "plains_animal_pen_2.nbt",
+     "size": null,
+     "blocks": 13,
+     "top": [
+      [
+       "minecraft:oak_fence",
+       6
+      ],
+      [
+       "minecraft:tall_grass",
+       2
+      ],
+      [
+       "minecraft:grass_block",
+       1
+      ],
+      [
+       "minecraft:dirt",
+       1
+      ],
+      [
+       "minecraft:hay_block",
+       1
+      ],
+      [
+       "minecraft:grass",
+       1
+      ],
+      [
+       "minecraft:dandelion",
+       1
+      ]
+     ]
+    }
+   ]
+  },
+  "savanna": {
+   "house_count": 31,
+   "avg_blocks_per_house": 20.2,
+   "avg_size": null,
+   "palette": [
+    {
+     "block": "minecraft:acacia_fence",
+     "ratio": 0.123
+    },
+    {
+     "block": "minecraft:acacia_door",
+     "ratio": 0.118
+    },
+    {
+     "block": "minecraft:acacia_log",
+     "ratio": 0.081
+    },
+    {
+     "block": "minecraft:wall_torch",
+     "ratio": 0.062
+    },
+    {
+     "block": "minecraft:glass_pane",
+     "ratio": 0.057
+    },
+    {
+     "block": "minecraft:dirt",
+     "ratio": 0.045
+    },
+    {
+     "block": "minecraft:grass_block",
+     "ratio": 0.043
+    },
+    {
+     "block": "minecraft:acacia_planks",
+     "ratio": 0.043
+    },
+    {
+     "block": "minecraft:grass",
+     "ratio": 0.041
+    },
+    {
+     "block": "minecraft:acacia_wood",
+     "ratio": 0.041
+    },
+    {
+     "block": "minecraft:acacia_slab",
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:orange_bed",
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:brown_wall_banner",
+     "ratio": 0.027
+    },
+    {
+     "block": "minecraft:dirt_path",
+     "ratio": 0.024
+    },
+    {
+     "block": "minecraft:wheat",
+     "ratio": 0.024
+    },
+    {
+     "block": "minecraft:tall_grass",
+     "ratio": 0.022
+    },
+    {
+     "block": "minecraft:torch",
+     "ratio": 0.016
+    },
+    {
+     "block": "minecraft:chest",
+     "ratio": 0.016
+    },
+    {
+     "block": "minecraft:water",
+     "ratio": 0.014
+    },
+    {
+     "block": "minecraft:yellow_terracotta",
+     "ratio": 0.013
+    }
+   ],
+   "examples": [
+    {
+     "file": "savanna_animal_pen_1.nbt",
+     "size": null,
+     "blocks": 18,
+     "top": [
+      [
+       "minecraft:acacia_fence",
+       9
+      ],
+      [
+       "minecraft:acacia_slab",
+       3
+      ],
+      [
+       "minecraft:acacia_log",
+       1
+      ],
+      [
+       "minecraft:dirt",
+       1
+      ],
+      [
+       "minecraft:grass_block",
+       1
+      ],
+      [
+       "minecraft:acacia_planks",
+       1
+      ],
+      [
+       "minecraft:water",
+       1
+      ],
+      [
+       "minecraft:acacia_fence_gate",
+       1
+      ]
+     ]
+    },
+    {
+     "file": "savanna_animal_pen_2.nbt",
+     "size": null,
+     "blocks": 16,
+     "top": [
+      [
+       "minecraft:acacia_fence",
+       9
+      ],
+      [
+       "minecraft:tall_grass",
+       2
+      ],
+      [
+       "minecraft:dirt",
+       1
+      ],
+      [
+       "minecraft:grass_block",
+       1
+      ],
+      [
+       "minecraft:water",
+       1
+      ],
+      [
+       "minecraft:grass",
+       1
+      ],
+      [
+       "minecraft:torch",
+       1
+      ]
+     ]
+    },
+    {
+     "file": "savanna_animal_pen_3.nbt",
+     "size": null,
+     "blocks": 13,
+     "top": [
+      [
+       "minecraft:acacia_fence",
+       7
+      ],
+      [
+       "minecraft:acacia_slab",
+       2
+      ],
+      [
+       "minecraft:grass_block",
+       1
+      ],
+      [
+       "minecraft:grass",
+       1
+      ],
+      [
+       "minecraft:acacia_fence_gate",
+       1
+      ],
+      [
+       "minecraft:torch",
+       1
+      ]
+     ]
+    }
+   ]
+  },
+  "snowy": {
+   "house_count": 30,
+   "avg_blocks_per_house": 18.2,
+   "avg_size": null,
+   "palette": [
+    {
+     "block": "minecraft:snow",
+     "ratio": 0.147
+    },
+    {
+     "block": "minecraft:spruce_door",
+     "ratio": 0.117
+    },
+    {
+     "block": "minecraft:spruce_fence",
+     "ratio": 0.106
+    },
+    {
+     "block": "minecraft:stripped_spruce_log",
+     "ratio": 0.057
+    },
+    {
+     "block": "minecraft:spruce_slab",
+     "ratio": 0.051
+    },
+    {
+     "block": "minecraft:lantern",
+     "ratio": 0.048
+    },
+    {
+     "block": "minecraft:wall_torch",
+     "ratio": 0.046
+    },
+    {
+     "block": "minecraft:stripped_spruce_wood",
+     "ratio": 0.042
+    },
+    {
+     "block": "minecraft:grass_block",
+     "ratio": 0.038
+    },
+    {
+     "block": "minecraft:spruce_planks",
+     "ratio": 0.037
+    },
+    {
+     "block": "minecraft:glass_pane",
+     "ratio": 0.029
+    },
+    {
+     "block": "minecraft:snow_block",
+     "ratio": 0.027
+    },
+    {
+     "block": "minecraft:cobblestone_wall",
+     "ratio": 0.022
+    },
+    {
+     "block": "minecraft:blue_bed",
+     "ratio": 0.022
+    },
+    {
+     "block": "minecraft:dirt",
+     "ratio": 0.018
+    },
+    {
+     "block": "minecraft:furnace",
+     "ratio": 0.016
+    },
+    {
+     "block": "minecraft:torch",
+     "ratio": 0.015
+    },
+    {
+     "block": "minecraft:diorite_wall",
+     "ratio": 0.015
+    },
+    {
+     "block": "minecraft:white_bed",
+     "ratio": 0.015
+    },
+    {
+     "block": "minecraft:chest",
+     "ratio": 0.013
+    }
+   ],
+   "examples": [
+    {
+     "file": "snowy_animal_pen_1.nbt",
+     "size": null,
+     "blocks": 21,
+     "top": [
+      [
+       "minecraft:spruce_fence",
+       8
+      ],
+      [
+       "minecraft:snow",
+       6
+      ],
+      [
+       "minecraft:grass_block",
+       2
+      ],
+      [
+       "minecraft:stripped_spruce_log",
+       1
+      ],
+      [
+       "minecraft:snow_block",
+       1
+      ],
+      [
+       "minecraft:dirt",
+       1
+      ],
+      [
+       "minecraft:spruce_fence_gate",
+       1
+      ],
+      [
+       "minecraft:torch",
+       1
+      ]
+     ]
+    },
+    {
+     "file": "snowy_animal_pen_2.nbt",
+     "size": null,
+     "blocks": 16,
+     "top": [
+      [
+       "minecraft:spruce_fence",
+       6
+      ],
+      [
+       "minecraft:snow",
+       3
+      ],
+      [
+       "minecraft:grass_block",
+       2
+      ],
+      [
+       "minecraft:dirt",
+       1
+      ],
+      [
+       "minecraft:snow_block",
+       1
+      ],
+      [
+       "minecraft:water",
+       1
+      ],
+      [
+       "minecraft:spruce_fence_gate",
+       1
+      ],
+      [
+       "minecraft:lantern",
+       1
+      ]
+     ]
+    },
+    {
+     "file": "snowy_armorer_house_1.nbt",
+     "size": null,
+     "blocks": 16,
+     "top": [
+      [
+       "minecraft:stripped_spruce_log",
+       2
+      ],
+      [
+       "minecraft:spruce_door",
+       2
+      ],
+      [
+       "minecraft:spruce_fence",
+       2
+      ],
+      [
+       "minecraft:diorite",
+       1
+      ],
+      [
+       "minecraft:spruce_planks",
+       1
+      ],
+      [
+       "minecraft:snow",
+       1
+      ],
+      [
+       "minecraft:grass",
+       1
+      ],
+      [
+       "minecraft:torch",
+       1
+      ]
+     ]
+    }
+   ]
+  },
+  "taiga": {
+   "house_count": 27,
+   "avg_blocks_per_house": 21.9,
+   "avg_size": null,
+   "palette": [
+    {
+     "block": "minecraft:spruce_trapdoor",
+     "ratio": 0.146
+    },
+    {
+     "block": "minecraft:spruce_door",
+     "ratio": 0.095
+    },
+    {
+     "block": "minecraft:wall_torch",
+     "ratio": 0.088
+    },
+    {
+     "block": "minecraft:spruce_log",
+     "ratio": 0.078
+    },
+    {
+     "block": "minecraft:spruce_fence",
+     "ratio": 0.056
+    },
+    {
+     "block": "minecraft:glass_pane",
+     "ratio": 0.047
+    },
+    {
+     "block": "minecraft:cobblestone",
+     "ratio": 0.041
+    },
+    {
+     "block": "minecraft:large_fern",
+     "ratio": 0.041
+    },
+    {
+     "block": "minecraft:cobblestone_wall",
+     "ratio": 0.037
+    },
+    {
+     "block": "minecraft:grass_block",
+     "ratio": 0.036
+    },
+    {
+     "block": "minecraft:dirt",
+     "ratio": 0.034
+    },
+    {
+     "block": "minecraft:spruce_planks",
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:dirt_path",
+     "ratio": 0.031
+    },
+    {
+     "block": "minecraft:torch",
+     "ratio": 0.024
+    },
+    {
+     "block": "minecraft:purple_bed",
+     "ratio": 0.024
+    },
+    {
+     "block": "minecraft:fern",
+     "ratio": 0.017
+    },
+    {
+     "block": "minecraft:poppy",
+     "ratio": 0.017
+    },
+    {
+     "block": "minecraft:chest",
+     "ratio": 0.017
+    },
+    {
+     "block": "minecraft:wheat",
+     "ratio": 0.017
+    },
+    {
+     "block": "minecraft:blue_bed",
+     "ratio": 0.017
+    }
+   ],
+   "examples": [
+    {
+     "file": "taiga_animal_pen_1.nbt",
+     "size": null,
+     "blocks": 17,
+     "top": [
+      [
+       "minecraft:spruce_fence",
+       9
+      ],
+      [
+       "minecraft:spruce_trapdoor",
+       4
+      ],
+      [
+       "minecraft:grass_block",
+       1
+      ],
+      [
+       "minecraft:spruce_planks",
+       1
+      ],
+      [
+       "minecraft:spruce_fence_gate",
+       1
+      ],
+      [
+       "minecraft:torch",
+       1
+      ]
+     ]
+    },
+    {
+     "file": "taiga_armorer_2.nbt",
+     "size": null,
+     "blocks": 13,
+     "top": [
+      [
+       "minecraft:cobblestone_wall",
+       2
+      ],
+      [
+       "minecraft:large_fern",
+       2
+      ],
+      [
+       "minecraft:grass_block",
+       1
+      ],
+      [
+       "minecraft:cobblestone",
+       1
+      ],
+      [
+       "minecraft:dirt",
+       1
+      ],
+      [
+       "minecraft:spruce_log",
+       1
+      ],
+      [
+       "minecraft:dirt_path",
+       1
+      ],
+      [
+       "minecraft:fern",
+       1
+      ]
+     ]
+    },
+    {
+     "file": "taiga_armorer_house_1.nbt",
+     "size": null,
+     "blocks": 16,
+     "top": [
+      [
+       "minecraft:spruce_door",
+       2
+      ],
+      [
+       "minecraft:wall_torch",
+       2
+      ],
+      [
+       "minecraft:cobblestone_wall",
+       2
+      ],
+      [
+       "minecraft:grass_block",
+       1
+      ],
+      [
+       "minecraft:dirt",
+       1
+      ],
+      [
+       "minecraft:cobblestone",
+       1
+      ],
+      [
+       "minecraft:spruce_planks",
+       1
+      ],
+      [
+       "minecraft:spruce_log",
+       1
+      ]
+     ]
+    }
+   ]
+  },
+  "village_town_centers": {
+   "house_count": 32,
+   "avg_blocks_per_house": 11.0,
+   "avg_size": null,
+   "palette": [
+    {
+     "block": "minecraft:bell",
+     "ratio": 0.099
+    },
+    {
+     "block": "minecraft:water",
+     "ratio": 0.074
+    },
+    {
+     "block": "minecraft:dirt_path",
+     "ratio": 0.074
+    },
+    {
+     "block": "minecraft:torch",
+     "ratio": 0.06
+    },
+    {
+     "block": "minecraft:grass_block",
+     "ratio": 0.057
+    },
+    {
+     "block": "minecraft:oak_fence",
+     "ratio": 0.051
+    },
+    {
+     "block": "minecraft:brown_wall_banner",
+     "ratio": 0.04
+    },
+    {
+     "block": "minecraft:spruce_fence",
+     "ratio": 0.04
+    },
+    {
+     "block": "minecraft:dirt",
+     "ratio": 0.034
+    },
+    {
+     "block": "minecraft:wall_torch",
+     "ratio": 0.028
+    },
+    {
+     "block": "minecraft:stripped_spruce_wood",
+     "ratio": 0.028
+    },
+    {
+     "block": "minecraft:white_glazed_terracotta",
+     "ratio": 0.023
+    },
+    {
+     "block": "minecraft:cobblestone",
+     "ratio": 0.023
+    },
+    {
+     "block": "minecraft:grass",
+     "ratio": 0.023
+    },
+    {
+     "block": "minecraft:acacia_slab",
+     "ratio": 0.023
+    },
+    {
+     "block": "minecraft:acacia_wood",
+     "ratio": 0.023
+    },
+    {
+     "block": "minecraft:spruce_trapdoor",
+     "ratio": 0.023
+    },
+    {
+     "block": "minecraft:smooth_sandstone",
+     "ratio": 0.017
+    },
+    {
+     "block": "minecraft:sand",
+     "ratio": 0.017
+    },
+    {
+     "block": "minecraft:cut_sandstone",
+     "ratio": 0.017
+    }
+   ],
+   "examples": [
+    {
+     "file": "desert_meeting_point_1.nbt",
+     "size": null,
+     "blocks": 8,
+     "top": [
+      [
+       "minecraft:smooth_sandstone",
+       1
+      ],
+      [
+       "minecraft:sand",
+       1
+      ],
+      [
+       "minecraft:cut_sandstone",
+       1
+      ],
+      [
+       "minecraft:terracotta",
+       1
+      ],
+      [
+       "minecraft:water",
+       1
+      ],
+      [
+       "minecraft:potted_cactus",
+       1
+      ],
+      [
+       "minecraft:torch",
+       1
+      ],
+      [
+       "minecraft:bell",
+       1
+      ]
+     ]
+    },
+    {
+     "file": "desert_meeting_point_2.nbt",
+     "size": null,
+     "blocks": 9,
+     "top": [
+      [
+       "minecraft:smooth_sandstone_slab",
+       2
+      ],
+      [
+       "minecraft:water",
+       2
+      ],
+      [
+       "minecraft:smooth_sandstone",
+       1
+      ],
+      [
+       "minecraft:sand",
+       1
+      ],
+      [
+       "minecraft:cut_sandstone",
+       1
+      ],
+      [
+       "minecraft:torch",
+       1
+      ],
+      [
+       "minecraft:bell",
+       1
+      ]
+     ]
+    },
+    {
+     "file": "desert_meeting_point_3.nbt",
+     "size": null,
+     "blocks": 20,
+     "top": [
+      [
+       "minecraft:white_glazed_terracotta",
+       4
+      ],
+      [
+       "minecraft:sandstone_wall",
+       3
+      ],
+      [
+       "minecraft:hay_block",
+       2
+      ],
+      [
+       "minecraft:sand",
+       1
+      ],
+      [
+       "minecraft:smooth_sandstone",
+       1
+      ],
+      [
+       "minecraft:cut_sandstone",
+       1
+      ],
+      [
+       "minecraft:terracotta",
+       1
+      ],
+      [
+       "minecraft:water",
+       1
+      ]
+     ]
+    }
+   ]
+  },
+  "woodland_mansion": {
+   "house_count": 52,
+   "avg_blocks_per_house": 9.0,
+   "avg_size": null,
+   "palette": [
+    {
+     "block": "minecraft:birch_planks",
+     "ratio": 0.111
+    },
+    {
+     "block": "minecraft:oak_fence",
+     "ratio": 0.109
+    },
+    {
+     "block": "minecraft:oak_planks",
+     "ratio": 0.047
+    },
+    {
+     "block": "minecraft:structure_block",
+     "ratio": 0.045
+    },
+    {
+     "block": "minecraft:dark_oak_fence",
+     "ratio": 0.038
+    },
+    {
+     "block": "minecraft:cobblestone_wall",
+     "ratio": 0.036
+    },
+    {
+     "block": "minecraft:oak_slab",
+     "ratio": 0.032
+    },
+    {
+     "block": "minecraft:dark_oak_log",
+     "ratio": 0.03
+    },
+    {
+     "block": "minecraft:cobblestone",
+     "ratio": 0.028
+    },
+    {
+     "block": "minecraft:chest",
+     "ratio": 0.026
+    },
+    {
+     "block": "minecraft:iron_door",
+     "ratio": 0.026
+    },
+    {
+     "block": "minecraft:white_wool",
+     "ratio": 0.023
+    },
+    {
+     "block": "minecraft:dark_oak_planks",
+     "ratio": 0.021
+    },
+    {
+     "block": "minecraft:water",
+     "ratio": 0.021
+    },
+    {
+     "block": "minecraft:ladder",
+     "ratio": 0.017
+    },
+    {
+     "block": "minecraft:cobblestone_slab",
+     "ratio": 0.015
+    },
+    {
+     "block": "minecraft:white_carpet",
+     "ratio": 0.015
+    },
+    {
+     "block": "minecraft:smooth_stone_slab",
+     "ratio": 0.013
+    },
+    {
+     "block": "minecraft:torch",
+     "ratio": 0.013
+    },
+    {
+     "block": "minecraft:bookshelf",
+     "ratio": 0.011
+    }
+   ],
+   "examples": [
+    {
+     "file": "1x1_a1.nbt",
+     "size": null,
+     "blocks": 7,
+     "top": [
+      [
+       "minecraft:birch_planks",
+       1
+      ],
+      [
+       "minecraft:cobblestone",
+       1
+      ],
+      [
+       "minecraft:potted_oxeye_daisy",
+       1
+      ],
+      [
+       "minecraft:potted_blue_orchid",
+       1
+      ],
+      [
+       "minecraft:potted_allium",
+       1
+      ],
+      [
+       "minecraft:potted_azure_bluet",
+       1
+      ],
+      [
+       "minecraft:cobblestone_wall",
+       1
+      ]
+     ]
+    },
+    {
+     "file": "1x1_a2.nbt",
+     "size": null,
+     "blocks": 10,
+     "top": [
+      [
+       "minecraft:rail",
+       4
+      ],
+      [
+       "minecraft:ladder",
+       3
+      ],
+      [
+       "minecraft:birch_planks",
+       1
+      ],
+      [
+       "minecraft:cobblestone",
+       1
+      ],
+      [
+       "minecraft:carved_pumpkin",
+       1
+      ]
+     ]
+    },
+    {
+     "file": "1x1_a3.nbt",
+     "size": null,
+     "blocks": 5,
+     "top": [
+      [
+       "minecraft:birch_planks",
+       1
+      ],
+      [
+       "minecraft:cobblestone",
+       1
+      ],
+      [
+       "minecraft:oak_planks",
+       1
+      ],
+      [
+       "minecraft:potted_red_tulip",
+       1
+      ],
+      [
+       "minecraft:light_gray_carpet",
+       1
+      ]
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -325,10 +325,35 @@ public class UIStructureAiPanel extends UIDashboardPanel
             }
 
             String biomeRef = mchorse.bbs_mod.ai.AiBiomeSkills.summary();
+            String principles = mchorse.bbs_mod.ai.AiBuildSkills.designPrinciples();
+
+            /* 已学习的建筑参考（notre_dame）：材质比例+密度+比例参数 */
+            String learnedRef = "";
+            var learnedData = mchorse.bbs_mod.ai.AiBuildSkills.loadSkill("learned/notre_dame.json");
+
+            if (learnedData != null)
+            {
+                String title = learnedData.has("title") ? learnedData.get("title").getAsString() : "";
+                var dims = learnedData.getAsJsonObject("dimensions");
+                var props = learnedData.getAsJsonObject("proportions");
+
+                learnedRef = "\n\n建筑参考（" + title + "）: "
+                    + dims.get("width").getAsInt() + "×" + dims.get("height").getAsInt() + "×" + dims.get("length").getAsInt()
+                    + " · 密度 " + props.get("density").getAsDouble()
+                    + " · 材质: ";
+
+                var pal = learnedData.getAsJsonArray("palette");
+
+                for (var pi : pal)
+                {
+                    var po = pi.getAsJsonObject();
+                    learnedRef += po.get("block").getAsString() + "(" + po.get("ratio").getAsDouble() * 100 + "%) ";
+                }
+            }
 
             AiChatRequest request = new AiChatRequest(
                 L10n.lang("bbs.ui.ai.structure.build_system").get(),
-                L10n.lang("bbs.ui.ai.structure.build_prompt").format(theme).get() + styleHint + fewShot + biomeRef);
+                L10n.lang("bbs.ui.ai.structure.build_prompt").format(theme).get() + principles + styleHint + fewShot + biomeRef + learnedRef);
 
         request.temperature(0.6F);
         /* 0 = the field is omitted, so the provider's own output cap applies */

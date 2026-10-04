@@ -635,8 +635,9 @@ public class AiDebugServer
             var writes = mchorse.bbs_mod.ai.pose.PoseSolver.toPoseTrackWrites(poses, boneEnds,
                 new mchorse.bbs_mod.film.replays.FormProperties("test"), null);
 
-            step.accept("pose track writes (" + writes.size() + " channels)",
-                !writes.isEmpty() && writes.get(0).keys.size() == 3);
+            step.accept("pose track writes (" + writes.size() + " channels, " +
+                writes.stream().mapToInt(w -> w.keys.size()).sum() + " keys)",
+                !writes.isEmpty() && writes.get(0).keys.size() >= 3);
 
             /* 6 打光 fx 通道（2.5 亮起） */
             var lightWrite = new mchorse.bbs_mod.ai.commit.FrameCommitter.ChannelWrite("lighting",

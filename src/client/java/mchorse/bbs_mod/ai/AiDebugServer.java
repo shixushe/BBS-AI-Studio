@@ -419,6 +419,76 @@ public class AiDebugServer
                         return "generate queued: " + script;
                     }
 
+                    if (op.equals("aiChat"))
+                    {
+                        var dashboard = mchorse.bbs_mod.BBSModClient.getDashboard();
+                        var panel = dashboard.getPanels().panel;
+
+                        if (!(panel instanceof mchorse.bbs_mod.ui.film.UIFilmPanel filmPanel)
+                            || filmPanel.aiChatBar == null)
+                        {
+                            return "not the film panel";
+                        }
+
+                        var bar = filmPanel.aiChatBar;
+                        StringBuilder sb = new StringBuilder();
+
+                        try
+                        {
+                            java.lang.reflect.Field busyField = bar.getClass().getDeclaredField("busy");
+
+                            busyField.setAccessible(true);
+                            sb.append("busy=").append(busyField.getBoolean(bar)).append(" | ");
+                        }
+                        catch (Exception ignored)
+                        {}
+
+                        java.lang.reflect.Field historyField;
+
+                        try
+                        {
+                            historyField = bar.getClass().getDeclaredField("history");
+
+                            historyField.setAccessible(true);
+                        }
+                        catch (Exception e)
+                        {
+                            return "no history field: " + e;
+                        }
+
+                        Object history = historyField.get(bar);
+                        java.lang.reflect.Field statusField = null;
+
+                        try
+                        {
+                            statusField = bar.getClass().getDeclaredField("status");
+
+                            statusField.setAccessible(true);
+                            Object status = statusField.get(bar);
+
+                            sb.append("status=").append(status.getClass().getField("label").get(status)).append(" | ");
+                        }
+                        catch (Exception ignored)
+                        {}
+
+                        @SuppressWarnings("unchecked")
+                        java.util.List<Object> children = (java.util.List<Object>) history.getClass()
+                            .getMethod("getChildren").invoke(history);
+
+                        for (Object child : children)
+                        {
+                            if (child.getClass().getSimpleName().equals("AiChatMessage"))
+                            {
+                                Object role = child.getClass().getMethod("getRole").invoke(child);
+                                Object text = child.getClass().getMethod("getText").invoke(child);
+
+                                sb.append("\n[").append(role).append("] ").append(text);
+                            }
+                        }
+
+                        return sb.length() == 0 ? "(no chat messages)" : sb.toString();
+                    }
+
                     if (op.equals("aiReport"))
                     {
                         var state = mchorse.bbs_mod.ai.preview.AiPreviewState.get();

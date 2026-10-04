@@ -131,7 +131,6 @@ public class PoseSolver
             pose.phase = beat.phase;
             pose.pose = beat.pose;
             pose.intent = beat.intents == null || beat.intents.isEmpty() ? "linear" : beat.intents.get(0).name().toLowerCase();
-            pose.rootY = PoseLibrary.ROOT_Y.getOrDefault(beat.pose, 0F);
 
             /* @ 技能姿势：作者姿态整只替换，不吃幅度 */
             if (beat.pose.startsWith("@"))
@@ -157,9 +156,21 @@ public class PoseSolver
 
                     continue;
                 }
+
+                /* 模型编造了技能库里没有的 @名字：退回同名基础姿势（@wave→wave），
+                 * 再不行按未知姿势退化——绝不让一次生成整个炸掉 */
+                if (PoseLibrary.get(beat.pose.substring(1)) != null)
+                {
+                    beat.pose = beat.pose.substring(1);
+                }
             }
 
-            for (Map.Entry<String, float[]> entry : PoseLibrary.get(beat.pose).entrySet())
+            /* get() 对未知名字返回 null：退化为空姿势（即 idle），只保留该拍的时序与意图 */
+            Map<String, float[]> libraryPose = PoseLibrary.get(beat.pose);
+
+            pose.rootY = PoseLibrary.ROOT_Y.getOrDefault(beat.pose, 0F);
+
+            for (Map.Entry<String, float[]> entry : (libraryPose == null ? Map.<String, float[]>of() : libraryPose).entrySet())
             {
                 BoneNameResolver.Resolution resolution = bones.resolved.get(entry.getKey());
 

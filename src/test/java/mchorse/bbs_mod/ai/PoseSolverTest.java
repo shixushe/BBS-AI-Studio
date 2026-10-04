@@ -110,6 +110,35 @@ public class PoseSolverTest
 
         equal(2, eyePoses.get(0).channels.size(), "blink with bound eyes writes both eye channels");
 
+        /* 幻觉 @技能姿势：技能库没有该名字时不得 NPE——@挥手 退化为空姿势，
+         * @wave 退级成基础 wave（有骨骼通道），@compress 退级后还带走 rootY */
+        AnimationPlan ghostPlan;
+
+        try
+        {
+            ghostPlan = AnimationPlan.parse("""
+                {
+                  "version": 1, "fps": 20, "total_ticks": 30,
+                  "beats": [
+                    { "index": 0, "tick": 0, "phase": "hold", "pose": "@挥手", "spacing": 0, "intents": ["hold"] },
+                    { "index": 1, "tick": 10, "phase": "hold", "pose": "@wave", "spacing": 10, "intents": ["hold"] },
+                    { "index": 2, "tick": 20, "phase": "down", "pose": "@compress", "spacing": 10, "intents": ["ease_in_out"] }
+                  ]
+                }
+                """);
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        List<PoseSolver.KeyPose> ghostPoses = PoseSolver.solve(ghostPlan, bones);
+
+        equal(3, ghostPoses.size(), "hallucinated @poses still solve into three beats");
+        equal(0, ghostPoses.get(0).channels.size(), "unknown @pose degrades to empty pose (no crash)");
+        check(ghostPoses.get(1).channels.size() > 0, "@wave falls back to base wave channels");
+        equal(-0.18F, ghostPoses.get(2).rootY, "stripped @compress keeps its rootY offset");
+
         /* Two-ended writes: same bone on root and part end fans out to both */
         FormProperties properties = new FormProperties("properties");
         PoseSolver.KeyPose pose = new PoseSolver.KeyPose();

@@ -86,6 +86,15 @@ public class DataToString
             {
                 builder.append('\\');
             }
+            else if (character < 32)
+            {
+                /* 其余控制字符（\r、\t 等）必须转义，否则序列化结果里会混入
+                 * 裸 CTRL 字符——GLM 等 JSON 后端会直接 400 拒收。用 unicode
+                 * 转义形式是因为 unescape() 能原样还原它。 */
+                builder.append(String.format("\\u%04x", (int) character));
+
+                continue;
+            }
 
             builder.append(character);
         }

@@ -72,6 +72,9 @@ public class BoneNameResolver
         /** Generic bones with no confident match - the user must resolve these. */
         public final List<String> unresolved = new ArrayList<>();
 
+        /** 模型的实际骨骼清单（v2 直写模式直接用这些名字驱动） */
+        public final java.util.Set<String> inventory = new java.util.LinkedHashSet<>();
+
         public boolean isComplete()
         {
             return this.unresolved.isEmpty();
@@ -104,6 +107,7 @@ public class BoneNameResolver
         for (String bone : actualBones)
         {
             normalized.add(bone);
+            result.inventory.add(bone);
         }
 
         List<String> generics = new ArrayList<>(PoseLibrary.GENERIC_BONES);

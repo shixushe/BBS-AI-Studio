@@ -90,6 +90,14 @@ public class PoseSolver
         public float[] values = new float[] {0F, 0F, 0F};
     }
 
+    /** 泛骨骼名 → 模型实际骨骼名（未解析返回 null） */
+    private static String actualOf(BoneNameResolver.Result bones, String generic)
+    {
+        BoneNameResolver.Resolution r = bones.resolved.get(generic);
+
+        return r == null ? null : r.actual;
+    }
+
     /** 步行保底：骨骼值幅度不足 threshold 时设为 target（度）——只兜底不覆盖 */
     private static void ensure(java.util.Map<String, float[]> vals, String generic, int axis, float threshold, float target)
     {
@@ -336,27 +344,39 @@ public class PoseSolver
                 /* 直写骨骼（度数域）：本拍给值或沿用上一拍——关节不瞬回绑定姿势 */
                 java.util.Map<String, float[]> beatVals = new java.util.HashMap<>();
 
-                for (String generic : allGenerics)
+                /* 键 = 模型实际骨骼名（深度适配：跳过泛骨骼层直呼其名）；
+                 * 泛骨骼名仍兼容（映射到实际名） */
+                if (beat.poseObject != null)
                 {
-                    if (!bones.resolved.containsKey(generic))
+                    for (String key : beat.poseObject.keys())
                     {
-                        continue;
-                    }
+                        String actual = key;
 
-                    BaseType boneValue = beat.poseObject == null ? null : beat.poseObject.get(generic);
+                        if (!bones.inventory.contains(key) && bones.resolved.containsKey(key))
+                        {
+                            actual = bones.resolved.get(key).actual;
+                        }
 
-                    if (BaseType.isMap(boneValue))
-                    {
-                        MapType bm = boneValue.asMap();
+                        if (!bones.inventory.contains(actual))
+                        {
+                            continue;
+                        }
+
+                        MapType bm = beat.poseObject.getMap(key);
                         float[] r = readVec3(bm, "r", 0F);
                         float[] sc = bm.has("s") ? readVec3(bm, "s", 1F) : new float[] {1F, 1F, 1F};
                         float[] t = bm.has("t") ? readVec3(bm, "t", 0F) : new float[] {0F, 0F, 0F};
 
-                        beatVals.put(generic, new float[] {r[0], r[1], r[2], sc[0], sc[1], sc[2], t[0], t[1], t[2]});
+                        beatVals.put(actual, new float[] {r[0], r[1], r[2], sc[0], sc[1], sc[2], t[0], t[1], t[2]});
                     }
-                    else if (carried.containsKey(generic))
+                }
+
+                /* 连续性：没提到的实际骨骼沿用上一拍 */
+                for (String actual : bones.inventory)
+                {
+                    if (!beatVals.containsKey(actual) && carried.containsKey(actual))
                     {
-                        beatVals.put(generic, carried.get(generic).clone());
+                        beatVals.put(actual, carried.get(actual).clone());
                     }
                 }
 
@@ -367,40 +387,101 @@ public class PoseSolver
                 {
                     float g = (spanIndex % 2 == 0) ? 1F : -1F;
 
-                    ensure(beatVals, "left_leg", 0, 8F, 15F * g);
-                    ensure(beatVals, "right_leg", 0, 8F, -15F * g);
-                    ensure(beatVals, "left_knee", 0, 6F, 12F);
-                    ensure(beatVals, "right_knee", 0, 6F, 12F);
-                    ensure(beatVals, "left_arm", 0, 10F, -18F * g);
-                    ensure(beatVals, "right_arm", 0, 10F, 18F * g);
-                    ensure(beatVals, "left_elbow", 0, 4F, -10F);
-                    ensure(beatVals, "right_elbow", 0, 4F, -10F);
-                    ensure(beatVals, "torso_lower", 1, 3F, 6F * g);
-                    ensure(beatVals, "torso", 1, 2.5F, -4F * g);
-                    ensure(beatVals, "body", 0, 1.5F, 2.5F);
+                    for (Map.Entry<String, BoneNameResolver.Resolution> entry : bones.resolved.entrySet())
+                    {
+                        String genericKey = entry.getKey();
+                        String actual = entry.getValue().actual;
+
+                        float targetAxis;
+                        int axis;
+
+                        switch (genericKey)
+                        {
+                            case "left_leg" -> { targetAxis = 15F * g; axis = 0; }
+                            case "right_leg" -> { targetAxis = -15F * g; axis = 0; }
+                            case "left_knee", "right_knee" -> { targetAxis = 12F; axis = 0; }
+                            case "left_arm" -> { targetAxis = -18F * g; axis = 0; }
+                            case "right_arm" -> { targetAxis = 18F * g; axis = 0; }
+                            case "left_elbow", "right_elbow" -> { targetAxis = -10F; axis = 0; }
+                            case "torso_lower" -> { targetAxis = 6F * g; axis = 1; }
+                            case "torso" -> { targetAxis = -4F * g; axis = 1; }
+                            case "body" -> { targetAxis = -2.5F; axis = 0; }
+                            default -> { continue; }
+                        }
+
+                        float threshold = switch (genericKey)
+                        {
+                            case "left_leg", "right_leg" -> 8F;
+                            case "left_knee", "right_knee" -> 6F;
+                            case "left_arm", "right_arm" -> 10F;
+                            case "left_elbow", "right_elbow" -> 4F;
+                            case "torso_lower" -> 3F;
+                            case "torso" -> 2.5F;
+                            case "body" -> 1.5F;
+                            default -> 0F;
+                        };
+
+                        float[] v = beatVals.get(actual);
+
+                        if (v == null)
+                        {
+                            v = new float[] {0F, 0F, 0F, 1F, 1F, 1F, 0F, 0F, 0F};
+                            beatVals.put(actual, v);
+                        }
+
+                        /* 只兜底：轴幅度低于阈值才接管，作者大值优先 */
+                        if (Math.abs(v[axis]) < threshold)
+                        {
+                            v[axis] = targetAxis;
+                        }
+                    }
+
+                    /* 正反校正（作者数据推导的符号约定：X 负=前倾/前摆）：
+                     * 1) 同侧臂腿同向 = 摆错边，翻转到对侧；
+                     * 2) 前进时身体后仰（正 X）改为前倾 */
+                    float[] ll = beatVals.get(actualOf(bones, "left_leg"));
+                    float[] la = beatVals.get(actualOf(bones, "left_arm"));
+                    float[] rl = beatVals.get(actualOf(bones, "right_leg"));
+                    float[] ra = beatVals.get(actualOf(bones, "right_arm"));
+
+                    if (ll != null && la != null && Math.abs(ll[0]) >= 8F && Math.abs(la[0]) >= 10F
+                        && Math.signum(ll[0]) == Math.signum(la[0]))
+                    {
+                        la[0] = -la[0];
+                    }
+
+                    if (rl != null && ra != null && Math.abs(rl[0]) >= 8F && Math.abs(ra[0]) >= 10F
+                        && Math.signum(rl[0]) == Math.signum(ra[0]))
+                    {
+                        ra[0] = -ra[0];
+                    }
+
+                    if (beat.move != null && beat.move[0] > 0.05D)
+                    {
+                        float[] bod = beatVals.get(actualOf(bones, "body"));
+
+                        if (bod != null && bod[0] > 1F)
+                        {
+                            bod[0] = -2.5F;
+                        }
+                    }
 
                     spanIndex++;
                 }
 
-                for (String generic : allGenerics)
+                for (Map.Entry<String, float[]> entry : beatVals.entrySet())
                 {
-                    float[] v = beatVals.get(generic);
-                    BoneNameResolver.Resolution res = bones.resolved.get(generic);
-
-                    if (v == null || res == null)
-                    {
-                        continue;
-                    }
-
+                    String actual = entry.getKey();
+                    float[] v = entry.getValue();
                     BoneChannel channel = new BoneChannel();
 
-                    channel.bone = res.actual;
+                    channel.bone = actual;
                     channel.x = (float) Math.toRadians(v[0]) * amplitude;
                     channel.y = (float) Math.toRadians(v[1]) * amplitude;
                     channel.z = (float) Math.toRadians(v[2]) * amplitude;
                     channel.values = new float[] {channel.x, channel.y, channel.z, v[3], v[4], v[5], v[6], v[7], v[8]};
 
-                    carried.put(generic, v.clone());
+                    carried.put(actual, v.clone());
                     v2.channels.add(channel);
                 }
 

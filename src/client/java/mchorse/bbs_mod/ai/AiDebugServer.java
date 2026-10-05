@@ -411,12 +411,32 @@ public class AiDebugServer
                             return "not the film panel";
                         }
 
+                        /* 自动选中模型表单回放——选错回放（粒子/空表单）时不再报错 */
+                        var current = filmPanel.replayEditor.getReplay();
+
+                        if (current == null || !(current.form.get() instanceof mchorse.bbs_mod.forms.forms.ModelForm))
+                        {
+                            for (var r : filmPanel.getData().replays.getList())
+                            {
+                                if (r.form.get() instanceof mchorse.bbs_mod.forms.forms.ModelForm)
+                                {
+                                    filmPanel.replayEditor.setReplay(r);
+
+                                    break;
+                                }
+                            }
+                        }
+
                         String script = map == null || map.getString("script").isEmpty()
                             ? "角色向前走" : map.getString("script");
 
+                        var selected = filmPanel.replayEditor.getReplay();
+
                         filmPanel.aiChatBar.executeGenerate(script);
 
-                        return "generate queued: " + script;
+                        return "generate queued: " + script + " | replay="
+                            + (selected == null ? "null" : selected.getId() + ":"
+                                + (selected.form.get() == null ? "null" : selected.form.get().getClass().getSimpleName()));
                     }
 
                     if (op.equals("aiChat"))

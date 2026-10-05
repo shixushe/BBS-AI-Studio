@@ -344,6 +344,7 @@ public class PoseSolverTest
         BoneNameResolver.Result withEyes2 = BoneNameResolver.resolve(STAR_BONES);
 
         withEyes2.resolved.put("left_eye", BoneNameResolver.confirmed("left_eye", "左眼瞳"));
+        withEyes2.inventory.add("左眼瞳");
 
         List<PoseSolver.KeyPose> v2fxPoses = PoseSolver.solve(v2fx, withEyes2);
         PoseSolver.BoneChannel eye = v2fxPoses.get(0).channels.stream()
@@ -400,6 +401,35 @@ public class PoseSolverTest
 
         /* v2 曲线强制：LLM 给 linear 也升为 S 曲线 */
         equal("ease_in_out", walkPoses.get(0).intent, "v2 linear intent upgraded to S curve");
+
+        /* 深度适配：pose 键直接用模型实际骨骼名（跳过泛骨骼层） */
+        AnimationPlan v2raw;
+
+        try
+        {
+            v2raw = AnimationPlan.parse("""
+                {
+                  "version": 2, "fps": 20, "total_ticks": 8,
+                  "beats": [
+                    { "index": 0, "tick": 0, "phase": "hold",
+                      "pose": { "left_leg_end": {"r": [5, 0, 0]}, "head": {"r": [3, 0, 0]} } }
+                  ]
+                }
+                """);
+        }
+        catch (AiException e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        List<PoseSolver.KeyPose> rawPoses = PoseSolver.solve(v2raw, bones);
+        PoseSolver.BoneChannel rawEnd = rawPoses.get(0).channels.stream()
+            .filter(c -> c.bone.equals("left_leg_end")).findFirst().orElse(null);
+
+        check(rawEnd != null && Math.abs(rawEnd.x - (float) Math.toRadians(5)) < 0.0001F,
+            "actual bone names drive channels directly (deep adaptation)");
+        check(rawPoses.get(0).channels.stream().anyMatch(c -> c.bone.equals("head")),
+            "generic names still map to actual bones for compatibility");
 
         /* Two-ended writes: same bone on root and part end fans out to both */
         FormProperties properties = new FormProperties("properties");

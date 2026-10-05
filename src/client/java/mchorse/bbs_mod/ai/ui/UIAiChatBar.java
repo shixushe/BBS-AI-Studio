@@ -340,7 +340,46 @@ public class UIAiChatBar extends UIElement
 
             if (bound > 0)
             {
-                system += "\n\n本模型可用骨骼（pose 的键名，每拍全部给出，共 " + bound + " 根）：" + boneList;
+                system += "\n\n本模型主要骨骼（pose 的键名，每拍全部给出，共 " + bound + " 根）：" + boneList;
+            }
+
+            /* 深度适配：其余可直接驱动的实际骨骼（跳过泛骨骼层，直呼其名） */
+            java.util.List<String> extras = new java.util.ArrayList<>();
+
+            for (String actual : resolvedNow.inventory)
+            {
+                boolean mapped = false;
+
+                for (String g : boneHints.keySet())
+                {
+                    var r = resolvedNow.resolved.get(g);
+
+                    if (r != null && r.actual.equals(actual))
+                    {
+                        mapped = true;
+
+                        break;
+                    }
+                }
+
+                if (!mapped
+                    && !actual.contains("controller")
+                    && !actual.contains("pole")
+                    && !actual.contains("_IK")
+                    && !actual.contains("_FK")
+                    && !actual.contains("Move_IK")
+                    && !actual.equals("anchor")
+                    && !actual.matches("\\d+"))
+                {
+                    extras.add(actual);
+                }
+            }
+
+            if (!extras.isEmpty())
+            {
+                system += "\n其余可直接驱动的骨骼（作者姿势也用这些名字，如 low_body、上眼皮）: "
+                    + String.join("、", extras)
+                    + "。IK 控制器/极向量骨骼（controller_*、pole_*）留给模型内部程序，不要直接驱动。";
             }
         }
         catch (Exception ignored)
@@ -385,6 +424,71 @@ public class UIAiChatBar extends UIElement
         system += "\n\n灯光：fx 数组 {\"tick\":T,\"kind\":\"lighting\",\"value\":<亮度倍率,默认1,打击瞬间可用2~3>,\"duration\":<回落 tick 数>}——会在该 tick 打亮并在 duration 后回到 1。"
             + (caps.ik ? "\nIK: 场景已有 " + caps.ikChains + " 条约束链（手动配置，动画无需请求）。" : "")
             + (caps.numericChannels > 0 ? "\n曲线打磨：生成后可用「打磨」模式对 " + caps.numericChannels + " 条数值通道做缓动/回弹处理。" : "");
+
+        /* 运镜 fx：入框时创建相机关键帧夹具 */
+        system += "\n\n运镜 fx（每个动作建议至少一个机位 + 一处打光）：fx 数组 "
+            + "{\"kind\":\"camera\",\"id\":\"orbit|static|dolly\",\"tick\":<起始>,\"duration\":<持续>,\"value\":<距离格数,默认5>}——"
+            + "orbit=环绕演员一周，static=3/4 角固定机位，dolly=缓慢推近。duration 缺省 40 tick。";
+
+        /* 修改关键帧：已有动作时附上当前键摘要，让模型学会改而不是重造 */
+        try
+        {
+            Replay currentReplay = this.panel.replayEditor == null ? null : this.panel.replayEditor.getReplay();
+
+            if (currentReplay != null)
+            {
+                mchorse.bbs_mod.utils.keyframes.KeyframeChannel<mchorse.bbs_mod.utils.pose.Pose> poseTrack =
+                    currentReplay.properties.get(
+                        mchorse.bbs_mod.film.replays.tracks.TrackId.property("",
+                            mchorse.bbs_mod.film.replays.FormProperties.POSE_PROPERTY));
+
+                if (poseTrack != null && !poseTrack.getKeyframes().isEmpty())
+                {
+                    StringBuilder keys = new StringBuilder();
+                    int shown = 0;
+
+                    for (mchorse.bbs_mod.utils.keyframes.Keyframe<mchorse.bbs_mod.utils.pose.Pose> kf : poseTrack.getKeyframes())
+                    {
+                        if (shown++ >= 16)
+                        {
+                            break;
+                        }
+
+                        mchorse.bbs_mod.utils.pose.Pose p = kf.getValue();
+
+                        {
+                            keys.append("tick ").append((int) kf.getTick()).append(": ");
+
+                            int c = 0;
+
+                            for (var t : p.transforms.entrySet())
+                            {
+                                if (c++ > 0)
+                                {
+                                    keys.append(", ");
+                                }
+
+                                keys.append(t.getKey()).append("=")
+                                    .append(String.format("%.0f,%.0f,%.0f",
+                                        Math.toDegrees(t.getValue().rotate.x),
+                                        Math.toDegrees(t.getValue().rotate.y),
+                                        Math.toDegrees(t.getValue().rotate.z)));
+                            }
+
+                            keys.append("\n");
+                        }
+                    }
+
+                    if (keys.length() > 0)
+                    {
+                        system += "\n\n【当前关键帧】（用户要求修改/调整动作时参考）：\n" + keys
+                            + "修改要求：输出完整修改后的 v2 计划——未提及的拍子保持 tick 与数值原样，只改用户指出的骨骼/区间；改完仍是整条计划（系统会自动替换旧关键帧）。";
+                    }
+                }
+            }
+        }
+        catch (Exception ignored)
+        {}
 
         AiChatRequest request = new AiChatRequest(system, script);
 
@@ -1110,9 +1214,24 @@ public class UIAiChatBar extends UIElement
 
         AiFilmBridge.broadcast(diff);
 
-        /* 结构性 fx：预览不动场景，入框时创建特效回放（粒子/原版粒子/拖尾） */
+        /* 结构性 fx：预览不动场景，入框时创建特效回放（粒子/原版粒子/拖尾/相机） */
         for (AnimationPlan.Fx fx : pendingFx)
         {
+            /* 相机 fx：不建回放，直接在 film.camera 里建关键帧夹具 */
+            if (fx.kind.equals("camera"))
+            {
+                try
+                {
+                    this.createCameraClip(fx);
+                }
+                catch (Exception e)
+                {
+                    this.history.log(AiChatMessage.Role.ERROR, "运镜创建失败：" + e.getMessage());
+                }
+
+                continue;
+            }
+
             if (fx.id.isEmpty())
             {
                 continue;
@@ -1206,6 +1325,104 @@ public class UIAiChatBar extends UIElement
         }
 
         this.history.refresh();
+    }
+
+    /**
+     * 运镜 fx：在 film.camera 里创建关键帧夹具（导演机位）。
+     * orbit=环绕演员一周，static=3/4 角固定机位，dolly=缓慢推近；
+     * 机位基点取演员在该 tick 的世界位置与朝向。
+     */
+    private void createCameraClip(AnimationPlan.Fx fx)
+    {
+        Replay actor = this.panel.replayEditor == null ? null : this.panel.replayEditor.getReplay();
+
+        if (actor == null || this.panel.getData() == null)
+        {
+            return;
+        }
+
+        float at = Math.max(0F, fx.tick);
+        double ax = this.replayActorX(at);
+        double ay = this.replayActorY(at) + 1.2D;
+        double az = this.replayActorZ(at);
+        double yaw = this.currentReplayDouble(actor.keyframes.yaw, at);
+
+        double dist = fx.value > 0.1F ? fx.value : 5D;
+        int duration = fx.duration > 0 ? fx.duration : 40;
+
+        var clip = new mchorse.bbs_mod.camera.clips.overwrite.KeyframeClip();
+
+        clip.title.set("AI " + fx.id);
+        clip.tick.set(Math.max(0, (int) at));
+        clip.duration.set(duration);
+
+        double dirX = -Math.sin(Math.toRadians(yaw));
+        double dirZ = Math.cos(Math.toRadians(yaw));
+
+        /* 站到相机位后看向演员的 yaw */
+        java.util.function.BiConsumer<Double, double[]> place = (t, cam) ->
+        {
+            clip.x.insert(t.floatValue(), cam[0]);
+            clip.y.insert(t.floatValue(), cam[1]);
+            clip.z.insert(t.floatValue(), cam[2]);
+
+            double dx = ax - cam[0];
+            double dz = az - cam[2];
+
+            clip.yaw.insert(t.floatValue(), Math.toDegrees(Math.atan2(-dx, dz)));
+            clip.pitch.insert(t.floatValue(), -8D);
+            clip.fov.insert(t.floatValue(), 65D);
+        };
+
+        switch (fx.id)
+        {
+            case "orbit" ->
+            {
+                int steps = 8;
+
+                for (int i = 0; i <= steps; i++)
+                {
+                    double a = 2 * Math.PI * i / steps;
+
+                    place.accept((double) duration * i / steps, new double[] {
+                        ax + Math.sin(a) * dist,
+                        ay,
+                        az + Math.cos(a) * dist
+                    });
+                }
+            }
+            case "dolly" ->
+            {
+                /* 从正前方 dist 推近到 45% */
+                place.accept(0D, new double[] {ax + dirX * dist, ay, az + dirZ * dist});
+                place.accept((double) duration, new double[] {ax + dirX * dist * 0.45D, ay + 0.2D, az + dirZ * dist * 0.45D});
+            }
+            default ->
+            {
+                /* static：3/4 角固定机位 */
+                double side = dist * 0.7D;
+
+                place.accept(0D, new double[] {
+                    ax + dirX * dist + dirZ * side,
+                    ay + 0.4D,
+                    az + dirZ * dist - dirX * side
+                });
+            }
+        }
+
+        /* 键间平滑 */
+        for (var channel : clip.channels)
+        {
+            for (var keyframe : channel.getKeyframes())
+            {
+                keyframe.getInterpolation().setInterp(mchorse.bbs_mod.utils.interps.Interpolations.CUBIC_INOUT);
+            }
+        }
+
+        this.panel.getData().camera.addClip(clip);
+
+        this.history.log(AiChatMessage.Role.SYSTEM,
+            "运镜已创建：" + fx.id + " @" + fx.tick + "（时长 " + duration + " tick，距离 " + String.format("%.1f", dist) + " 格，可在相机轨调整）");
     }
 
     /** 删掉上次 AI 入框创建的特效回放（category=ai），返回删除数 */

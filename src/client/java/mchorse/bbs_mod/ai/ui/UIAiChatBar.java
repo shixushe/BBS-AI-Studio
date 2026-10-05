@@ -343,7 +343,9 @@ public class UIAiChatBar extends UIElement
                 system += "\n\n本模型主要骨骼（pose 的键名，每拍全部给出，共 " + bound + " 根）：" + boneList;
             }
 
-            /* 深度适配：其余可直接驱动的实际骨骼（跳过泛骨骼层，直呼其名） */
+            /* 深度适配：其余可直接驱动的实际骨骼（跳过泛骨骼层，直呼其名）；
+             * 物理骨由物理系统驱动（二级运动），不列入可驱动清单 */
+            java.util.Set<String> physicsBones = mchorse.bbs_mod.ai.AiSkillLibrary.physicsBones(modelForm.model.get());
             java.util.List<String> extras = new java.util.ArrayList<>();
 
             for (String actual : resolvedNow.inventory)
@@ -369,6 +371,7 @@ public class UIAiChatBar extends UIElement
                     && !actual.contains("_FK")
                     && !actual.contains("Move_IK")
                     && !actual.equals("anchor")
+                    && !physicsBones.contains(actual)
                     && !actual.matches("\\d+"))
                 {
                     extras.add(actual);
@@ -380,6 +383,14 @@ public class UIAiChatBar extends UIElement
                 system += "\n其余可直接驱动的骨骼（作者姿势也用这些名字，如 low_body、上眼皮）: "
                     + String.join("、", extras)
                     + "。IK 控制器/极向量骨骼（controller_*、pole_*）留给模型内部程序，不要直接驱动。";
+            }
+
+            /* IK 接地：模型自带腿部 IK 链时告知接地策略 */
+            String ikNote = mchorse.bbs_mod.ai.AiSkillLibrary.ikSummary(modelForm.model.get());
+
+            if (!ikNote.isEmpty())
+            {
+                system += "\n\n" + ikNote;
             }
         }
         catch (Exception ignored)
@@ -482,7 +493,8 @@ public class UIAiChatBar extends UIElement
                     if (keys.length() > 0)
                     {
                         system += "\n\n【当前关键帧】（用户要求修改/调整动作时参考）：\n" + keys
-                            + "修改要求：输出完整修改后的 v2 计划——未提及的拍子保持 tick 与数值原样，只改用户指出的骨骼/区间；改完仍是整条计划（系统会自动替换旧关键帧）。";
+                            + "修改要求：输出完整修改后的 v2 计划——未提及的拍子保持 tick 与数值原样，只改用户指出的骨骼/区间；改完仍是整条计划（系统会自动替换旧关键帧）。"
+                            + "分层编辑：骨骼分三组——上半身(body/torso/torso_lower/左右臂/左右肘)、下半身(左右腿/左右膝)、头部组(head/headwear/眼睛/眉毛)；只动用户指定的组，其余组数值逐拍原样保留。";
                     }
                 }
             }
@@ -609,6 +621,37 @@ public class UIAiChatBar extends UIElement
                 mchorse.bbs_mod.ui.framework.elements.overlay.UIOverlay.addOverlay(context, ask, 280, 0.7F);
 
                 return;
+            }
+
+            /* 物理骨保护：物理系统驱动的骨骼（发辫/垂饰等）由物理叠二级运动，
+             * AI 关键帧不得与之打架——从计划里剥掉这些键 */
+            java.util.Set<String> physicsBones = mchorse.bbs_mod.ai.AiSkillLibrary.physicsBones(modelForm.model.get());
+
+            if (!physicsBones.isEmpty())
+            {
+                int stripped = 0;
+
+                for (AnimationPlan.Beat beat : generated.beats)
+                {
+                    if (beat.poseObject == null)
+                    {
+                        continue;
+                    }
+
+                    for (String bone : new java.util.ArrayList<>(beat.poseObject.keys()))
+                    {
+                        if (physicsBones.contains(bone))
+                        {
+                            beat.poseObject.remove(bone);
+                            stripped++;
+                        }
+                    }
+                }
+
+                if (stripped > 0)
+                {
+                    thinking.addProcess("物理保护：剥除物理骨键 " + stripped + " 个（" + String.join("、", physicsBones) + " 由物理系统驱动）");
+                }
             }
 
             this.previewGenerated(generated, bones, replay, boneEnds, thinking);

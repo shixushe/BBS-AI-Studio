@@ -30,6 +30,12 @@ public class AiSkillLibrary
     /** poses.json 读取候选位置（模型 id 相对 config 资产根）。 */
     private static File posesFile(String modelId)
     {
+        return modelFile(modelId, "poses.json");
+    }
+
+    /** 模型目录下任意数据文件的路径解析（poses/physics/ik 预设共用） */
+    public static File modelFile(String modelId, String fileName)
+    {
         if (modelId == null || modelId.isEmpty())
         {
             return null;
@@ -54,7 +60,7 @@ public class AiSkillLibrary
 
         for (String base : bases)
         {
-            File file = new File(base, safe + "/poses.json");
+            File file = new File(base, safe + "/" + fileName);
 
             if (file.isFile())
             {
@@ -63,6 +69,93 @@ public class AiSkillLibrary
         }
 
         return null;
+    }
+
+    /**
+     * 模型的物理骨链骨骼名（physics_presets.json 的“物理骨链 bones”键）——
+     * 这些骨骼由物理系统驱动（二级运动），AI 不得写关键帧去打架。
+     */
+    public static synchronized java.util.Set<String> physicsBones(String modelId)
+    {
+        java.util.Set<String> out = new java.util.LinkedHashSet<>();
+        java.io.File file = modelFile(modelId, "physics_presets.json");
+
+        if (file == null || !file.isFile())
+        {
+            return out;
+        }
+
+        try
+        {
+            mchorse.bbs_mod.data.types.MapType map = mchorse.bbs_mod.data.DataToString.mapFromString(
+                java.nio.file.Files.readString(file.toPath()));
+
+            if (map == null)
+            {
+                return out;
+            }
+
+            for (String group : map.keys())
+            {
+                mchorse.bbs_mod.data.types.MapType bones = map.getMap(group).getMap("bones");
+
+                for (String bone : bones.keys())
+                {
+                    out.add(bone);
+                }
+            }
+        }
+        catch (Exception ignored)
+        {}
+
+        return out;
+    }
+
+    /**
+     * 模型的 IK 链摘要（ik_presets.json）：末端骨骼 → 链长，供提示词告知
+     * 模型“接地由 IK 负责”并指导支撑腿伸直。
+     */
+    public static synchronized String ikSummary(String modelId)
+    {
+        java.io.File file = modelFile(modelId, "ik_presets.json");
+
+        if (file == null || !file.isFile())
+        {
+            return "";
+        }
+
+        try
+        {
+            mchorse.bbs_mod.data.types.MapType map = mchorse.bbs_mod.data.DataToString.mapFromString(
+                java.nio.file.Files.readString(file.toPath()));
+
+            if (map == null)
+            {
+                return "";
+            }
+
+            java.util.Set<String> legs = new java.util.LinkedHashSet<>();
+
+            for (String preset : map.keys())
+            {
+                mchorse.bbs_mod.data.types.MapType chains = map.getMap(preset);
+
+                for (String end : chains.keys())
+                {
+                    if (end.contains("leg"))
+                    {
+                        legs.add(end);
+                    }
+                }
+            }
+
+            return legs.isEmpty() ? "" : "该模型自带腿部 IK 链（" + String.join("、", legs)
+                + "）——用户启用后脚部会锁定地面；请让触地拍的支撑腿伸直（膝 ≤10°）、摆动腿屈膝前摆（膝 15~25°）。";
+        }
+        catch (Exception ignored)
+        {}
+
+        return "";
     }
 
     /**

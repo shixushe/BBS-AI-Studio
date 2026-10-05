@@ -466,6 +466,36 @@ public class PoseSolver
                         }
                     }
 
+                    /* IK 接地辅助：触地腿（X 负=前摆触地）膝盖伸直让脚“踩住”，
+                     * 摆动腿屈膝前摆——滑步/悬空的直接来源是反着来 */
+                    for (String side : new String[] {"left", "right"})
+                    {
+                        float[] leg = beatVals.get(actualOf(bones, side + "_leg"));
+                        float[] knee = beatVals.get(actualOf(bones, side + "_knee"));
+
+                        if (leg == null || knee == null)
+                        {
+                            continue;
+                        }
+
+                        if (leg[0] < -3F)
+                        {
+                            /* 触地：膝盖过弯压到 8°（伸直支撑） */
+                            if (knee[0] > 10F)
+                            {
+                                knee[0] = 8F;
+                            }
+                        }
+                        else if (Math.abs(leg[0]) >= 8F)
+                        {
+                            /* 摆动：膝盖不足则屈到 15° */
+                            if (knee[0] < 12F)
+                            {
+                                knee[0] = 15F;
+                            }
+                        }
+                    }
+
                     spanIndex++;
                 }
 

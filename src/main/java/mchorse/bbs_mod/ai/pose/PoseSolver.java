@@ -890,10 +890,79 @@ public class PoseSolver
                 }
             }
 
+            /* 冗余键抽稀：连续三键值全等（carry-forward 的 hold 拍）删中间 */
+            dedupeKeys(keys);
+
+            /* 自动平滑：固定 cubic 段升级为原生 auto_clamped（曲线插件
+             * “自动钳制”的 Blender 自动柄移植）——每根骨骼的切线由邻段
+             * 斜率自动生成，极限处自动压平不过冲，无缝衔接用户手动微调 */
+            for (EditPatch.KeyWrite key : keys)
+            {
+                if ("cubic_inout".equals(key.interpolation) || "cubic_out".equals(key.interpolation))
+                {
+                    key.interpolation = "auto_clamped";
+                }
+            }
+
             writes.add(write);
         }
 
         return writes;
+    }
+
+    /** 三连等值键去重：中间键与两侧的整只 Pose 逐骨骼全等（±容差）时删除 */
+    private static void dedupeKeys(List<EditPatch.KeyWrite> keys)
+    {
+        for (int i = 1; i < keys.size() - 1; )
+        {
+            if (samePose(keys.get(i - 1).fullValue, keys.get(i).fullValue)
+                && samePose(keys.get(i).fullValue, keys.get(i + 1).fullValue))
+            {
+                keys.remove(i);
+            }
+            else
+            {
+                i++;
+            }
+        }
+    }
+
+    /** 两键的整只 Pose 是否逐骨骼全等（旋转 0.6°、缩放/平移 0.001 容差） */
+    private static boolean samePose(Object a, Object b)
+    {
+        if (!(a instanceof mchorse.bbs_mod.utils.pose.Pose pa)
+            || !(b instanceof mchorse.bbs_mod.utils.pose.Pose pb)
+            || pa.transforms.size() != pb.transforms.size())
+        {
+            return false;
+        }
+
+        for (Map.Entry<String, PoseTransform> entry : pa.transforms.entrySet())
+        {
+            PoseTransform tb = pb.transforms.get(entry.getKey());
+
+            if (tb == null)
+            {
+                return false;
+            }
+
+            PoseTransform ta = entry.getValue();
+
+            if (Math.abs(ta.rotate.x - tb.rotate.x) > 0.01F
+                || Math.abs(ta.rotate.y - tb.rotate.y) > 0.01F
+                || Math.abs(ta.rotate.z - tb.rotate.z) > 0.01F
+                || Math.abs(ta.scale.x - tb.scale.x) > 0.001F
+                || Math.abs(ta.scale.y - tb.scale.y) > 0.001F
+                || Math.abs(ta.scale.z - tb.scale.z) > 0.001F
+                || Math.abs(ta.translate.x - tb.translate.x) > 0.001F
+                || Math.abs(ta.translate.y - tb.translate.y) > 0.001F
+                || Math.abs(ta.translate.z - tb.translate.z) > 0.001F)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

@@ -651,6 +651,7 @@ public class UIAiChatBar extends UIElement
                 if (stripped > 0)
                 {
                     thinking.addProcess("物理保护：剥除物理骨键 " + stripped + " 个（" + String.join("、", physicsBones) + " 由物理系统驱动）");
+                    thinking.addProcess("二级运动提示：程序化动画标签页里把这些骨骼的动画强度调到 0.3~0.5——既跟随基础动作又有物理延迟摆动；勾选“烘焙到关键帧”可固化导出");
                 }
             }
 
@@ -785,6 +786,7 @@ public class UIAiChatBar extends UIElement
                     int v2Moves = 0;
                     double v2Travel = 0D;
                     int v2WallHits = 0;
+                    double prevVert = 0D;
 
                     for (AnimationPlan.Beat beat : generated.beats)
                     {
@@ -794,6 +796,7 @@ public class UIAiChatBar extends UIElement
                         }
 
                         double fwd = beat.move[0];
+                        double vert = beat.move.length >= 2 ? beat.move[1] : 0F;
                         double lat = beat.move.length >= 3 ? beat.move[2] : 0F;
 
                         /* 局部轴 → 键空间：前进沿面朝方向，左移为角色的左侧 */
@@ -803,9 +806,22 @@ public class UIAiChatBar extends UIElement
                         double segKz = tgtKz - prevKz;
                         double segLen = Math.sqrt(segKx * segKx + segKz * segKz);
 
-                        if (segLen < 0.001D)
+                        if (segLen < 0.001D && Math.abs(vert - prevVert) < 0.001D)
                         {
                             prevTick = beat.tick;
+
+                            continue;
+                        }
+
+                        /* 纯垂直拍（原地跳）：不产生水平段，但更新垂直链并出点 */
+                        if (segLen < 0.001D)
+                        {
+                            path.add(new float[] {segStartTick, (float) prevKx, (float) prevKz, (float) prevVert});
+                            path.add(new float[] {beat.tick, (float) prevKx, (float) prevKz, (float) vert});
+
+                            prevVert = vert;
+                            prevTick = beat.tick;
+                            segStartTick = beat.tick;
 
                             continue;
                         }
@@ -832,10 +848,11 @@ public class UIAiChatBar extends UIElement
                         v2Travel += allowed;
                         v2Moves++;
 
-                        /* 段起点键（恒速段的开始） */
-                        path.add(new float[] {segStartTick, (float) (prevKx - segKx * f), (float) (prevKz - segKz * f), 0F});
-                        path.add(new float[] {beat.tick, (float) prevKx, (float) prevKz, 1F});
+                        /* 段起点键（恒速段的开始）+ 各自的累计垂直量 */
+                        path.add(new float[] {segStartTick, (float) (prevKx - segKx * f), (float) (prevKz - segKz * f), (float) prevVert});
+                        path.add(new float[] {beat.tick, (float) prevKx, (float) prevKz, (float) vert});
 
+                        prevVert = vert;
                         segStartTick = beat.tick;
                         prevTick = beat.tick;
                     }
@@ -851,8 +868,22 @@ public class UIAiChatBar extends UIElement
                             this.writeLinearMove(writes, replay.keyframes.z, "z", (int) a[0], (int) b[0], a[2], b[2]);
                         }
 
-                        /* 贴地：移动跨度内每个路径点一个地表跟随键（无起伏） */
-                        if (this.lastSnap)
+                        /* 贴地 + 垂直弹道：移动跨度内每个路径点一个 y 键——
+                         * 地表跟随（无起伏）叠加 move[1] 累计垂直位移（跳跃
+                         * 弧线：上抛/下落的弹道由插值曲线呈现） */
+                        boolean anyVertical = false;
+
+                        for (AnimationPlan.Beat b : generated.beats)
+                        {
+                            if (b.move != null && b.move.length >= 2 && Math.abs(b.move[1]) > 0.001D)
+                            {
+                                anyVertical = true;
+
+                                break;
+                            }
+                        }
+
+                        if (this.lastSnap || anyVertical)
                         {
                             FrameCommitter.ChannelWrite v2Y = new FrameCommitter.ChannelWrite("y", yChannel, 0F);
 
@@ -862,14 +893,29 @@ public class UIAiChatBar extends UIElement
                             {
                                 double wkx = wx + (pt[1] - x0);
                                 double wkz = wz + (pt[2] - z0);
+                                double yVal;
 
-                                prevGround = this.stepGround(this.groundYAt(wkx, wkz, wy), prevGround);
+                                if (this.lastSnap)
+                                {
+                                    prevGround = this.stepGround(this.groundYAt(wkx, wkz, wy), prevGround);
+                                    yVal = prevGround + anchorDY;
+                                }
+                                else
+                                {
+                                    yVal = baseY;
+                                }
+
+                                /* 该路径点的累计垂直位移（跳跃/上升/下落） */
+                                if (pt.length >= 4)
+                                {
+                                    yVal += pt[3];
+                                }
 
                                 EditPatch.KeyWrite yKey = new EditPatch.KeyWrite();
 
                                 yKey.tick = pt[0];
-                                yKey.value = (float) (prevGround + anchorDY);
-                                yKey.interpolation = "cubic_inout";
+                                yKey.value = (float) yVal;
+                                yKey.interpolation = "auto_clamped";
                                 v2Y.keys.add(yKey);
                             }
 

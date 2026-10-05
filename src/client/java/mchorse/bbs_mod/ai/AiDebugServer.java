@@ -532,6 +532,7 @@ public class AiDebugServer
                                 .append(" keys=").append(write.keys.size())
                                 .append(" channelNull=").append(write.channel == null)
                                 .append(" channelKeyCount=").append(keys)
+                                .append(" chPath=").append(write.channel == null ? "-" : write.channel.getPath())
                                 .append(" poseCh=").append(write.poseChannel).append("]");
                         }
 

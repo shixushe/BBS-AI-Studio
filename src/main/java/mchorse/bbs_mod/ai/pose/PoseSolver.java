@@ -35,6 +35,9 @@ public class PoseSolver
     /** One solved extreme pose: bone channel -> rotation offsets, in degrees. */
     public static class KeyPose
     {
+        /** v2 直写拍：与相邻直写拍之间不做错帧中点（纯 S 曲线段更顺滑） */
+        public boolean direct;
+
         public int tick;
         public String phase;
         public String pose;
@@ -85,6 +88,23 @@ public class PoseSolver
         /** Library entry: rotation [0..2], optional scale [3..5], optional
          * translate [6..8] (作者姿势的 t 分量——蹲下/站姿等靠平移造型). */
         public float[] values = new float[] {0F, 0F, 0F};
+    }
+
+    /** 步行保底：骨骼值幅度不足 threshold 时设为 target（度）——只兜底不覆盖 */
+    private static void ensure(java.util.Map<String, float[]> vals, String generic, int axis, float threshold, float target)
+    {
+        float[] v = vals.get(generic);
+
+        if (v == null)
+        {
+            v = new float[] {0F, 0F, 0F, 1F, 1F, 1F, 0F, 0F, 0F};
+            vals.put(generic, v);
+        }
+
+        if (Math.abs(v[axis]) < threshold)
+        {
+            v[axis] = target;
+        }
     }
 
     /** 读骨骼值向量（r/t/s）：缺失或类型不对时用 fallback 填满 3 位 */
@@ -185,9 +205,24 @@ public class PoseSolver
 
         allGenerics.addAll(PoseLibrary.OPTIONAL_BONES);
 
-        /* v2 连续性载体：某拍没提的骨骼沿用上一拍的值——关节一旦动起来
-         * 就不会瞬回绑定姿势，"每一步都运用每个关节"由此保证 */
-        java.util.Map<String, BoneChannel> carried = new java.util.HashMap<>();
+        /* v2 连续性载体（度数域 {r0,r1,r2, s0,s1,s2, t0,t1,t2}）：某拍没提
+         * 的骨骼沿用上一拍的值——关节一旦动起来就不会瞬回绑定姿势 */
+        java.util.Map<String, float[]> carried = new java.util.HashMap<>();
+
+        /* v2 位移跨度：beat.move 出现的首尾 tick——生物力学保底层的作用域 */
+        int firstMoveTick = Integer.MAX_VALUE;
+        int lastMoveTick = Integer.MIN_VALUE;
+
+        for (AnimationPlan.Beat b : plan.beats)
+        {
+            if (b.move != null)
+            {
+                firstMoveTick = Math.min(firstMoveTick, b.tick);
+                lastMoveTick = Math.max(lastMoveTick, b.tick);
+            }
+        }
+
+        boolean hasMove = firstMoveTick != Integer.MAX_VALUE;
 
         /* 步态展开：相邻走路拍之间插入 walk_pass 过渡帧（passing 位），
          * 并把走路的线性插值升级为 S 曲线——只有左右两个极端姿势来回
@@ -224,6 +259,9 @@ public class PoseSolver
          * 逐骨骼微变），套用归套用，不做复读机 */
         java.util.Map<String, Integer> skillSeen = new java.util.HashMap<>();
 
+        /* v2 位移跨度内的步数计数（步行保底层的相位） */
+        int spanIndex = 0;
+
         for (AnimationPlan.Beat beat : expanded)
         {
             /* ══ v2 直写骨骼值：LLM 以动画师身份逐关节创作，不走姿势名库 ══ */
@@ -235,6 +273,12 @@ public class PoseSolver
                 v2.phase = beat.phase;
                 v2.pose = beat.pose;
                 v2.intent = beat.intents == null || beat.intents.isEmpty() ? "ease_in_out" : beat.intents.get(0).name().toLowerCase();
+
+                /* 曲线强制：LLM 给 linear/hold 也升为 S 曲线——生硬感的直接来源 */
+                if ("linear".equals(v2.intent) || "hold".equals(v2.intent))
+                {
+                    v2.intent = "ease_in_out";
+                }
 
                 /* @作者姿势仍可混用（模型自带的成品姿势） */
                 if (beat.pose.startsWith("@"))
@@ -272,8 +316,13 @@ public class PoseSolver
                             };
                             v2.channels.add(channel);
 
-                            /* 作者姿势也进载体：之后的拍子延续这套造型 */
-                            carried.put(entry.getKey(), channel);
+                            /* 作者姿势也进载体（转回度数）：之后的拍子延续这套造型 */
+                            carried.put(entry.getKey(), new float[] {
+                                (float) Math.toDegrees(channel.x), (float) Math.toDegrees(channel.y),
+                                (float) Math.toDegrees(channel.z),
+                                entry.getValue().scale.x, entry.getValue().scale.y, entry.getValue().scale.z,
+                                entry.getValue().translate.x, entry.getValue().translate.y, entry.getValue().translate.z
+                            });
                         }
 
                         poses.add(v2);
@@ -282,13 +331,14 @@ public class PoseSolver
                     }
                 }
 
-                /* 直写骨骼：r 度→弧度（吃幅度），t/s 原样；没提到的骨骼
-                 * 沿用上一拍——关节不瞬回绑定姿势 */
+                v2.direct = true;
+
+                /* 直写骨骼（度数域）：本拍给值或沿用上一拍——关节不瞬回绑定姿势 */
+                java.util.Map<String, float[]> beatVals = new java.util.HashMap<>();
+
                 for (String generic : allGenerics)
                 {
-                    BoneNameResolver.Resolution res = bones.resolved.get(generic);
-
-                    if (res == null)
+                    if (!bones.resolved.containsKey(generic))
                     {
                         continue;
                     }
@@ -298,43 +348,60 @@ public class PoseSolver
                     if (BaseType.isMap(boneValue))
                     {
                         MapType bm = boneValue.asMap();
-                        BoneChannel channel = new BoneChannel();
-
-                        channel.bone = res.actual;
-
                         float[] r = readVec3(bm, "r", 0F);
+                        float[] sc = bm.has("s") ? readVec3(bm, "s", 1F) : new float[] {1F, 1F, 1F};
+                        float[] t = bm.has("t") ? readVec3(bm, "t", 0F) : new float[] {0F, 0F, 0F};
 
-                        channel.x = (float) Math.toRadians(r[0]) * amplitude;
-                        channel.y = (float) Math.toRadians(r[1]) * amplitude;
-                        channel.z = (float) Math.toRadians(r[2]) * amplitude;
-
-                        float[] s = bm.has("s") ? readVec3(bm, "s", 1F) : new float[] {1F, 1F, 1F};
-                        float[] t = bm.has("t") ? readVec3(bm, "t", 0F) : null;
-
-                        if (t != null)
-                        {
-                            channel.values = new float[] {channel.x, channel.y, channel.z, s[0], s[1], s[2], t[0], t[1], t[2]};
-                        }
-                        else
-                        {
-                            channel.values = new float[] {channel.x, channel.y, channel.z, s[0], s[1], s[2]};
-                        }
-
-                        carried.put(generic, channel);
-                        v2.channels.add(channel);
+                        beatVals.put(generic, new float[] {r[0], r[1], r[2], sc[0], sc[1], sc[2], t[0], t[1], t[2]});
                     }
                     else if (carried.containsKey(generic))
                     {
-                        BoneChannel prev = carried.get(generic);
-                        BoneChannel channel = new BoneChannel();
-
-                        channel.bone = prev.bone;
-                        channel.x = prev.x;
-                        channel.y = prev.y;
-                        channel.z = prev.z;
-                        channel.values = prev.values.clone();
-                        v2.channels.add(channel);
+                        beatVals.put(generic, carried.get(generic).clone());
                     }
+                }
+
+                /* 生物力学保底层：位移跨度内的拍保证步行关节最低幅度——
+                 * LLM 写得含蓄（骨盆 1°、漏骨盆）也不会再是"一块铁板"；
+                 * 模型写了更大值时完全尊重 */
+                if (hasMove && beat.tick >= firstMoveTick && beat.tick <= lastMoveTick)
+                {
+                    float g = (spanIndex % 2 == 0) ? 1F : -1F;
+
+                    ensure(beatVals, "left_leg", 0, 8F, 15F * g);
+                    ensure(beatVals, "right_leg", 0, 8F, -15F * g);
+                    ensure(beatVals, "left_knee", 0, 6F, 12F);
+                    ensure(beatVals, "right_knee", 0, 6F, 12F);
+                    ensure(beatVals, "left_arm", 0, 10F, -18F * g);
+                    ensure(beatVals, "right_arm", 0, 10F, 18F * g);
+                    ensure(beatVals, "left_elbow", 0, 4F, -10F);
+                    ensure(beatVals, "right_elbow", 0, 4F, -10F);
+                    ensure(beatVals, "torso_lower", 1, 3F, 6F * g);
+                    ensure(beatVals, "torso", 1, 2.5F, -4F * g);
+                    ensure(beatVals, "body", 0, 1.5F, 2.5F);
+
+                    spanIndex++;
+                }
+
+                for (String generic : allGenerics)
+                {
+                    float[] v = beatVals.get(generic);
+                    BoneNameResolver.Resolution res = bones.resolved.get(generic);
+
+                    if (v == null || res == null)
+                    {
+                        continue;
+                    }
+
+                    BoneChannel channel = new BoneChannel();
+
+                    channel.bone = res.actual;
+                    channel.x = (float) Math.toRadians(v[0]) * amplitude;
+                    channel.y = (float) Math.toRadians(v[1]) * amplitude;
+                    channel.z = (float) Math.toRadians(v[2]) * amplitude;
+                    channel.values = new float[] {channel.x, channel.y, channel.z, v[3], v[4], v[5], v[6], v[7], v[8]};
+
+                    carried.put(generic, v.clone());
+                    v2.channels.add(channel);
                 }
 
                 poses.add(v2);
@@ -527,7 +594,7 @@ public class PoseSolver
      * = smoothstep(0.5 - delayOf(bone))，clamp 后 lerp 旋转与缩放。某个骨骼
      * 只在一侧存在时保持原值（出现/消失不补间）。中点键继承后拍的到达意图。
      */
-    private static void bakeStagger(List<EditPatch.KeyWrite> keys)
+    private static void bakeStagger(List<EditPatch.KeyWrite> keys, List<KeyPose> poses)
     {
         if (keys.size() < 2)
         {
@@ -545,7 +612,12 @@ public class PoseSolver
             mchorse.bbs_mod.utils.pose.Pose a = prev.fullValue instanceof mchorse.bbs_mod.utils.pose.Pose pa ? pa : null;
             mchorse.bbs_mod.utils.pose.Pose b = next.fullValue instanceof mchorse.bbs_mod.utils.pose.Pose pb ? pb : null;
 
-            if (a != null && b != null && next.tick > prev.tick)
+            /* 连续直写段（走路等循环运动）不插错帧中点——纯 S 曲线段更顺滑；
+             * 注意只跳过中点生成，键本身必须保留 */
+            boolean directPair = poses != null && i - 1 < poses.size() && i < poses.size()
+                && poses.get(i - 1).direct && poses.get(i).direct;
+
+            if (!directPair && a != null && b != null && next.tick > prev.tick)
             {
                 float d = next.tick - prev.tick;
                 mchorse.bbs_mod.utils.pose.Pose mid = new mchorse.bbs_mod.utils.pose.Pose();
@@ -692,7 +764,7 @@ public class PoseSolver
             /* 跟随/错帧烘焙（12 原则的 Overlapping Action）：每个拍间段插入一个
              * 中点键，各骨骼的到达进度按组别延迟（腿/躯干先行，手臂跟随，
              * 头再滞后）——L4 写出的就是带跟随感的成品，而非同拍同速的僵硬插值 */
-            bakeStagger(write.keys);
+            bakeStagger(write.keys, poses);
 
             /* 到达意图落前一个键（与逐骨骼路径同一语义） */
             List<EditPatch.KeyWrite> keys = write.keys;

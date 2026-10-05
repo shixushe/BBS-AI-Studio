@@ -351,10 +351,55 @@ public class PoseSolverTest
         PoseSolver.BoneChannel bod = v2fxPoses.get(0).channels.stream()
             .filter(c -> c.bone.equals("body")).findFirst().orElse(null);
 
-        check(eye != null && eye.values.length == 6 && Math.abs(eye.values[4] - 0.12F) < 0.0001F,
+        check(eye != null && eye.values.length == 9 && Math.abs(eye.values[4] - 0.12F) < 0.0001F,
             "v2 blink scale passes through");
         check(bod != null && bod.values.length == 9 && Math.abs(bod.values[7] - -0.04F) < 0.0001F,
             "v2 body translate passes through");
+
+        /* 生物力学保底层：移动跨度内弱值/缺值兜底到最低幅度（不再铁板） */
+        AnimationPlan v2walk;
+
+        try
+        {
+            v2walk = AnimationPlan.parse("""
+                {
+                  "version": 2, "fps": 20, "total_ticks": 16,
+                  "beats": [
+                    { "index": 0, "tick": 0, "phase": "hold", "move": [0.5, 0, 0],
+                      "pose": { "left_arm": {"r": [3, 0, 0]} } },
+                    { "index": 1, "tick": 8, "phase": "hold", "move": [1.0, 0, 0],
+                      "pose": {} }
+                  ]
+                }
+                """);
+        }
+        catch (AiException e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        List<PoseSolver.KeyPose> walkPoses = PoseSolver.solve(v2walk, bones);
+
+        PoseSolver.BoneChannel arm0 = walkPoses.get(0).channels.stream()
+            .filter(c -> c.bone.equals("left_arm")).findFirst().orElse(null);
+
+        check(arm0 != null && Math.abs(arm0.x - (float) Math.toRadians(-18)) < 0.0001F,
+            "weak authored arm swing is floored to the biomechanics minimum");
+
+        PoseSolver.BoneChannel floorLeg1 = walkPoses.get(1).channels.stream()
+            .filter(c -> c.bone.equals("left_leg")).findFirst().orElse(null);
+
+        check(floorLeg1 != null && Math.abs(Math.abs(floorLeg1.x) - (float) Math.toRadians(15)) < 0.0001F,
+            "floor-created leg swing carries forward (continuity beats parity)");
+
+        PoseSolver.BoneChannel arm1 = walkPoses.get(1).channels.stream()
+            .filter(c -> c.bone.equals("left_arm")).findFirst().orElse(null);
+
+        check(arm1 != null && Math.abs(arm1.x - (float) Math.toRadians(-18)) < 0.0001F,
+            "floor respects existing authored amplitude on later beats");
+
+        /* v2 曲线强制：LLM 给 linear 也升为 S 曲线 */
+        equal("ease_in_out", walkPoses.get(0).intent, "v2 linear intent upgraded to S curve");
 
         /* Two-ended writes: same bone on root and part end fans out to both */
         FormProperties properties = new FormProperties("properties");

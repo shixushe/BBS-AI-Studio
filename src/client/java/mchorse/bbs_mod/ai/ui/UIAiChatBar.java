@@ -622,20 +622,22 @@ public class UIAiChatBar extends UIElement
                     ? Math.max(wy - 2D, Math.min(wy + 2D, this.groundYAt(wx, wz, wy)))
                     : wy;
 
-                /* ══ v2 直写模式：位移来自 LLM 的 beat.move 累计坐标，逐段
-                 * 碰壁截断 + 贴地链；不开贴地时走路完全不碰 y ══ */
+                /* ══ v2 直写模式：move 是角色局部轴 [前进, 垂直, 左移]（相对
+                 * 初始朝向的累计格数）——世界坐标换算后逐段碰壁截断；移动
+                 * 跨度内每个拍都写键（恒速连续，不走走停停）；贴地链跟随 */
                 if (generated.version >= mchorse.bbs_mod.ai.plan.AnimationPlan.VERSION_DIRECT)
                 {
+                    /* 路径点：tick → 键空间位置（局部轴换算 + 碰壁截断） */
+                    java.util.List<float[]> path = new java.util.ArrayList<>();
                     double prevKx = x0;
                     double prevKz = z0;
                     double prevWx = wx;
                     double prevWz = wz;
                     int prevTick = 0;
+                    int segStartTick = 0;
                     int v2Moves = 0;
                     double v2Travel = 0D;
                     int v2WallHits = 0;
-
-                    FrameCommitter.ChannelWrite v2Y = null;
 
                     for (AnimationPlan.Beat beat : generated.beats)
                     {
@@ -644,8 +646,12 @@ public class UIAiChatBar extends UIElement
                             continue;
                         }
 
-                        double tgtKx = x0 + beat.move[0];
-                        double tgtKz = z0 + beat.move[2];
+                        double fwd = beat.move[0];
+                        double lat = beat.move.length >= 3 ? beat.move[2] : 0F;
+
+                        /* 局部轴 → 键空间：前进沿面朝方向，左移为角色的左侧 */
+                        double tgtKx = x0 + fwd * dirX + lat * dirZ;
+                        double tgtKz = z0 + fwd * dirZ + lat * dirX;
                         double segKx = tgtKx - prevKx;
                         double segKz = tgtKz - prevKz;
                         double segLen = Math.sqrt(segKx * segKx + segKz * segKz);
@@ -657,8 +663,6 @@ public class UIAiChatBar extends UIElement
                             continue;
                         }
 
-                        /* 碰壁截断（世界空间方向与键空间一致）：起点被包裹
-                         * 时放弃检测，绝不误判 */
                         double allowed = segLen;
 
                         if (startFree)
@@ -672,8 +676,6 @@ public class UIAiChatBar extends UIElement
                             }
                         }
 
-                        double startKx = prevKx;
-                        double startKz = prevKz;
                         double f = allowed / segLen;
 
                         prevKx += segKx * f;
@@ -683,40 +685,57 @@ public class UIAiChatBar extends UIElement
                         v2Travel += allowed;
                         v2Moves++;
 
-                        /* 段两端线性键：从上一拍到这一拍匀速移动 */
-                        this.writeLinearMove(writes, replay.keyframes.x, "x", prevTick, beat.tick, startKx, prevKx);
-                        this.writeLinearMove(writes, replay.keyframes.z, "z", prevTick, beat.tick, startKz, prevKz);
+                        /* 段起点键（恒速段的开始） */
+                        path.add(new float[] {segStartTick, (float) (prevKx - segKx * f), (float) (prevKz - segKz * f), 0F});
+                        path.add(new float[] {beat.tick, (float) prevKx, (float) prevKz, 1F});
 
-                        /* 贴地：每个移动拍写一个地表跟随键（无起伏） */
-                        if (this.lastSnap)
-                        {
-                            if (v2Y == null)
-                            {
-                                v2Y = new FrameCommitter.ChannelWrite("y", yChannel, 0F);
-                                writes.add(v2Y);
-                            }
-
-                            prevGround = this.stepGround(this.groundYAt(prevWx, prevWz, wy), prevGround);
-
-                            EditPatch.KeyWrite yKey = new EditPatch.KeyWrite();
-
-                            yKey.tick = beat.tick;
-                            yKey.value = (float) (prevGround + anchorDY);
-                            yKey.interpolation = "cubic_inout";
-                            v2Y.keys.add(yKey);
-                        }
-
+                        segStartTick = beat.tick;
                         prevTick = beat.tick;
                     }
 
                     if (v2Moves > 0)
                     {
+                        for (int i = 0; i + 1 < path.size(); i += 2)
+                        {
+                            float[] a = path.get(i);
+                            float[] b = path.get(i + 1);
+
+                            this.writeLinearMove(writes, replay.keyframes.x, "x", (int) a[0], (int) b[0], a[1], b[1]);
+                            this.writeLinearMove(writes, replay.keyframes.z, "z", (int) a[0], (int) b[0], a[2], b[2]);
+                        }
+
+                        /* 贴地：移动跨度内每个路径点一个地表跟随键（无起伏） */
+                        if (this.lastSnap)
+                        {
+                            FrameCommitter.ChannelWrite v2Y = new FrameCommitter.ChannelWrite("y", yChannel, 0F);
+
+                            writes.add(v2Y);
+
+                            for (float[] pt : path)
+                            {
+                                double wkx = wx + (pt[1] - x0);
+                                double wkz = wz + (pt[2] - z0);
+
+                                prevGround = this.stepGround(this.groundYAt(wkx, wkz, wy), prevGround);
+
+                                EditPatch.KeyWrite yKey = new EditPatch.KeyWrite();
+
+                                yKey.tick = pt[0];
+                                yKey.value = (float) (prevGround + anchorDY);
+                                yKey.interpolation = "cubic_inout";
+                                v2Y.keys.add(yKey);
+                            }
+
+                            v2Y.keys.sort(java.util.Comparator.comparingDouble(k -> k.tick));
+                        }
+
                         thinking.addProcess("行走位移：" + v2Moves + " 段共 "
-                            + String.format("%.1f", v2Travel) + " 格（x/z 线性键"
+                            + String.format("%.1f", v2Travel) + " 格（沿角色朝向，恒速连续"
                             + (v2WallHits > 0 ? "，" + v2WallHits + " 段碰壁截断" : "")
                             + (this.lastSnap ? "，贴地跟随" : "") + "）");
                     }
                 }
+
 
                 if (firstWalk >= 0 && lastWalk > firstWalk)
                 {

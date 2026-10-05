@@ -6,6 +6,7 @@ import mchorse.bbs_mod.data.DataToString;
 import mchorse.bbs_mod.data.types.BaseType;
 import mchorse.bbs_mod.data.types.ListType;
 import mchorse.bbs_mod.data.types.MapType;
+import mchorse.bbs_mod.data.types.NumericType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,11 @@ import java.util.List;
 public class AnimationPlan
 {
     public static final int VERSION = 1;
+
+    /** v2：LLM 直接输出逐骨骼旋转/平移/缩放（动画师式创作），不再引用姿势名库 */
+    public static final int VERSION_DIRECT = 2;
+
+    public int version = VERSION;
 
     /** Phases of a walk-cycle-ish beat; the model may only use these labels. */
     public static final List<String> PHASES = List.of("contact", "down", "passing", "up", "anticipation", "hold", "follow_through");
@@ -63,6 +69,12 @@ public class AnimationPlan
         public String pose;
         public int spacing;
         public final List<PolishKind> intents = new ArrayList<>();
+
+        /** v2：直写骨骼值（键=泛骨骼名，值={r:[度],t:[格],s:[比]}），与 pose 字符串互斥 */
+        public MapType poseObject;
+
+        /** v2：该拍时点相对起点的累计位移（格，[x,y,z]）——行走/移动用 */
+        public float[] move;
     }
 
     /**
@@ -97,11 +109,12 @@ public class AnimationPlan
 
         int version = map.getInt("version");
 
-        if (version != VERSION)
+        if (version != VERSION && version != VERSION_DIRECT)
         {
-            throw new AiException(AiException.Type.PARSE, "Plan version " + version + " is not supported (expected " + VERSION + ")");
+            throw new AiException(AiException.Type.PARSE, "Plan version " + version + " is not supported (expected " + VERSION + " or " + VERSION_DIRECT + ")");
         }
 
+        plan.version = version;
         plan.fps = map.getInt("fps", 20);
         plan.totalTicks = map.getInt("total_ticks");
         plan.modelHint = map.getString("model_hint", "humanoid");
@@ -169,17 +182,56 @@ public class AnimationPlan
             beat.index = beatMap.getInt("index", i);
             beat.tick = beatMap.getInt("tick");
             beat.phase = beatMap.getString("phase", "");
-            beat.pose = beatMap.getString("pose", "");
+            beat.pose = "";
             beat.spacing = beatMap.getInt("spacing", 0);
+
+            /* v2：pose 可以是对象（直写骨骼值）或字符串（@作者姿势） */
+            BaseType poseValue = beatMap.get("pose");
+
+            if (poseValue != null && BaseType.isMap(poseValue))
+            {
+                beat.poseObject = poseValue.asMap();
+            }
+            else
+            {
+                beat.pose = beatMap.getString("pose", "");
+
+                if (version == VERSION && !beat.pose.startsWith("@") && !POSES.contains(beat.pose))
+                {
+                    throw new AiException(AiException.Type.PARSE, "Beat " + i + " has unknown pose: " + beat.pose);
+                }
+            }
+
+            /* v2 累计位移（格，相对起点，[x,y,z]） */
+            BaseType moveValue = beatMap.get("move");
+
+            if (version >= VERSION_DIRECT && BaseType.isList(moveValue) && moveValue.asList().size() >= 2)
+            {
+                ListType moveList = moveValue.asList();
+                float[] move = new float[3];
+
+                for (int m = 0; m < 3; m++)
+                {
+                    if (m < moveList.size() && BaseType.isNumeric(moveList.get(m)))
+                    {
+                        move[m] = ((NumericType) moveList.get(m)).floatValue();
+                    }
+                }
+
+                beat.move = move;
+            }
 
             if (!PHASES.contains(beat.phase))
             {
-                throw new AiException(AiException.Type.PARSE, "Beat " + i + " has unknown phase: " + beat.phase);
-            }
-
-            if (!beat.pose.startsWith("@") && !POSES.contains(beat.pose))
-            {
-                throw new AiException(AiException.Type.PARSE, "Beat " + i + " has unknown pose: " + beat.pose);
+                if (version >= VERSION_DIRECT)
+                {
+                    /* v2 宽容：未知相位归为 hold，不再让整次生成报废 */
+                    beat.phase = "hold";
+                }
+                else
+                {
+                    throw new AiException(AiException.Type.PARSE, "Beat " + i + " has unknown phase: " + beat.phase);
+                }
             }
 
             if (beat.tick <= previousTick && i > 0)
@@ -187,9 +239,22 @@ public class AnimationPlan
                 throw new AiException(AiException.Type.PARSE, "Beat " + i + " tick " + beat.tick + " is not strictly increasing (previous " + previousTick + ")");
             }
 
-            if (i > 0 && beat.spacing != beat.tick - previousTick)
+            if (i > 0)
             {
-                throw new AiException(AiException.Type.PARSE, "Beat " + i + " spacing " + beat.spacing + " does not match tick gap " + (beat.tick - previousTick));
+                int gap = beat.tick - previousTick;
+
+                if (version >= VERSION_DIRECT)
+                {
+                    /* v2 spacing 可省略——给了就必须对 */
+                    if (beat.spacing > 0 && beat.spacing != gap)
+                    {
+                        throw new AiException(AiException.Type.PARSE, "Beat " + i + " spacing " + beat.spacing + " does not match tick gap " + gap);
+                    }
+                }
+                else if (beat.spacing != gap)
+                {
+                    throw new AiException(AiException.Type.PARSE, "Beat " + i + " spacing " + beat.spacing + " does not match tick gap " + (beat.tick - previousTick));
+                }
             }
 
             BaseType intents = beatMap.get("intents");
@@ -203,6 +268,12 @@ public class AnimationPlan
 
                     if (kind == null)
                     {
+                        /* v2 宽容：未知意图跳过（曲线退默认），v1 保持严格 */
+                        if (version >= VERSION_DIRECT)
+                        {
+                            continue;
+                        }
+
                         throw new AiException(AiException.Type.PARSE, "Beat " + i + " intent " + j + " is not a known label: " + label);
                     }
 

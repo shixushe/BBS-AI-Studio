@@ -856,6 +856,18 @@ public class AiDebugServer
                     + "{\"index\":1,\"tick\":6,\"phase\":\"down\",\"pose\":\"crouch\",\"spacing\":6,\"intents\":[\"ease_in_out\"]},"
                     + "{\"index\":2,\"tick\":14,\"phase\":\"hold\",\"pose\":\"idle\",\"spacing\":8,\"intents\":[\"hold\"]}]}");
                 step.accept("plan parse (3 beats)", plan.beats.size() == 3);
+
+                /* v2 直写骨骼值计划：对象 pose + move 位移 */
+                var v2plan = mchorse.bbs_mod.ai.plan.AnimationPlan.parse(
+                    "{\"version\":2,\"fps\":20,\"total_ticks\":8,\"beats\":["
+                    + "{\"index\":0,\"tick\":0,\"phase\":\"hold\",\"move\":[0.4,0,0],\"pose\":{\"head\":{\"r\":[10,0,0]}}},"
+                    + "{\"index\":1,\"tick\":8,\"phase\":\"hold\",\"move\":[0.9,0,0],\"pose\":{\"head\":{\"r\":[12,0,0]}}}]}");
+
+                step.accept("v2 plan parse (direct bones + move)",
+                    v2plan.version == 2 && v2plan.beats.size() == 2
+                    && v2plan.beats.get(0).poseObject != null
+                    && v2plan.beats.get(0).move != null
+                    && Math.abs(v2plan.beats.get(1).move[0] - 0.9F) < 0.001F);
             }
             catch (Exception e)
             {

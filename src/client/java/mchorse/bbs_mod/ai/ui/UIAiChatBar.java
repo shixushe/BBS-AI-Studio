@@ -290,17 +290,61 @@ public class UIAiChatBar extends UIElement
             system += "\n\n该模型自带 " + skillPoses.size() + " 个预设姿势（beat.pose 用 \"@名字\" 直接引用，作者调好的成品姿势）:"
                 + intentTable
                 + "【硬性要求】挥手、鞠躬、坐下、思考、哭、害羞、睡觉、疑惑、抱胸、摊手、登场、赞美、搬东西、牵手、卖萌等表情/姿态类动作，"
-                + "必须直接用上面的 @作者姿势（一个 beat 定住 10-20 tick 即可），"
-                + "不要用 wave/bow/sit/cheer 这些程序化姿势名——它们只是给没有作者姿势的模型兜底的，"
-                + "套在自带作者姿势的模型上会丢失作者的动作细节。"
-                + "程序化姿势只保留给位移类动作：walk_step、walk_step_b、run、crouch、jump 类。";
+                + "必须直接用上面的 @作者姿势（一个 beat 定住 10-20 tick 即可）；@姿势拍里的 pose 对象可省略或只给少数骨骼，之后的拍子从该造型自然延续。"
+                + "走/跑/蹲起等位移动作用骨骼值创作。";
         }
 
-        if (!skillPoses.isEmpty())
+        /* v2 骨骼清单：把实际绑定的泛骨骼连同运动学提示交给模型——
+         * 它必须用这些键名逐关节创作 */
+        try
         {
-            /* 该模型有作者姿势：从程序化枚举里拿掉表情/姿态类，逼模型走 @姿势 */
-            system = system.replace("|wave|cheer|bow|sit", "").replace("wave|cheer|bow|sit|", "");
+            var inv = mchorse.bbs_mod.ai.AiFormWalker.collectBones(modelForm);
+            var resolvedNow = mchorse.bbs_mod.ai.pose.BoneNameResolver.resolve(inv);
+
+            java.util.LinkedHashMap<String, String> boneHints = new java.util.LinkedHashMap<>();
+
+            boneHints.put("head", "头：注视先动，身体跟随");
+            boneHints.put("body", "上身根：整体前倾/侧倾，配 t 表达重心");
+            boneHints.put("torso", "胸廓：呼吸 ±1°、与骨盆拮抗");
+            boneHints.put("torso_lower", "骨盆：迈步反旋、蹲/坐下沉配 t");
+            boneHints.put("left_arm", "左大臂：与右腿反相摆");
+            boneHints.put("right_arm", "右大臂：与左腿反相摆");
+            boneHints.put("left_elbow", "左小臂：铰链 X -150~0");
+            boneHints.put("right_elbow", "右小臂：铰链 X -150~0");
+            boneHints.put("left_leg", "左大腿：步幅/抬腿");
+            boneHints.put("right_leg", "右大腿：步幅/抬腿");
+            boneHints.put("left_knee", "左小腿：铰链 X 0~150");
+            boneHints.put("right_knee", "右小腿：铰链 X 0~150");
+            boneHints.put("left_eye", "左眼：眨眼用 s=[1,0.12,1]");
+            boneHints.put("right_eye", "右眼：眨眼用 s=[1,0.12,1]");
+            boneHints.put("left_eyebrow", "左眉：表情");
+            boneHints.put("right_eyebrow", "右眉：表情");
+            boneHints.put("headwear", "头饰：随头微晃");
+
+            StringBuilder boneList = new StringBuilder();
+            int bound = 0;
+
+            for (var entry : boneHints.entrySet())
+            {
+                if (resolvedNow.resolved.containsKey(entry.getKey()))
+                {
+                    if (bound > 0)
+                    {
+                        boneList.append("；");
+                    }
+
+                    boneList.append(entry.getKey()).append("(").append(entry.getValue()).append(")");
+                    bound++;
+                }
+            }
+
+            if (bound > 0)
+            {
+                system += "\n\n本模型可用骨骼（pose 的键名，每拍全部给出，共 " + bound + " 根）：" + boneList;
+            }
         }
+        catch (Exception ignored)
+        {}
 
         if (!caps.modBlocks.isEmpty())
         {
@@ -577,6 +621,102 @@ public class UIAiChatBar extends UIElement
                 double prevGround = this.lastSnap
                     ? Math.max(wy - 2D, Math.min(wy + 2D, this.groundYAt(wx, wz, wy)))
                     : wy;
+
+                /* ══ v2 直写模式：位移来自 LLM 的 beat.move 累计坐标，逐段
+                 * 碰壁截断 + 贴地链；不开贴地时走路完全不碰 y ══ */
+                if (generated.version >= mchorse.bbs_mod.ai.plan.AnimationPlan.VERSION_DIRECT)
+                {
+                    double prevKx = x0;
+                    double prevKz = z0;
+                    double prevWx = wx;
+                    double prevWz = wz;
+                    int prevTick = 0;
+                    int v2Moves = 0;
+                    double v2Travel = 0D;
+                    int v2WallHits = 0;
+
+                    FrameCommitter.ChannelWrite v2Y = null;
+
+                    for (AnimationPlan.Beat beat : generated.beats)
+                    {
+                        if (beat.move == null)
+                        {
+                            continue;
+                        }
+
+                        double tgtKx = x0 + beat.move[0];
+                        double tgtKz = z0 + beat.move[2];
+                        double segKx = tgtKx - prevKx;
+                        double segKz = tgtKz - prevKz;
+                        double segLen = Math.sqrt(segKx * segKx + segKz * segKz);
+
+                        if (segLen < 0.001D)
+                        {
+                            prevTick = beat.tick;
+
+                            continue;
+                        }
+
+                        /* 碰壁截断（世界空间方向与键空间一致）：起点被包裹
+                         * 时放弃检测，绝不误判 */
+                        double allowed = segLen;
+
+                        if (startFree)
+                        {
+                            allowed = this.clampTravel(prevWx, wy, prevWz,
+                                segKx / segLen, segKz / segLen, segLen);
+
+                            if (allowed + 0.01D < segLen)
+                            {
+                                v2WallHits++;
+                            }
+                        }
+
+                        double startKx = prevKx;
+                        double startKz = prevKz;
+                        double f = allowed / segLen;
+
+                        prevKx += segKx * f;
+                        prevKz += segKz * f;
+                        prevWx += segKx * f;
+                        prevWz += segKz * f;
+                        v2Travel += allowed;
+                        v2Moves++;
+
+                        /* 段两端线性键：从上一拍到这一拍匀速移动 */
+                        this.writeLinearMove(writes, replay.keyframes.x, "x", prevTick, beat.tick, startKx, prevKx);
+                        this.writeLinearMove(writes, replay.keyframes.z, "z", prevTick, beat.tick, startKz, prevKz);
+
+                        /* 贴地：每个移动拍写一个地表跟随键（无起伏） */
+                        if (this.lastSnap)
+                        {
+                            if (v2Y == null)
+                            {
+                                v2Y = new FrameCommitter.ChannelWrite("y", yChannel, 0F);
+                                writes.add(v2Y);
+                            }
+
+                            prevGround = this.stepGround(this.groundYAt(prevWx, prevWz, wy), prevGround);
+
+                            EditPatch.KeyWrite yKey = new EditPatch.KeyWrite();
+
+                            yKey.tick = beat.tick;
+                            yKey.value = (float) (prevGround + anchorDY);
+                            yKey.interpolation = "cubic_inout";
+                            v2Y.keys.add(yKey);
+                        }
+
+                        prevTick = beat.tick;
+                    }
+
+                    if (v2Moves > 0)
+                    {
+                        thinking.addProcess("行走位移：" + v2Moves + " 段共 "
+                            + String.format("%.1f", v2Travel) + " 格（x/z 线性键"
+                            + (v2WallHits > 0 ? "，" + v2WallHits + " 段碰壁截断" : "")
+                            + (this.lastSnap ? "，贴地跟随" : "") + "）");
+                    }
+                }
 
                 if (firstWalk >= 0 && lastWalk > firstWalk)
                 {

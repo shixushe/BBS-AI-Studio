@@ -1,10 +1,14 @@
 package mchorse.bbs_mod.ai.pose;
 
 import mchorse.bbs_mod.ai.commit.EditPatch;
-import mchorse.bbs_mod.forms.forms.Form;
-import mchorse.bbs_mod.utils.keyframes.KeyframeChannel;
 import mchorse.bbs_mod.ai.commit.FrameCommitter;
 import mchorse.bbs_mod.ai.plan.AnimationPlan;
+import mchorse.bbs_mod.data.types.BaseType;
+import mchorse.bbs_mod.data.types.ListType;
+import mchorse.bbs_mod.data.types.MapType;
+import mchorse.bbs_mod.data.types.NumericType;
+import mchorse.bbs_mod.forms.forms.Form;
+import mchorse.bbs_mod.utils.keyframes.KeyframeChannel;
 import mchorse.bbs_mod.film.replays.FormProperties;
 import mchorse.bbs_mod.film.replays.tracks.TrackId;
 import mchorse.bbs_mod.utils.interps.Interpolations;
@@ -83,6 +87,30 @@ public class PoseSolver
         public float[] values = new float[] {0F, 0F, 0F};
     }
 
+    /** 读骨骼值向量（r/t/s）：缺失或类型不对时用 fallback 填满 3 位 */
+    private static float[] readVec3(MapType map, String key, float fallback)
+    {
+        float[] out = new float[] {fallback, fallback, fallback};
+        BaseType value = map.get(key);
+
+        if (!BaseType.isList(value))
+        {
+            return out;
+        }
+
+        ListType list = value.asList();
+
+        for (int i = 0; i < 3 && i < list.size(); i++)
+        {
+            if (BaseType.isNumeric(list.get(i)))
+            {
+                out[i] = ((NumericType) list.get(i)).floatValue();
+            }
+        }
+
+        return out;
+    }
+
     /** X 轴镜像的骨骼名：left_/right_（含中文 左/右）前缀互换，其余原样 */
     private static String mirroredBone(String bone)
     {
@@ -141,7 +169,9 @@ public class PoseSolver
             throw new IllegalArgumentException("Bone map is unresolved (missing: " + bones.unresolved + ") - confirm candidates in the UI first");
         }
 
-        List<String> missing = PoseLibrary.missing(plan.beats.stream().map(b -> b.pose).distinct().toList());
+        List<String> missing = plan.version < AnimationPlan.VERSION_DIRECT
+            ? PoseLibrary.missing(plan.beats.stream().map(b -> b.pose).distinct().toList())
+            : List.of();
 
         if (!missing.isEmpty())
         {
@@ -149,6 +179,15 @@ public class PoseSolver
         }
 
         List<KeyPose> poses = new ArrayList<>();
+
+        /* v2 全骨骼清单（稳定顺序）：直写模式下每拍都要覆盖到 */
+        List<String> allGenerics = new ArrayList<>(PoseLibrary.GENERIC_BONES);
+
+        allGenerics.addAll(PoseLibrary.OPTIONAL_BONES);
+
+        /* v2 连续性载体：某拍没提的骨骼沿用上一拍的值——关节一旦动起来
+         * 就不会瞬回绑定姿势，"每一步都运用每个关节"由此保证 */
+        java.util.Map<String, BoneChannel> carried = new java.util.HashMap<>();
 
         /* 步态展开：相邻走路拍之间插入 walk_pass 过渡帧（passing 位），
          * 并把走路的线性插值升级为 S 曲线——只有左右两个极端姿势来回
@@ -187,6 +226,122 @@ public class PoseSolver
 
         for (AnimationPlan.Beat beat : expanded)
         {
+            /* ══ v2 直写骨骼值：LLM 以动画师身份逐关节创作，不走姿势名库 ══ */
+            if (plan.version >= AnimationPlan.VERSION_DIRECT && (beat.poseObject != null || beat.pose.isEmpty()))
+            {
+                KeyPose v2 = new KeyPose();
+
+                v2.tick = beat.tick;
+                v2.phase = beat.phase;
+                v2.pose = beat.pose;
+                v2.intent = beat.intents == null || beat.intents.isEmpty() ? "ease_in_out" : beat.intents.get(0).name().toLowerCase();
+
+                /* @作者姿势仍可混用（模型自带的成品姿势） */
+                if (beat.pose.startsWith("@"))
+                {
+                    mchorse.bbs_mod.utils.pose.Pose skill = skillPoses.get(beat.pose.substring(1));
+
+                    if (skill == null)
+                    {
+                        skill = skillPoses.get(beat.pose);
+                    }
+
+                    if (skill != null)
+                    {
+                        int seen = skillSeen.merge(beat.pose, 1, Integer::sum);
+                        boolean mirror = seen % 2 == 0;
+
+                        for (Map.Entry<String, mchorse.bbs_mod.utils.pose.PoseTransform> entry : skill.transforms.entrySet())
+                        {
+                            BoneChannel channel = new BoneChannel();
+
+                            channel.bone = mirror ? mirroredBone(entry.getKey()) : entry.getKey();
+
+                            float jx = mirror ? -1F : 1F;
+                            float jy = 1F + 0.05F * ((seen - 1) % 3 - 1) * (0.6F + 0.4F * Math.abs(entry.getKey().hashCode() % 7) / 7F);
+
+                            channel.x = entry.getValue().rotate.x;
+                            channel.y = entry.getValue().rotate.y * jy;
+                            channel.z = entry.getValue().rotate.z * jx;
+                            channel.values = new float[] {
+                                channel.x, channel.y, channel.z,
+                                entry.getValue().scale.x, entry.getValue().scale.y, entry.getValue().scale.z,
+                                entry.getValue().translate.x * jx,
+                                entry.getValue().translate.y * jy,
+                                entry.getValue().translate.z * jx
+                            };
+                            v2.channels.add(channel);
+
+                            /* 作者姿势也进载体：之后的拍子延续这套造型 */
+                            carried.put(entry.getKey(), channel);
+                        }
+
+                        poses.add(v2);
+
+                        continue;
+                    }
+                }
+
+                /* 直写骨骼：r 度→弧度（吃幅度），t/s 原样；没提到的骨骼
+                 * 沿用上一拍——关节不瞬回绑定姿势 */
+                for (String generic : allGenerics)
+                {
+                    BoneNameResolver.Resolution res = bones.resolved.get(generic);
+
+                    if (res == null)
+                    {
+                        continue;
+                    }
+
+                    BaseType boneValue = beat.poseObject == null ? null : beat.poseObject.get(generic);
+
+                    if (BaseType.isMap(boneValue))
+                    {
+                        MapType bm = boneValue.asMap();
+                        BoneChannel channel = new BoneChannel();
+
+                        channel.bone = res.actual;
+
+                        float[] r = readVec3(bm, "r", 0F);
+
+                        channel.x = (float) Math.toRadians(r[0]) * amplitude;
+                        channel.y = (float) Math.toRadians(r[1]) * amplitude;
+                        channel.z = (float) Math.toRadians(r[2]) * amplitude;
+
+                        float[] s = bm.has("s") ? readVec3(bm, "s", 1F) : new float[] {1F, 1F, 1F};
+                        float[] t = bm.has("t") ? readVec3(bm, "t", 0F) : null;
+
+                        if (t != null)
+                        {
+                            channel.values = new float[] {channel.x, channel.y, channel.z, s[0], s[1], s[2], t[0], t[1], t[2]};
+                        }
+                        else
+                        {
+                            channel.values = new float[] {channel.x, channel.y, channel.z, s[0], s[1], s[2]};
+                        }
+
+                        carried.put(generic, channel);
+                        v2.channels.add(channel);
+                    }
+                    else if (carried.containsKey(generic))
+                    {
+                        BoneChannel prev = carried.get(generic);
+                        BoneChannel channel = new BoneChannel();
+
+                        channel.bone = prev.bone;
+                        channel.x = prev.x;
+                        channel.y = prev.y;
+                        channel.z = prev.z;
+                        channel.values = prev.values.clone();
+                        v2.channels.add(channel);
+                    }
+                }
+
+                poses.add(v2);
+
+                continue;
+            }
+
             KeyPose pose = new KeyPose();
 
             pose.tick = beat.tick;

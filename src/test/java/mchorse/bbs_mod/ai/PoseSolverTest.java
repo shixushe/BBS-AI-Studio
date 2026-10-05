@@ -1,5 +1,6 @@
 package mchorse.bbs_mod.ai;
 
+import mchorse.bbs_mod.ai.AiException;
 import mchorse.bbs_mod.ai.commit.EditPatch;
 import mchorse.bbs_mod.ai.commit.FrameCommitter;
 import mchorse.bbs_mod.ai.plan.AnimationPlan;
@@ -268,6 +269,92 @@ public class PoseSolverTest
             && Math.abs(firstWave.x - secondWave.x) < 0.0001F
             && Math.abs(firstWave.y + secondWave.y) > 0.0001F,
             "mirror negates Y rotation while keeping X");
+
+        /* v2 直写骨骼值：度→弧度、缺骨沿用上一拍（全关节连续）、move/t/s 解析 */
+        AnimationPlan v2plan;
+
+        try
+        {
+            v2plan = AnimationPlan.parse("""
+            {
+              "version": 2, "fps": 20, "total_ticks": 16,
+              "beats": [
+                { "index": 0, "tick": 0, "phase": "hold", "move": [0.4, 0, 0],
+                  "pose": { "head": {"r": [10, 0, 0]}, "left_leg": {"r": [16, 0, 0]} } },
+                { "index": 1, "tick": 8, "phase": "hold", "move": [0.9, 0, 0],
+                  "pose": { "head": {"r": [12, 0, 0]} } }
+              ]
+            }
+            """);
+        }
+        catch (AiException e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        equal(2, v2plan.version, "v2 plan version kept");
+        check(v2plan.beats.get(0).poseObject != null && v2plan.beats.get(0).move != null,
+            "v2 beat carries poseObject and move");
+        equal(0.9F, v2plan.beats.get(1).move[0], "v2 move parsed");
+
+        List<PoseSolver.KeyPose> v2poses = PoseSolver.solve(v2plan, bones);
+
+        equal(2, v2poses.size(), "v2 beats solve one-to-one");
+
+        PoseSolver.BoneChannel head0 = v2poses.get(0).channels.stream()
+            .filter(c -> c.bone.equals("head")).findFirst().orElse(null);
+
+        check(head0 != null && Math.abs(head0.x - (float) Math.toRadians(10)) < 0.0001F,
+            "v2 head degrees converted to radians");
+
+        PoseSolver.BoneChannel v2leg0 = v2poses.get(0).channels.stream()
+            .filter(c -> c.bone.equals("left_leg")).findFirst().orElse(null);
+        PoseSolver.BoneChannel v2leg1 = v2poses.get(1).channels.stream()
+            .filter(c -> c.bone.equals("left_leg")).findFirst().orElse(null);
+
+        check(v2leg0 != null && v2leg1 != null && Math.abs(v2leg1.x - v2leg0.x) < 0.0001F,
+            "v2 missing bone carries forward the previous beat (joint continuity)");
+
+        PoseSolver.BoneChannel head1 = v2poses.get(1).channels.stream()
+            .filter(c -> c.bone.equals("head")).findFirst().orElse(null);
+
+        check(head1 != null && Math.abs(head1.x - (float) Math.toRadians(12)) < 0.0001F,
+            "v2 second beat overrides the carried value");
+
+        /* v2 的 t/s 透传：眨眼缩放、body 平移 */
+        AnimationPlan v2fx;
+
+        try
+        {
+            v2fx = AnimationPlan.parse("""
+            {
+              "version": 2, "fps": 20, "total_ticks": 8,
+              "beats": [
+                { "index": 0, "tick": 0, "phase": "hold",
+                  "pose": { "left_eye": {"r": [0, 0, 0], "s": [1, 0.12, 1]}, "body": {"r": [0, 0, 0], "t": [0, -0.04, 0]} } }
+              ]
+            }
+            """);
+        }
+        catch (AiException e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        BoneNameResolver.Result withEyes2 = BoneNameResolver.resolve(STAR_BONES);
+
+        withEyes2.resolved.put("left_eye", BoneNameResolver.confirmed("left_eye", "左眼瞳"));
+
+        List<PoseSolver.KeyPose> v2fxPoses = PoseSolver.solve(v2fx, withEyes2);
+        PoseSolver.BoneChannel eye = v2fxPoses.get(0).channels.stream()
+            .filter(c -> c.bone.equals("左眼瞳")).findFirst().orElse(null);
+        PoseSolver.BoneChannel bod = v2fxPoses.get(0).channels.stream()
+            .filter(c -> c.bone.equals("body")).findFirst().orElse(null);
+
+        check(eye != null && eye.values.length == 6 && Math.abs(eye.values[4] - 0.12F) < 0.0001F,
+            "v2 blink scale passes through");
+        check(bod != null && bod.values.length == 9 && Math.abs(bod.values[7] - -0.04F) < 0.0001F,
+            "v2 body translate passes through");
 
         /* Two-ended writes: same bone on root and part end fans out to both */
         FormProperties properties = new FormProperties("properties");

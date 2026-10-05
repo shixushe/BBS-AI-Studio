@@ -57,9 +57,9 @@ public class AiSettings
         stream = builder.getBoolean("stream", false);
         jsonMode = builder.getBoolean("json_mode", false);
         temperature = builder.getFloat("temperature", 0.7F, 0F, 1F); /* GLM 限 [0,1] */
-        timeoutMs = builder.getInt("timeout_ms", 60000, 1000, 300000);
+        timeoutMs = builder.getInt("timeout_ms", 180000, 1000, 3600000);
         maxRetries = builder.getInt("max_retries", 1, 0, 5);
-        maxTokens = builder.getInt("max_tokens", 8192, 0, 131072);
+        maxTokens = builder.getInt("max_tokens", 8192, 0, 4000000);
         usagePromptTokens = builder.getInt("usage_prompt_tokens", 0, 0, Integer.MAX_VALUE);
         usageCompletionTokens = builder.getInt("usage_completion_tokens", 0, 0, Integer.MAX_VALUE);
         usageRequests = builder.getInt("usage_requests", 0, 0, Integer.MAX_VALUE);

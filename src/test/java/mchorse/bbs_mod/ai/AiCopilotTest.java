@@ -253,7 +253,7 @@ public class AiCopilotTest
 
         /* Contract violations must be loud */
         String[] bad = {
-            "{\"version\":2,\"total_ticks\":1,\"beats\":[{\"tick\":0,\"phase\":\"contact\",\"pose\":\"idle\"}]}",
+            "{\"version\":9,\"total_ticks\":1,\"beats\":[{\"tick\":0,\"phase\":\"contact\",\"pose\":\"idle\"}]}",
             "{\"version\":1,\"total_ticks\":1,\"beats\":[{\"tick\":0,\"phase\":\"jump\",\"pose\":\"idle\"}]}",
             "{\"version\":1,\"total_ticks\":1,\"beats\":[{\"tick\":0,\"phase\":\"contact\",\"pose\":\"flying\"}]}",
             "{\"version\":1,\"total_ticks\":1,\"beats\":[{\"tick\":0,\"phase\":\"contact\",\"pose\":\"idle\"},{\"tick\":0,\"phase\":\"contact\",\"pose\":\"idle\"}]}",

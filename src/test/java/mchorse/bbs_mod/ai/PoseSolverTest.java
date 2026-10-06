@@ -43,6 +43,7 @@ public class PoseSolverTest
         starAdaptation();
         starBuiltins();
         motionTemplates();
+        openSourcePolish();
 
         System.out.println("\n" + (failures == 0 ? "ALL PASS" : failures + " FAILURES") + " (" + checks + " checks)");
 
@@ -699,6 +700,117 @@ public class PoseSolverTest
         check(contactLeg != null
             && Math.abs(Math.abs(contactLeg.x) - (float) Math.toRadians(32) * 0.94F) < 0.01F,
             "contact beats still get the MC-scale floor + stride energy");
+    }
+
+    /**
+     * 开源思想移植回归：拓扑先验绑定推断（Motus/ACT 规则版）、关节限位
+     * 钳制、呼吸微动层（Puppeteer 后处理思想的确定性版）。
+     */
+    private static void openSourcePolish()
+    {
+        /* 拓扑推断：镜像规则 + 运动链规则 */
+        BoneNameResolver.Result manual = BoneNameResolver.resolve(
+            List.of("head", "body", "left_arm", "right_arm", "left_leg", "right_leg"));
+
+        manual.resolved.put("left_elbow", BoneNameResolver.confirmed("left_elbow", "forearm_L"));
+
+        java.util.Map<String, String> hierarchy = java.util.Map.of(
+            "forearm_L", "left_arm", "forearm_R", "right_arm", "shin_R", "right_leg");
+
+        String viaMirror = BoneNameResolver.suggestByTopology("right_elbow", manual,
+            List.of("forearm_L", "forearm_R"), hierarchy);
+
+        check("forearm_R".equals(viaMirror), "topology mirror infers the paired bone from the resolved side");
+
+        String viaChain = BoneNameResolver.suggestByTopology("right_knee", manual,
+            List.of("forearm_L", "forearm_R", "shin_R"), hierarchy);
+
+        check("shin_R".equals(viaChain), "topology chain infers the child bone under the resolved parent");
+
+        String nope = BoneNameResolver.suggestByTopology("right_elbow", manual,
+            List.of("forearm_L"), hierarchy);
+
+        check(nope == null, "topology inference stays null when neither rule can fire");
+
+        /* 关节限位钳制：LLM 写出反关节在这里归位 */
+        AnimationPlan hingePlan;
+
+        try
+        {
+            hingePlan = AnimationPlan.parse("""
+                {
+                  "version": 2, "fps": 20, "total_ticks": 6,
+                  "beats": [
+                    { "index": 0, "tick": 0, "phase": "hold",
+                      "pose": { "left_elbow": {"r": [-200, 0, 0]}, "right_knee": {"r": [200, 0, 0]} } }
+                  ]
+                }
+                """);
+        }
+        catch (AiException e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        List<PoseSolver.KeyPose> hingePoses = PoseSolver.solve(hingePlan, BoneNameResolver.resolve(STAR_BONES));
+
+        PoseSolver.BoneChannel elbow = hingePoses.get(0).channels.stream()
+            .filter(c -> c.bone.equals("left_elbow")).findFirst().orElse(null);
+        PoseSolver.BoneChannel knee = hingePoses.get(0).channels.stream()
+            .filter(c -> c.bone.equals("right_knee")).findFirst().orElse(null);
+
+        check(elbow != null && Math.abs(elbow.x - (float) Math.toRadians(-150)) < 0.0001F,
+            "reverse elbow rotation clamps to the -150 deg hinge limit");
+        check(knee != null && Math.abs(knee.x - (float) Math.toRadians(150)) < 0.0001F,
+            "hyperextended knee clamps to the 150 deg hinge limit");
+
+        /* 呼吸层：非步态直写段（≥10 tick）自动插呼吸中点键 */
+        AnimationPlan breathePlan;
+
+        try
+        {
+            breathePlan = AnimationPlan.parse("""
+                {
+                  "version": 2, "fps": 20, "total_ticks": 16,
+                  "beats": [
+                    { "index": 0, "tick": 0, "phase": "hold", "pose": { "torso_lower": {"r": [0, 0, 0]}, "head": {"r": [0, 0, 0]} } },
+                    { "index": 1, "tick": 16, "phase": "hold", "pose": { "torso_lower": {"r": [0, 0, 0]}, "head": {"r": [0, 0, 0]} } }
+                  ]
+                }
+                """);
+        }
+        catch (AiException e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        List<PoseSolver.KeyPose> breathePoses = PoseSolver.solve(breathePlan, BoneNameResolver.resolve(STAR_BONES));
+
+        FormProperties breatheProps = new FormProperties("breatheTrack");
+        List<FrameCommitter.ChannelWrite> breatheWrites =
+            PoseSolver.toPoseTrackWrites(breathePoses, java.util.Map.of(), breatheProps, null);
+
+        check(!breatheWrites.isEmpty() && breatheWrites.get(0).keys.size() == 3,
+            "breathing layer inserts a midpoint key into the long static segment");
+
+        boolean sways = false;
+
+        if (!breatheWrites.isEmpty())
+        {
+            for (EditPatch.KeyWrite key : breatheWrites.get(0).keys)
+            {
+                if (key.fullValue instanceof mchorse.bbs_mod.utils.pose.Pose pose
+                    && pose.transforms.get("head") != null
+                    && Math.abs(pose.transforms.get("head").rotate.y) > 0.0001F)
+                {
+                    sways = true;
+
+                    break;
+                }
+            }
+        }
+
+        check(sways, "the breathing midpoint actually sways the head");
     }
 
     /** Raw JSON of a shipped builtin model (for template extraction tests). */

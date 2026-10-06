@@ -38,6 +38,9 @@ public class PoseSolver
         /** v2 直写拍：与相邻直写拍之间不做错帧中点（纯 S 曲线段更顺滑） */
         public boolean direct;
 
+        /** v2 步行/跑步拍（位移跨度内）：呼吸层与错帧层对其让路 */
+        public boolean gait;
+
         public int tick;
         public String phase;
         public String pose;
@@ -415,6 +418,7 @@ public class PoseSolver
                 }
 
                 v2.direct = true;
+                v2.gait = hasMove && beat.tick >= firstMoveTick && beat.tick <= lastMoveTick;
 
                 /* 直写骨骼（度数域）：本拍给值或沿用上一拍——关节不瞬回绑定姿势 */
                 java.util.Map<String, float[]> beatVals = new java.util.HashMap<>();
@@ -629,6 +633,30 @@ public class PoseSolver
                     }
 
                     spanIndex++;
+                }
+
+                /* 关节限位强制钳制（提示词的约定在此兜底）：肘 X∈[-150,0]、
+                 * 膝 X∈[0,150]——LLM 写出反关节（肘外翻/膝反折）在这里归位 */
+                for (String hinge : new String[] {"left_elbow", "right_elbow"})
+                {
+                    BoneNameResolver.Resolution res = bones.resolved.get(hinge);
+                    float[] v = res == null ? null : beatVals.get(res.actual);
+
+                    if (v != null)
+                    {
+                        v[0] = Math.max(-150F, Math.min(0F, v[0]));
+                    }
+                }
+
+                for (String hinge : new String[] {"left_knee", "right_knee"})
+                {
+                    BoneNameResolver.Resolution res = bones.resolved.get(hinge);
+                    float[] v = res == null ? null : beatVals.get(res.actual);
+
+                    if (v != null)
+                    {
+                        v[0] = Math.max(0F, Math.min(150F, v[0]));
+                    }
                 }
 
                 for (Map.Entry<String, float[]> entry : beatVals.entrySet())
@@ -959,6 +987,98 @@ public class PoseSolver
         return v < 0F ? 0F : v > 1F ? 1F : v;
     }
 
+    /**
+     * 呼吸层：两端都是 v2 直写拍（且都不在步态跨度内）的段，段长 ≥10 tick
+     * 时在中点插一个呼吸微动键——torso 侧倾 ±0.8°、骨盆反向 ±0.3°、头微转
+     * ±0.5°，按段中点的绝对 tick 取正弦相位，相邻段的呼吸自然连续。只在
+     * 两端姿势都含该骨骼时叠加（缺骨骼的段保持原值，不做无中生有）。
+     */
+    private static void bakeBreathing(List<EditPatch.KeyWrite> keys, List<KeyPose> poses)
+    {
+        if (keys.size() < 2 || poses == null)
+        {
+            return;
+        }
+
+        List<EditPatch.KeyWrite> baked = new ArrayList<>();
+        baked.add(keys.get(0));
+
+        for (int i = 1; i < keys.size(); i++)
+        {
+            EditPatch.KeyWrite prev = keys.get(i - 1);
+            EditPatch.KeyWrite next = keys.get(i);
+
+            boolean bothDirectNonGait = i - 1 < poses.size() && i < poses.size()
+                && poses.get(i - 1).direct && !poses.get(i - 1).gait
+                && poses.get(i).direct && !poses.get(i).gait;
+
+            mchorse.bbs_mod.utils.pose.Pose a = prev.fullValue instanceof mchorse.bbs_mod.utils.pose.Pose pa ? pa : null;
+            mchorse.bbs_mod.utils.pose.Pose b = next.fullValue instanceof mchorse.bbs_mod.utils.pose.Pose pb ? pb : null;
+
+            if (bothDirectNonGait && a != null && b != null && next.tick - prev.tick >= 10F)
+            {
+                mchorse.bbs_mod.utils.pose.Pose mid = new mchorse.bbs_mod.utils.pose.Pose();
+
+                for (String name : union(a.transforms.keySet(), b.transforms.keySet()))
+                {
+                    mchorse.bbs_mod.utils.pose.PoseTransform ta = a.transforms.get(name);
+                    mchorse.bbs_mod.utils.pose.PoseTransform tb = b.transforms.get(name);
+
+                    if (ta == null || tb == null)
+                    {
+                        mid.getOrCreate(name).copy(ta != null ? ta : tb);
+
+                        continue;
+                    }
+
+                    mchorse.bbs_mod.utils.pose.PoseTransform t = mid.getOrCreate(name);
+
+                    t.rotate.set(
+                        (ta.rotate.x + tb.rotate.x) * 0.5F,
+                        (ta.rotate.y + tb.rotate.y) * 0.5F,
+                        (ta.rotate.z + tb.rotate.z) * 0.5F);
+                    t.scale.set(
+                        (ta.scale.x + tb.scale.x) * 0.5F,
+                        (ta.scale.y + tb.scale.y) * 0.5F,
+                        (ta.scale.z + tb.scale.z) * 0.5F);
+                    t.translate.set(
+                        (ta.translate.x + tb.translate.x) * 0.5F,
+                        (ta.translate.y + tb.translate.y) * 0.5F,
+                        (ta.translate.z + tb.translate.z) * 0.5F);
+                }
+
+                float phase = (prev.tick + next.tick) * 0.5F;
+                float sway = (float) Math.sin(phase * 0.4D) * (float) Math.toRadians(2D);
+
+                for (Map.Entry<String, Float> target : Map.of(
+                    "torso", sway,
+                    "torso_lower", -sway * 0.4F,
+                    "head", sway * 0.6F).entrySet())
+                {
+                    mchorse.bbs_mod.utils.pose.PoseTransform t = mid.transforms.get(target.getKey());
+
+                    if (t != null)
+                    {
+                        t.rotate.y += target.getValue();
+                    }
+                }
+
+                EditPatch.KeyWrite midKey = new EditPatch.KeyWrite();
+
+                midKey.tick = (prev.tick + next.tick) * 0.5F;
+                midKey.interpolation = "sine_inout";
+                midKey.intent = next.intent == null ? "ease_in_out" : next.intent;
+                midKey.fullValue = mid;
+                baked.add(midKey);
+            }
+
+            baked.add(next);
+        }
+
+        keys.clear();
+        keys.addAll(baked);
+    }
+
     private static java.util.Set<String> union(java.util.Set<String> a, java.util.Set<String> b)
     {
         java.util.Set<String> out = new java.util.LinkedHashSet<>(a);
@@ -1055,6 +1175,12 @@ public class PoseSolver
              * 头再滞后）——L4 写出的就是带跟随感的成品，而非同拍同速的僵硬插值 */
             bakeStagger(write.keys, poses);
 
+            /* 呼吸层（Puppeteer 后处理管线的确定性版）：非步态的直写段段长
+             * ≥10 tick 时自动插一个带呼吸微动的中点键（torso 侧倾/骨盆反向/
+             * 头微转，按绝对 tick 相位取正弦）——静止和慢动作不再是一块铁板，
+             * 也不再指望 LLM 在每拍里写呼吸 */
+            bakeBreathing(write.keys, poses);
+
             /* 到达意图落前一个键（与逐骨骼路径同一语义） */
             List<EditPatch.KeyWrite> keys = write.keys;
 
@@ -1105,7 +1231,8 @@ public class PoseSolver
         }
     }
 
-    /** 两键的整只 Pose 是否逐骨骼全等（旋转 0.6°、缩放/平移 0.001 容差） */
+    /** 两键的整只 Pose 是否逐骨骼全等（旋转 0.06°、缩放/平移 0.0001 容差）
+     * ——容差必须远小于呼吸微动的幅度，否则中点键会被当成等值键删掉 */
     private static boolean samePose(Object a, Object b)
     {
         if (!(a instanceof mchorse.bbs_mod.utils.pose.Pose pa)
@@ -1126,15 +1253,15 @@ public class PoseSolver
 
             PoseTransform ta = entry.getValue();
 
-            if (Math.abs(ta.rotate.x - tb.rotate.x) > 0.01F
-                || Math.abs(ta.rotate.y - tb.rotate.y) > 0.01F
-                || Math.abs(ta.rotate.z - tb.rotate.z) > 0.01F
-                || Math.abs(ta.scale.x - tb.scale.x) > 0.001F
-                || Math.abs(ta.scale.y - tb.scale.y) > 0.001F
-                || Math.abs(ta.scale.z - tb.scale.z) > 0.001F
-                || Math.abs(ta.translate.x - tb.translate.x) > 0.001F
-                || Math.abs(ta.translate.y - tb.translate.y) > 0.001F
-                || Math.abs(ta.translate.z - tb.translate.z) > 0.001F)
+            if (Math.abs(ta.rotate.x - tb.rotate.x) > 0.001F
+                || Math.abs(ta.rotate.y - tb.rotate.y) > 0.001F
+                || Math.abs(ta.rotate.z - tb.rotate.z) > 0.001F
+                || Math.abs(ta.scale.x - tb.scale.x) > 0.0001F
+                || Math.abs(ta.scale.y - tb.scale.y) > 0.0001F
+                || Math.abs(ta.scale.z - tb.scale.z) > 0.0001F
+                || Math.abs(ta.translate.x - tb.translate.x) > 0.0001F
+                || Math.abs(ta.translate.y - tb.translate.y) > 0.0001F
+                || Math.abs(ta.translate.z - tb.translate.z) > 0.0001F)
             {
                 return false;
             }

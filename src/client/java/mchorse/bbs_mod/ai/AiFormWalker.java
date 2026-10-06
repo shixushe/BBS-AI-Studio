@@ -62,6 +62,65 @@ public class AiFormWalker
         return new ArrayList<>(collectBoneEnds(root).keySet());
     }
 
+    /**
+     * Bone name -> parent bone name (per the model's own rig hierarchy, first
+     * model wins for duplicated names). Feeds the topology-aware bone binding
+     * inference and the skeleton-hierarchy prompt conditioning.
+     */
+    public static Map<String, String> collectHierarchy(Form root)
+    {
+        Map<String, String> parentOf = new LinkedHashMap<>();
+
+        try
+        {
+            collectHierarchyInto(root, parentOf, new HashSet<>(), 0);
+        }
+        catch (Exception ignored)
+        {}
+
+        return parentOf;
+    }
+
+    private static void collectHierarchyInto(Form form, Map<String, String> parentOf, Set<Form> visited, int depth)
+    {
+        if (form == null || depth > MAX_DEPTH || !visited.add(form))
+        {
+            return;
+        }
+
+        if (form instanceof ModelForm modelForm)
+        {
+            ModelInstance instance = ModelFormRenderer.getModel(modelForm);
+
+            if (instance != null && instance.model != null)
+            {
+                for (String bone : instance.model.getGroupKeysInHierarchyOrder())
+                {
+                    if (bone == null || bone.isEmpty() || parentOf.containsKey(bone))
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        String parent = instance.model.getParentGroupKey(bone);
+
+                        parentOf.put(bone, parent == null ? "" : parent);
+                    }
+                    catch (Exception ignored)
+                    {
+                        parentOf.put(bone, "");
+                    }
+                }
+            }
+        }
+
+        for (mchorse.bbs_mod.forms.forms.BodyPart part : form.parts.getAllTyped())
+        {
+            collectHierarchyInto(part.getForm(), parentOf, visited, depth + 1);
+        }
+    }
+
     private static void walk(Form form, String path, Map<String, Set<String>> ends, List<String> order, Set<Form> visited, int depth)
     {
         if (form == null || depth > MAX_DEPTH || !visited.add(form))

@@ -197,6 +197,132 @@ public class BoneNameResolver
         return bestScore >= 0.3D ? best : null;
     }
 
+    /** 子角色泛骨骼 → 挂靠的父泛骨骼（肘挂臂、膝挂腿、头饰/眼/眉挂头） */
+    private static final Map<String, String> ROLE_PARENT = Map.of(
+        "left_elbow", "left_arm", "right_elbow", "right_arm",
+        "left_knee", "left_leg", "right_knee", "right_leg",
+        "headwear", "head", "left_eye", "head", "right_eye", "head",
+        "left_eyebrow", "head", "right_eyebrow", "head"
+    );
+
+    /**
+     * 拓扑先验推断（Motus/ACT 自动绑定思想的规则版）：骨骼名起得怪、
+     * 别名表够不着时，用骨架结构本身猜——
+     * <ol>
+     * <li>镜像：对侧泛骨骼已解析时，其真实名的左右互换名就是候选；</li>
+     * <li>运动链：肘/膝/头饰/眼/眉挂靠的父泛骨骼已解析时，父真实骨骼的
+     * 直接子骨骼就是候选（多个子骨骼取最短名）。</li>
+     * </ol>
+     *
+     * @param parentOf 骨骼 → 父骨骼（AiFormWalker.collectHierarchy）
+     * @return 推断出的真实骨骼名，或 null
+     */
+    public static String suggestByTopology(String generic, Result current, Collection<String> actualBones, Map<String, String> parentOf)
+    {
+        if (parentOf == null || parentOf.isEmpty() || current == null)
+        {
+            return null;
+        }
+
+        /* 已被占用的真实骨骼不再当候选 */
+        java.util.Set<String> taken = new java.util.HashSet<>();
+
+        for (Resolution r : current.resolved.values())
+        {
+            taken.add(r.actual);
+        }
+
+        /* 1) 镜像规则：对侧已解析 → 真实名左右互换 */
+        String mirrorGeneric = mirrorGeneric(generic);
+
+        if (!mirrorGeneric.equals(generic))
+        {
+            Resolution opposite = current.resolved.get(mirrorGeneric);
+
+            if (opposite != null)
+            {
+                String candidate = mirrorActual(opposite.actual);
+
+                if (actualBones.contains(candidate) && !taken.contains(candidate))
+                {
+                    return candidate;
+                }
+            }
+        }
+
+        /* 2) 运动链规则：父泛骨骼已解析 → 父真实名的直接子骨骼 */
+        String parentGeneric = ROLE_PARENT.get(generic);
+
+        if (parentGeneric != null)
+        {
+            Resolution parent = current.resolved.get(parentGeneric);
+
+            if (parent != null)
+            {
+                String best = null;
+
+                for (String bone : actualBones)
+                {
+                    if (taken.contains(bone) || !parentOf.getOrDefault(bone, "").equals(parent.actual))
+                    {
+                        continue;
+                    }
+
+                    if (best == null || bone.length() < best.length())
+                    {
+                        best = bone;
+                    }
+                }
+
+                return best;
+            }
+        }
+
+        return null;
+    }
+
+    /** 泛骨骼的左右互换名（left_arm↔right_arm、左腿↔右腿），其余原样 */
+    private static String mirrorGeneric(String generic)
+    {
+        if (generic.startsWith("left_"))
+        {
+            return "right_" + generic.substring(5);
+        }
+
+        if (generic.startsWith("right_"))
+        {
+            return "left_" + generic.substring(6);
+        }
+
+        return generic;
+    }
+
+    /** 真实骨骼名的左右互换（left_/right_ 与 左/右 前缀），其余原样 */
+    private static String mirrorActual(String bone)
+    {
+        if (bone.startsWith("left_"))
+        {
+            return "right_" + bone.substring(5);
+        }
+
+        if (bone.startsWith("right_"))
+        {
+            return "left_" + bone.substring(6);
+        }
+
+        if (bone.startsWith("左"))
+        {
+            return "右" + bone.substring(1);
+        }
+
+        if (bone.startsWith("右"))
+        {
+            return "左" + bone.substring(1);
+        }
+
+        return bone;
+    }
+
     /** 1 - levenshtein/maxLen, i.e. 1 for identical strings, 0 for disjoint ones. */
     private static double similarity(String a, String b)
     {

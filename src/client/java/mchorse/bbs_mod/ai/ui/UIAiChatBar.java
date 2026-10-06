@@ -441,6 +441,40 @@ public class UIAiChatBar extends UIElement
         catch (Exception ignored)
         {}
 
+        /* 骨架拓扑条件化（GenRA/UniMate 思想）：让模型看见运动链——
+         * 子骨骼挂在哪根父骨骼下，决定旋转的传导方向 */
+        try
+        {
+            java.util.Map<String, String> hierarchy = mchorse.bbs_mod.ai.AiFormWalker.collectHierarchy(modelForm);
+
+            if (!hierarchy.isEmpty())
+            {
+                StringBuilder chains = new StringBuilder();
+                int shown = 0;
+
+                for (java.util.Map.Entry<String, String> entry : hierarchy.entrySet())
+                {
+                    if (shown++ >= 26)
+                    {
+                        break;
+                    }
+
+                    if (chains.length() > 0)
+                    {
+                        chains.append("；");
+                    }
+
+                    String parent = entry.getValue() == null || entry.getValue().isEmpty() ? "根" : entry.getValue();
+
+                    chains.append(entry.getKey()).append("←").append(parent);
+                }
+
+                system += "\n\n骨骼层级（子←父，旋转沿链向末端传导）：" + chains;
+            }
+        }
+        catch (Exception ignored)
+        {}
+
         if (!caps.particles.isEmpty())
         {
             system += "\n\n可用粒子效果（fx.id 用这些名字）: " + String.join(", ", caps.particles)
@@ -615,12 +649,21 @@ public class UIAiChatBar extends UIElement
             {
                 /* 默认直接识别：未解析的泛骨骼先用解析器的最佳猜测自动绑定
                  * 并持久化（同一模型以后不再打扰），全部命中的话一次确认
-                 * 弹窗都不弹；只有连猜测都凑不齐时才问用户 */
+                 * 弹窗都不弹；名字猜不中再试拓扑推断（Motus/ACT 自动绑定
+                 * 思想的规则版：对侧镜像 + 运动链父子），仍凑不齐才问用户 */
+                java.util.Map<String, String> hierarchy = mchorse.bbs_mod.ai.AiFormWalker.collectHierarchy(modelForm);
                 java.util.List<String> autoBound = new ArrayList<>();
 
                 for (String generic : new ArrayList<>(bones.unresolved))
                 {
                     String guess = mchorse.bbs_mod.ai.pose.BoneNameResolver.suggest(generic, inventory);
+                    String how = "名称";
+
+                    if (guess == null)
+                    {
+                        guess = mchorse.bbs_mod.ai.pose.BoneNameResolver.suggestByTopology(generic, bones, inventory, hierarchy);
+                        how = "拓扑";
+                    }
 
                     if (guess != null)
                     {
@@ -631,7 +674,7 @@ public class UIAiChatBar extends UIElement
 
                         map.put(generic, guess);
                         mchorse.bbs_mod.ai.pose.AiBoneBindings.set(modelForm.model.get(), map);
-                        autoBound.add(generic + "→" + guess);
+                        autoBound.add(generic + "→" + guess + "(" + how + ")");
                     }
                 }
 

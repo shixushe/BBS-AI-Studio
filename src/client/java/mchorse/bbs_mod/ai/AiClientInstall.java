@@ -31,6 +31,28 @@ public class AiClientInstall
         GhostFrameLayer.install();
         AiDebugServer.install();
         BBSMod.events.register(new AiClientInstall());
+
+        /* 上一实例关停慢时端口还在占用，初装会静默失败——后台每 2 秒
+         * 重试一次直到起来（server 非空后 install 直接返回，开销为零） */
+        Thread debugRetry = new Thread(() ->
+        {
+            for (int i = 0; i < 120; i++)
+            {
+                try
+                {
+                    Thread.sleep(2000L);
+                }
+                catch (InterruptedException e)
+                {
+                    return;
+                }
+
+                mchorse.bbs_mod.ai.AiDebugServer.install();
+            }
+        }, "BBS AI debug retry");
+
+        debugRetry.setDaemon(true);
+        debugRetry.start();
     }
 
     @Subscribe

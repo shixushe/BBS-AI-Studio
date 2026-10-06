@@ -20,6 +20,27 @@ public class AiVision
 {
     private static java.util.concurrent.ExecutorService worker;
 
+    /** 帧尾待执行的抓帧任务（MinecraftClientMixin 在 render() 尾部调用 onFrameEnd） */
+    private static final java.util.concurrent.atomic.AtomicReference<Runnable> PENDING_GRAB =
+        new java.util.concurrent.atomic.AtomicReference<>();
+
+    /** 帧尾钩子：整帧已绘制完、尚未 swap——唯一能拍到真实画面的时机 */
+    public static void onFrameEnd()
+    {
+        Runnable grab = PENDING_GRAB.getAndSet(null);
+
+        if (grab != null)
+        {
+            grab.run();
+        }
+    }
+
+    /** 登记一个帧尾抓帧任务（渲染线程任意时刻调用，下一帧尾执行） */
+    public static void onFrameEndOnce(Runnable grab)
+    {
+        PENDING_GRAB.set(grab);
+    }
+
     public static boolean available()
     {
         return AiSettings.isConfigured()
@@ -57,6 +78,29 @@ public class AiVision
             onDone.accept(null, "帧编码失败");
 
             return;
+        }
+
+        /* 调试落盘：抓到的帧同时写 ai_shots/vision_*.png——黑帧排查用 */
+        for (int i = 0; i < frames.size(); i++)
+        {
+            try
+            {
+                java.awt.image.BufferedImage debug = new java.awt.image.BufferedImage(
+                    frames.get(i).width, frames.get(i).height, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+                for (int y = 0; y < frames.get(i).height; y++)
+                {
+                    for (int x = 0; x < frames.get(i).width; x++)
+                    {
+                        debug.setRGB(x, y, frames.get(i).getColor(x, y).getARGBColor());
+                    }
+                }
+
+                javax.imageio.ImageIO.write(debug, "png", new java.io.File(
+                    mchorse.bbs_mod.BBSMod.getSettingsFolder(), "ai_shots/vision_" + System.currentTimeMillis() + "_" + i + ".png"));
+            }
+            catch (Exception ignored)
+            {}
         }
 
         String system = "你是 Minecraft 动画质检员。给你同一动画按时间顺序截取的几帧渲染图，"

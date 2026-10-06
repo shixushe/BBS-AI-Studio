@@ -33,4 +33,16 @@ public class MinecraftClientMixin
             ci.cancel();
         }
     }
+
+    /**
+     * End-of-frame hook: everything has been drawn into the framebuffer and
+     * it has not been swapped away yet - the one moment a screenshot of what
+     * the user actually sees is possible (between-frames reads hit an
+     * already-cleared buffer and come out black).
+     */
+    @Inject(method = "render", at = @At("RETURN"))
+    public void bbs$onFrameEnd(CallbackInfo ci)
+    {
+        mchorse.bbs_mod.ai.AiVision.onFrameEnd();
+    }
 }

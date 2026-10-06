@@ -491,14 +491,18 @@ public class PoseSolver
                             default -> { continue; }
                         }
 
+                        /* 只抢救近零值（铁板救底）：阈值远低于目标幅度——
+                         * 模板/作者的 16° 平静步幅是刻意设计，不得被强抬到
+                         * MC 档（2026-10-06 用户反馈模板失效的根因之一）；
+                         * 真正接近零的关节才被托到 MC 可读幅度 */
                         float threshold = switch (genericKey)
                         {
-                            case "left_leg", "right_leg" -> legFloor;
+                            case "left_leg", "right_leg" -> 12F;
                             case "left_knee", "right_knee" -> 6F;
-                            case "left_arm", "right_arm" -> armFloor;
-                            case "left_elbow", "right_elbow" -> 8F;
-                            case "torso_lower" -> 4F;
-                            case "torso" -> 3F;
+                            case "left_arm", "right_arm" -> 10F;
+                            case "left_elbow", "right_elbow" -> 6F;
+                            case "torso_lower" -> 3F;
+                            case "torso" -> 2.5F;
                             case "body" -> 1.5F;
                             default -> 0F;
                         };

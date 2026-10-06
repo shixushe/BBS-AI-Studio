@@ -225,6 +225,15 @@ public class UIAiChatBar extends UIElement
     {
         mchorse.bbs_mod.ui.framework.UIContext context = this.getContext();
 
+        /* 回答过一次细节面板后直接用记住的答案生成，不再每次弹问 */
+        if (UIAiGenerateAskPanel.answered)
+        {
+            this.executeGenerate(script, UIAiGenerateAskPanel.lastAmplitudeIndex,
+                UIAiGenerateAskPanel.lastGround, UIAiGenerateAskPanel.lastSnap);
+
+            return;
+        }
+
         mchorse.bbs_mod.ui.framework.elements.overlay.UIOverlay.addOverlay(context,
             new UIAiGenerateAskPanel(context, (answer) -> this.executeGenerate(script, answer[0],
                 answer[1] == 1, answer.length > 2 && answer[2] == 1)), 240, 0.7F);
@@ -1267,8 +1276,9 @@ public class UIAiChatBar extends UIElement
     public static AnimationPlan lastPlan;
 
     /** 视觉校验的逐帧采集状态：待 seek 的 tick 队列 + 已抓帧 */
+    private mchorse.bbs_mod.camera.data.Position savedVisionCamera;
     private final java.util.Deque<Integer> visionTicks = new java.util.ArrayDeque<>();
-    private final java.util.List<mchorse.bbs_mod.utils.resources.Pixels> visionFrames = new ArrayList<>();
+    private java.util.List<mchorse.bbs_mod.utils.resources.Pixels> visionFrames = new ArrayList<>();
     private boolean visionPendingGrab;
     private int visionCooldown;
 
@@ -1321,45 +1331,66 @@ public class UIAiChatBar extends UIElement
         {
             this.visionPendingGrab = false;
 
-            try
-            {
-                var window = net.minecraft.client.MinecraftClient.getInstance().getWindow();
+            /* 帧尾抓帧：render() 中途和帧间都拿不到完整帧缓冲（前者世界
+             * 尚未合成、后者已被 swap 清掉）——挂到 AiVision.onFrameEnd
+             * （MinecraftClientMixin 在 render() 尾部回调），整帧画完、
+             * swap 之前，拍到的就是用户眼前的画面 */
+            var window = net.minecraft.client.MinecraftClient.getInstance().getWindow();
+            int grabW = window.getFramebufferWidth();
+            int grabH = window.getFramebufferHeight();
+            java.util.List<mchorse.bbs_mod.utils.resources.Pixels> sink = this.visionFrames;
 
-                this.visionFrames.add(mchorse.bbs_mod.ai.capture.FrameGrabber.grabScreen(
-                    window.getFramebufferWidth(), window.getFramebufferHeight()));
-            }
-            catch (Exception e)
+            mchorse.bbs_mod.ai.AiVision.onFrameEndOnce(() ->
             {
-                this.history.log(AiChatMessage.Role.SYSTEM, "视觉校验：抓帧失败 " + e.getMessage());
-            }
+                try
+                {
+                    /* 不读帧缓冲（自定义 FBO 可能仍处绑定态，glReadPixels
+                     * 拿到的是清屏色）——直接读主帧缓冲的颜色附件纹理，
+                     * MC 的世界+GUI 一定画在这张纹理上 */
+                    var framebuffer = net.minecraft.client.MinecraftClient.getInstance().getFramebuffer();
+
+                    sink.add(mchorse.bbs_mod.ai.capture.FrameGrabber.grab(
+                        framebuffer.getColorAttachment(), grabW, grabH));
+                }
+                catch (Exception e)
+                {
+                    this.history.log(AiChatMessage.Role.SYSTEM, "视觉校验：抓帧失败 " + e.getMessage());
+                }
+            });
         }
 
         Integer tick = this.visionTicks.poll();
 
         if (tick == null)
         {
-            java.util.List<mchorse.bbs_mod.utils.resources.Pixels> frames = new ArrayList<>(this.visionFrames);
+            this.restoreVisionCamera();
 
-            this.visionFrames.clear();
+            java.util.List<mchorse.bbs_mod.utils.resources.Pixels> frames = this.visionFrames;
+
+            this.visionFrames = new ArrayList<>();
 
             String script = this.lastScript;
+            var client = net.minecraft.client.MinecraftClient.getInstance();
 
-            mchorse.bbs_mod.ai.AiVision.verify(script, frames, (verdict, error) ->
+            client.execute(() ->
             {
-                if (error != null)
+                mchorse.bbs_mod.ai.AiVision.verify(script, frames, (verdict, error) ->
                 {
-                    this.history.log(AiChatMessage.Role.SYSTEM, "视觉校验失败：" + error);
-                }
-                else if ("PASS".equalsIgnoreCase(verdict))
-                {
-                    this.history.log(AiChatMessage.Role.SYSTEM, "视觉校验：PASS（视觉模型未发现可见问题）");
-                }
-                else
-                {
-                    this.history.log(AiChatMessage.Role.SYSTEM, "视觉校验结论：\n" + verdict);
-                }
+                    if (error != null)
+                    {
+                        this.history.log(AiChatMessage.Role.SYSTEM, "视觉校验失败：" + error);
+                    }
+                    else if ("PASS".equalsIgnoreCase(verdict))
+                    {
+                        this.history.log(AiChatMessage.Role.SYSTEM, "视觉校验：PASS（视觉模型未发现可见问题）");
+                    }
+                    else
+                    {
+                        this.history.log(AiChatMessage.Role.SYSTEM, "视觉校验结论：\n" + verdict);
+                    }
 
-                this.history.refresh();
+                    this.history.refresh();
+                });
             });
 
             return;
@@ -1368,6 +1399,7 @@ public class UIAiChatBar extends UIElement
         try
         {
             this.panel.getRunner().setCursor(tick);
+            this.frameVisionCamera(tick);
         }
         catch (Exception e)
         {
@@ -1376,6 +1408,58 @@ public class UIAiChatBar extends UIElement
 
         this.visionPendingGrab = true;
         this.visionCooldown = 3;
+    }
+
+    /** 视觉校验的特写机位：演员前方 2.5 格、头部高度——默认编辑器机位
+     * 太远，视觉模型只看得到"底部的小点"。用 runner 的 manual 通道，
+     * 不动用户的 POV 模式；全部帧采完由 restoreVisionCamera 复位 */
+    private void frameVisionCamera(float tick)
+    {
+        try
+        {
+            if (this.savedVisionCamera == null)
+            {
+                this.savedVisionCamera = new mchorse.bbs_mod.camera.data.Position();
+            }
+
+            Replay replay = this.panel.replayEditor.getReplay();
+
+            if (replay == null)
+            {
+                return;
+            }
+
+            double ax = this.replayActorX(tick);
+            double ay = this.replayActorY(tick);
+            double az = this.replayActorZ(tick);
+            double yaw = this.currentReplayDouble(replay.keyframes.yaw, tick);
+            double yawRad = Math.toRadians(yaw);
+
+            double dx = -Math.sin(yawRad) * 2.5D;
+            double dz = Math.cos(yawRad) * 2.5D;
+
+            mchorse.bbs_mod.camera.data.Position close =
+                new mchorse.bbs_mod.camera.data.Position(
+                    (float) (ax + dx), (float) (ay + 1.4D), (float) (az + dz),
+                    (float) yaw, -6F, 0F, 55F);
+
+            this.panel.getRunner().setManual(close);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    /** 复位特写机位（交还用户自己的编辑器视角） */
+    private void restoreVisionCamera()
+    {
+        try
+        {
+            this.panel.getRunner().setManual(null);
+        }
+        catch (Exception ignored)
+        {}
     }
 
     /** Polish: local intent parsing -> L3 on every numeric channel of the open replay -> preview. */

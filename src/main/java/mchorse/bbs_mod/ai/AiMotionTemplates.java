@@ -38,6 +38,19 @@ public class AiMotionTemplates
     /** 一次注入的模板上限 */
     private static final int MAX_TEMPLATES = 2;
 
+    /** 请求情绪词 → 片段名偏好词（命中 +2；片段带未请求情绪词 -2） */
+    private static final String[][] MOOD_PAIRS = {
+        {"沮丧", "垂头丧气"},
+        {"难过", "垂头丧气"},
+        {"伤心", "垂头丧气"},
+        {"失落", "垂头丧气"},
+        {"活力", "活力"},
+        {"精神", "活力"},
+        {"开心", "活力"},
+        {"平静", "平静"},
+        {"普通", "普通"}
+    };
+
     /** 模板匹配关键词 → 片段族（normalize 后 contains 匹配） */
     private static final Map<String, List<String>> FAMILY_KEYWORDS = Map.of(
         "walk", List.of("走", "步行", "散步", "walk", "stroll"),
@@ -105,17 +118,33 @@ public class AiMotionTemplates
         StringBuilder block = new StringBuilder();
         int injected = 0;
 
+        /* 同族片段按情绪匹配排序：请求的情绪词出现在片段名里 +2，
+         * 片段带请求没提的情绪词 -2（走路不再默认命中"垂头丧气"），
+         * 其余保持原顺序 */
+        java.util.List<String> names = new ArrayList<>();
+
         for (String name : animations.keys())
+        {
+            if (familyOf(name) != null && wantedFamilies.contains(familyOf(name)))
+            {
+                names.add(name);
+            }
+        }
+
+        String normalizedLower = normalizedScript;
+
+        names.sort((a, b) -> clipScore(b, normalizedLower) - clipScore(a, normalizedLower));
+
+        for (String name : names)
         {
             if (injected >= MAX_TEMPLATES)
             {
                 break;
             }
 
-            String family = familyOf(name);
             MapType clip = BaseType.isMap(animations.get(name)) ? animations.get(name).asMap() : null;
 
-            if (family == null || !wantedFamilies.contains(family) || clip == null)
+            if (clip == null)
             {
                 continue;
             }
@@ -203,6 +232,52 @@ public class AiMotionTemplates
     private static String normalize(String value)
     {
         return value == null ? "" : value.toLowerCase().replace(" ", "").replace("\u3000", "");
+    }
+
+    /** 片段名与请求的情绪匹配分：请求情绪词命中片段名 +2，片段带未请求
+     * 情绪词 -2，平淡名（平静/普通）在无情绪请求时 +1 */
+    private static int clipScore(String clipName, String normalizedScript)
+    {
+        String name = normalize(clipName);
+        int score = 0;
+
+        for (String[] pair : MOOD_PAIRS)
+        {
+            boolean requested = normalizedScript.contains(pair[0]);
+            boolean named = name.contains(pair[1]);
+            boolean neutralBase = pair[1].equals("平静") || pair[1].equals("普通");
+
+            if (requested && named)
+            {
+                score += 2;
+            }
+
+            /* 平静/普通是中性基准名不是情绪——不带负分，只吃中性加成 */
+            if (!requested && named && !neutralBase)
+            {
+                score -= 2;
+            }
+        }
+
+        if ((name.contains("平静") || name.contains("普通")) && !hasAnyMood(normalizedScript))
+        {
+            score += 3;
+        }
+
+        return score;
+    }
+
+    private static boolean hasAnyMood(String normalizedScript)
+    {
+        for (String[] pair : MOOD_PAIRS)
+        {
+            if (normalizedScript.contains(pair[0]))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

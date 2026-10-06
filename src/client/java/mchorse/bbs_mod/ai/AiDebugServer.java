@@ -43,7 +43,7 @@ public class AiDebugServer
     private static Class<? extends mchorse.bbs_mod.ui.dashboard.panels.UIDashboardPanel> pendingPanel;
     private static int pendingAttempts;
 
-    public static void install()
+    public static synchronized void install()
     {
         if (server != null || !AiSettings.debugServer.get())
         {
@@ -92,7 +92,12 @@ public class AiDebugServer
 
                 mchorse.bbs_mod.utils.ScreenshotRecorder recorder = new mchorse.bbs_mod.utils.ScreenshotRecorder(out.getParentFile());
 
-                recorder.takeScreenshot(out, window.getFramebufferWidth(), window.getFramebufferHeight());
+                /* 读颜色附件纹理而非帧缓冲——glReadPixels 在自定义 FBO
+                 * 绑定态下只会拿到清屏色（黑屏截图的根因） */
+                var framebuffer = MinecraftClient.getInstance().getFramebuffer();
+
+                recorder.takeScreenshot(out, framebuffer.getColorAttachment(),
+                    window.getFramebufferWidth(), window.getFramebufferHeight());
 
                 return out.getAbsolutePath();
             });
@@ -552,6 +557,7 @@ public class AiDebugServer
 
                             if (fp != null && fp.aiChatBar != null && !fp.aiChatBar.busy)
                             {
+                                ensureReplaySelected(fp);
                                 fp.aiChatBar.executeGenerate(dumpScript);
                             }
                         }
@@ -582,6 +588,7 @@ public class AiDebugServer
 
                                 sb.append("{\"tick\":").append(beat.tick)
                                     .append(",\"phase\":\"").append(beat.phase).append('"')
+                                    .append(",\"pose\":\"").append(beat.pose.replace("\"", "'")).append('"')
                                     .append(",\"move\":").append(beat.move == null ? "null"
                                         : "[" + beat.move[0] + "," + (beat.move.length > 1 ? beat.move[1] : 0) + "," + (beat.move.length > 2 ? beat.move[2] : 0) + "]")
                                     .append(",\"intents\":[");
@@ -893,6 +900,8 @@ public class AiDebugServer
 
         server.start();
 
+        System.out.println("[BBS AI] debug server listening on http://127.0.0.1:" + PORT);
+
         /* The dashboard builds its panels a few frames at a time after the
          * screen opens; retry the switch each tick until the panel exists */
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(client ->
@@ -1192,6 +1201,27 @@ public class AiDebugServer
         {
             return orDefault;
         }
+    }
+
+    /** 未选回放时自动选第一个 ModelForm 回放（HTTP 驱动的生成前置） */
+    private static void ensureReplaySelected(mchorse.bbs_mod.ui.film.UIFilmPanel panel)
+    {
+        try
+        {
+            if (panel.replayEditor != null && panel.replayEditor.getReplay() == null
+                && !panel.getData().replays.getList().isEmpty())
+            {
+                var replay = panel.getData().replays.getList().stream()
+                    .filter(r -> r.form.get() instanceof mchorse.bbs_mod.forms.forms.ModelForm)
+                    .findFirst()
+                    .orElseGet(() -> panel.getData().replays.getList().get(0));
+
+                panel.replayEditor.setReplay(replay, false,
+                    mchorse.bbs_mod.ui.film.replays.UIReplaysEditor.OrbitReaction.KEEP);
+            }
+        }
+        catch (Exception ignored)
+        {}
     }
 
     private static String json(String value)

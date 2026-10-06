@@ -26,6 +26,12 @@ public class UIAiGenerateAskPanel extends UIOverlayPanel
 {
     public static final float[] AMPLITUDES = {0.65F, 1F, 1.35F};
 
+    /** 记住的答案（跨面板实例，游戏会话内）：回答过一次就不再每次弹问 */
+    public static int lastAmplitudeIndex = 1;
+    public static boolean lastGround = true;
+    public static boolean lastSnap = true;
+    public static boolean answered = false;
+
     private final UIChoiceButton<String> amplitude;
     private final UIToggle ground;
     private final UIToggle snap;
@@ -76,6 +82,11 @@ public class UIAiGenerateAskPanel extends UIOverlayPanel
         UIButton go = new UIButton(L10n.lang("bbs.ui.ai.ask_generate.go"), (b) ->
         {
             this.close();
+
+            lastAmplitudeIndex = this.amplitudeIndex;
+            lastGround = this.ground.getValue();
+            lastSnap = this.snap.getValue();
+            answered = true;
 
             onGenerate.accept(new int[] {this.amplitudeIndex, this.ground.getValue() ? 1 : 0,
                 this.snap.getValue() ? 1 : 0});

@@ -698,8 +698,8 @@ public class PoseSolverTest
             .filter(c -> c.bone.equals("left_leg")).findFirst().orElse(null);
 
         check(contactLeg != null
-            && Math.abs(Math.abs(contactLeg.x) - (float) Math.toRadians(32) * 0.94F) < 0.01F,
-            "contact beats still get the MC-scale floor + stride energy");
+            && Math.abs(Math.abs(contactLeg.x) - (float) Math.toRadians(30) * 0.94F) < 0.01F,
+            "authored contact legs survive untouched except stride energy (floors only rescue near-zero)");
     }
 
     /**

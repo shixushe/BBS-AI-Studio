@@ -177,6 +177,12 @@ public class BoneNameResolver
         for (String actual : actualBones)
         {
             String normalized = normalize(actual);
+
+            if (isReserved(normalized))
+            {
+                continue;
+            }
+
             double score = score(normalized, aliases);
 
             if (score <= 0D)
@@ -381,9 +387,17 @@ public class BoneNameResolver
         return new Resolution(generic, actual, 1D, new ArrayList<>(List.of(actual)));
     }
 
-    /** 1 for an exact alias match, 0.75 for containment, 0 for nothing. */
+    /** 1 for an exact alias match, 0.75 for containment, 0 for nothing.
+     * Reserved rig bones (IK controllers/poles/physics drivers) never match:
+     * they are program-bones, and containment used to happily bind the torso
+     * generic to "torso_IK" (2026-10-06 live bindings pollution). */
     private static double score(String normalizedActual, List<String> aliases)
     {
+        if (isReserved(normalizedActual))
+        {
+            return 0D;
+        }
+
         for (String alias : aliases)
         {
             if (normalizedActual.equals(alias))
@@ -401,6 +415,16 @@ public class BoneNameResolver
         }
 
         return 0D;
+    }
+
+    /** IK/控制器/极向量/物理驱动骨骼：程序 bone，泛骨骼绑定永不落在这里 */
+    public static boolean isReserved(String normalizedActual)
+    {
+        return normalizedActual.contains("ik")
+            || normalizedActual.contains("controller")
+            || normalizedActual.contains("pole")
+            || normalizedActual.contains("move_")
+            || normalizedActual.contains("physics");
     }
 
     private static String normalize(String name)

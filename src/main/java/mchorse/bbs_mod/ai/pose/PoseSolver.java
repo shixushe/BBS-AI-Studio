@@ -542,15 +542,6 @@ public class PoseSolver
                         ra[0] = -ra[0];
                     }
 
-                    if (beat.move != null && beat.move[0] > 0.05D)
-                    {
-                        float[] bod = beatVals.get(actualOf(bones, "body"));
-
-                        if (bod != null && bod[0] > 1F)
-                        {
-                            bod[0] = -2.5F;
-                        }
-                    }
 
                     /* IK 接地辅助：触地腿（X 负=前摆触地）膝盖伸直让脚“踩住”，
                      * 摆动腿屈膝前摆——滑步/悬空的直接来源是反着来 */
@@ -938,9 +929,10 @@ public class PoseSolver
             boolean directPair = poses != null && i - 1 < poses.size() && i < poses.size()
                 && poses.get(i - 1).direct && poses.get(i).direct;
 
-            /* 短段（<3 tick）不插中点：模板步态本身 2~3 tick 一拍，
-             * 再对半插就逼近逐 tick 键——抖动的直接来源 */
-            if (!directPair && a != null && b != null && next.tick - prev.tick >= 3F)
+            /* 短段（<4 tick）不插中点键：作者节拍本身 2~3 tick 一拍且
+             * 自带 timing，中点重定时反而扭曲；只有更长的自由创作段
+             * （4~8 tick）才需要跟随感补间 */
+            if (!directPair && a != null && b != null && next.tick - prev.tick >= 4F)
             {
                 float d = next.tick - prev.tick;
                 mchorse.bbs_mod.utils.pose.Pose mid = new mchorse.bbs_mod.utils.pose.Pose();

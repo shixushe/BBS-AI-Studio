@@ -400,6 +400,27 @@ public class AiMotionTemplates
                 }
             }
 
+            /* 作者片段没动画 body 骨骼——步行/跑步补上作者观感里的
+             * 前倾（否则上半身僵直，"没有作者动作的前倾"） */
+            if (gait && !pose.has("body"))
+            {
+                float lean = -3F;
+
+                if (normalize(clipName).contains("垂头丧气"))
+                {
+                    lean = -6F;
+                }
+                else if ("run".equals(familyOf(clipName)))
+                {
+                    lean = -8F;
+                }
+
+                MapType bodyData = new MapType();
+
+                bodyData.put("r", vec3(lean, 0F, 0F));
+                pose.put("body", bodyData);
+            }
+
             beat.put("pose", pose);
             beats.add(beat);
             index++;

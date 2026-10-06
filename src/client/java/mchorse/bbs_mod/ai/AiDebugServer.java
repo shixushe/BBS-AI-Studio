@@ -539,6 +539,84 @@ public class AiDebugServer
                         return sb.toString();
                     }
 
+                    if (op.equals("aiDump"))
+                    {
+                        /* 评测数据出口：回吐最近一次生成的 脚本/系统提示词/解析后计划。
+                         * 带 script 时顺带触发一次生成（与 op=generate 同一条路）。 */
+                        String dumpScript = map.getString("script");
+
+                        if (dumpScript != null && !dumpScript.isEmpty())
+                        {
+                            var dash = mchorse.bbs_mod.BBSModClient.getDashboard();
+                            var fp = dash.getPanels().panel instanceof mchorse.bbs_mod.ui.film.UIFilmPanel film ? film : null;
+
+                            if (fp != null && fp.aiChatBar != null && !fp.aiChatBar.busy)
+                            {
+                                fp.aiChatBar.executeGenerate(dumpScript);
+                            }
+                        }
+
+                        mchorse.bbs_mod.ai.plan.AnimationPlan dumpPlan = mchorse.bbs_mod.ai.ui.UIAiChatBar.lastPlan;
+                        StringBuilder sb = new StringBuilder();
+
+                        sb.append("{\"script\":").append(jsonString(mchorse.bbs_mod.ai.ui.UIAiChatBar.lastScriptStatic))
+                            .append(",\"system\":").append(jsonString(mchorse.bbs_mod.ai.ui.UIAiChatBar.lastSystemStatic))
+                            .append(",\"plan\":");
+
+                        if (dumpPlan == null)
+                        {
+                            sb.append("null}");
+                        }
+                        else
+                        {
+                            sb.append("{\"total_ticks\":").append(dumpPlan.totalTicks).append(",\"beats\":[");
+
+                            for (int i = 0; i < dumpPlan.beats.size(); i++)
+                            {
+                                mchorse.bbs_mod.ai.plan.AnimationPlan.Beat beat = dumpPlan.beats.get(i);
+
+                                if (i > 0)
+                                {
+                                    sb.append(',');
+                                }
+
+                                sb.append("{\"tick\":").append(beat.tick)
+                                    .append(",\"phase\":\"").append(beat.phase).append('"')
+                                    .append(",\"move\":").append(beat.move == null ? "null"
+                                        : "[" + beat.move[0] + "," + (beat.move.length > 1 ? beat.move[1] : 0) + "," + (beat.move.length > 2 ? beat.move[2] : 0) + "]")
+                                    .append(",\"intents\":[");
+
+                                for (int j = 0; j < beat.intents.size(); j++)
+                                {
+                                    if (j > 0)
+                                    {
+                                        sb.append(',');
+                                    }
+
+                                    sb.append('"').append(beat.intents.get(j).name().toLowerCase()).append('"');
+                                }
+
+                                sb.append("],\"poseObject\":");
+
+                                if (beat.poseObject == null)
+                                {
+                                    sb.append("null");
+                                }
+                                else
+                                {
+                                    sb.append(mchorse.bbs_mod.data.DataToString.toString(beat.poseObject, true)
+                                        .replace("\r\n", "\n").replace("\r", "\n"));
+                                }
+
+                                sb.append('}');
+                            }
+
+                            sb.append("]}}");
+                        }
+
+                        return sb.toString();
+                    }
+
                     if (op.equals("filmInfo"))
                     {
                         var dashboard = mchorse.bbs_mod.BBSModClient.getDashboard();
@@ -1119,6 +1197,42 @@ public class AiDebugServer
     private static String json(String value)
     {
         return "{\"status\":\"" + value + "\"}";
+    }
+
+    /** 任意 Java 字符串 → JSON 字面量（评测 dump 用） */
+    private static String jsonString(String value)
+    {
+        if (value == null)
+        {
+            return "null";
+        }
+
+        StringBuilder sb = new StringBuilder("\"");
+
+        for (char c : value.toCharArray())
+        {
+            switch (c)
+            {
+                case '"' -> sb.append("\\\"");
+                case '\\' -> sb.append("\\\\");
+                case '\n' -> sb.append("\\n");
+                case '\r' -> sb.append("\\r");
+                case '\t' -> sb.append("\\t");
+                default ->
+                {
+                    if (c < 0x20)
+                    {
+                        sb.append(String.format("\\u%04x", (int) c));
+                    }
+                    else
+                    {
+                        sb.append(c);
+                    }
+                }
+            }
+        }
+
+        return sb.append('"').toString();
     }
 
     private static String jsonMap(String key, Object value)

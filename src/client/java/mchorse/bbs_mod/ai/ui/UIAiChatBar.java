@@ -65,7 +65,7 @@ public class UIAiChatBar extends UIElement
     private final UIElement previewRow;
     private final UILabel status;
 
-    private boolean busy;
+    public boolean busy;
 
     /** Change count already reported to the transcript, so the preview entry logs once per result. */
     private int lastLoggedCount = -1;
@@ -567,9 +567,16 @@ public class UIAiChatBar extends UIElement
             + (AiSettings.thinking.get() ? " · 思维链开" : ""));
         this.history.refresh();
 
+        lastScriptStatic = script;
+        lastSystemStatic = system;
+
         mchorse.bbs_mod.ai.AiPlans.generatePlan(request, (generated, response) ->
         {
             this.busy = false;
+
+            /* 评测钩子：暂存最近一次生成的脚本/系统提示词/解析后的计划，
+             * 供 /debug aiDump 回吐——自动化基线测试的数据出口 */
+            lastPlan = generated;
 
             if (response.reasoning != null && !response.reasoning.isEmpty())
             {
@@ -1253,6 +1260,11 @@ public class UIAiChatBar extends UIElement
 
     /** 本次生成的脚本（视觉校验的质检上下文） */
     private String lastScript = "";
+
+    /** 评测钩子：最近一次生成的脚本/系统提示词/解析后的计划（/debug aiDump 回吐） */
+    public static String lastScriptStatic = "";
+    public static String lastSystemStatic = "";
+    public static AnimationPlan lastPlan;
 
     /** 视觉校验的逐帧采集状态：待 seek 的 tick 队列 + 已抓帧 */
     private final java.util.Deque<Integer> visionTicks = new java.util.ArrayDeque<>();

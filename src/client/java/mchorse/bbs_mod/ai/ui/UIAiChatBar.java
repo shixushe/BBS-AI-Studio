@@ -1088,6 +1088,66 @@ public class UIAiChatBar extends UIElement
                             v2Y.replace = true;
                             writes.add(v2Y);
 
+                            /* 防坠虚：沿路径预扫地面——走到没有地面的地方
+                             * （悬崖/洞口外/未加载区）就地截断位移，绝不让
+                             * 角色以恒定高度走进虚空 */
+                            int voidAt = -1;
+
+                            if (this.lastSnap)
+                            {
+                                double scanGround = prevGround;
+
+                                for (int pi = 0; pi < path.size(); pi++)
+                                {
+                                    float[] pt = path.get(pi);
+                                    double wkx = wx + (pt[1] - x0);
+                                    double wkz = wz + (pt[2] - z0);
+                                    double found = this.groundAheadAt(wkx, wkz, scanGround);
+
+                                    if (found == Double.MIN_VALUE)
+                                    {
+                                        if (pi > 0)
+                                        {
+                                            voidAt = pi;
+
+                                            /* x/z 写入在截断 tick 之后的部分一并删掉 */
+                                            float cutTick = path.get(pi)[0];
+
+                                            for (FrameCommitter.ChannelWrite w : writes)
+                                            {
+                                                if (w.trackId.equals("x") || w.trackId.equals("z"))
+                                                {
+                                                    for (int ki = w.keys.size() - 1; ki >= 0; ki--)
+                                                    {
+                                                        if (w.keys.get(ki).tick > cutTick)
+                                                        {
+                                                            w.keys.remove(ki);
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            thinking.addProcess("防坠虚：路径前方无地面，位移在 tick "
+                                                + (int) cutTick + " 截断");
+                                        }
+                                        else
+                                        {
+                                            thinking.addProcess("防坠虚：起点前方无地面，本次不写位移");
+                                        }
+
+                                        break;
+                                    }
+
+                                    scanGround = found;
+                                }
+
+                                if (voidAt >= 0)
+                                {
+                                    /* 截掉截断点之后的路径点 */
+                                    path = new ArrayList<>(path.subList(0, voidAt));
+                                }
+                            }
+
                             for (float[] pt : path)
                             {
                                 double wkx = wx + (pt[1] - x0);
@@ -2004,11 +2064,47 @@ public class UIAiChatBar extends UIElement
         return new double[] {x0 + dirX * travel * frac, z0 + dirZ * travel * frac};
     }
 
-    /** 贴地链的单步：地表采样相对上一个键最多升降 ±2 格——既能把嵌在
-     * 虚空/地下的演员逐键抬回地表，又挡住树冠/屋顶的高度图突变 */
+    /** 贴地链的单步：地表采样相对上一个键上升最多 2 格（挡树冠/屋顶
+     * 突变），下降最多 6 格（下台阶/陡坡要跟得走） */
     private double stepGround(double groundY, double prevGround)
     {
-        return Math.max(prevGround - 2D, Math.min(prevGround + 2D, groundY));
+        return Math.max(prevGround - 6D, Math.min(prevGround + 2D, groundY));
+    }
+
+    /**
+     * 行走前方地面探测：从 feet 向下扫 12 格（比站定贴地的 5 格宽——
+     * 走路要预判下坡），找到碰撞返回其顶面高度；一无所获返回
+     * Double.MIN_VALUE（前方是洞口/虚空/未加载区）。
+     */
+    private double groundAheadAt(double x, double z, double feetY)
+    {
+        try
+        {
+            net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
+
+            if (client.world == null)
+            {
+                return feetY;
+            }
+
+            net.minecraft.util.math.BlockPos feet = net.minecraft.util.math.BlockPos.ofFloored(x, feetY, z);
+
+            for (int dy = 1; dy >= -12; dy--)
+            {
+                net.minecraft.util.math.BlockPos pos = feet.add(0, dy, 0);
+
+                if (!client.world.getBlockState(pos).getCollisionShape(client.world, pos).isEmpty())
+                {
+                    return pos.getY() + 1;
+                }
+            }
+
+            return Double.MIN_VALUE;
+        }
+        catch (Exception e)
+        {
+            return feetY;
+        }
     }
 
     /** 贴地：采样 (x,z) 的站立面。不用 getTopY 高度图——实测在某些世界

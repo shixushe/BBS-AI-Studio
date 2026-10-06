@@ -312,8 +312,9 @@ public class PoseSolverTest
         PoseSolver.BoneChannel v2leg1 = v2poses.get(1).channels.stream()
             .filter(c -> c.bone.equals("left_leg")).findFirst().orElse(null);
 
-        check(v2leg0 != null && v2leg1 != null && Math.abs(v2leg1.x - v2leg0.x) < 0.0001F,
-            "v2 missing bone carries forward the previous beat (joint continuity)");
+        check(v2leg0 != null && v2leg1 != null
+            && Math.abs(Math.abs(v2leg1.x) - Math.abs(v2leg0.x) * 0.94F) < 0.0001F,
+            "v2 missing bone carries forward (stride energy varies the carry by -6%)");
 
         PoseSolver.BoneChannel head1 = v2poses.get(1).channels.stream()
             .filter(c -> c.bone.equals("head")).findFirst().orElse(null);
@@ -387,17 +388,100 @@ public class PoseSolverTest
         check(arm0 != null && Math.abs(arm0.x - (float) Math.toRadians(-18)) < 0.0001F,
             "weak authored arm swing is floored to the biomechanics minimum");
 
+        PoseSolver.BoneChannel leg0w = walkPoses.get(0).channels.stream()
+            .filter(c -> c.bone.equals("left_leg")).findFirst().orElse(null);
         PoseSolver.BoneChannel floorLeg1 = walkPoses.get(1).channels.stream()
             .filter(c -> c.bone.equals("left_leg")).findFirst().orElse(null);
 
-        check(floorLeg1 != null && Math.abs(Math.abs(floorLeg1.x) - (float) Math.toRadians(15)) < 0.0001F,
-            "floor-created leg swing carries forward (continuity beats parity)");
+        check(floorLeg1 != null && leg0w != null
+            && Math.abs(Math.abs(floorLeg1.x) - Math.abs(leg0w.x) * 0.94F) < 0.0001F,
+            "floor-created leg swing (24 deg subdued) carries forward with stride energy");
 
         PoseSolver.BoneChannel arm1 = walkPoses.get(1).channels.stream()
             .filter(c -> c.bone.equals("left_arm")).findFirst().orElse(null);
 
-        check(arm1 != null && Math.abs(arm1.x - (float) Math.toRadians(-18)) < 0.0001F,
-            "floor respects existing authored amplitude on later beats");
+        check(arm1 != null && Math.abs(Math.abs(arm1.x) - Math.abs(arm0.x) * 0.94F) < 0.0001F,
+            "floor respects existing authored amplitude on later beats (scaled by stride energy)");
+
+        /* MC 幅度档：LLM 已经写大（±40°）时按标准档只兜 ±32° 的底，作者值不动 */
+        AnimationPlan v2big;
+
+        try
+        {
+            v2big = AnimationPlan.parse("""
+                {
+                  "version": 2, "fps": 20, "total_ticks": 16,
+                  "beats": [
+                    { "index": 0, "tick": 0, "phase": "hold", "move": [0.5, 0, 0],
+                      "pose": { "left_leg": {"r": [40, 0, 0]}, "right_leg": {"r": [-40, 0, 0]} } },
+                    { "index": 1, "tick": 8, "phase": "hold", "move": [1.0, 0, 0],
+                      "pose": {} }
+                  ]
+                }
+                """);
+        }
+        catch (AiException e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        List<PoseSolver.KeyPose> bigPoses = PoseSolver.solve(v2big, bones);
+        PoseSolver.BoneChannel bigLeg0 = bigPoses.get(0).channels.stream()
+            .filter(c -> c.bone.equals("left_leg")).findFirst().orElse(null);
+
+        check(bigLeg0 != null && Math.abs(bigLeg0.x - (float) Math.toRadians(40)) < 0.0001F,
+            "MC-scale authored leg swing survives the floor untouched");
+
+        /* 头部/头饰随步微摆：缺值兜底创建、逐拍反号（不再有"面具走"） */
+        PoseSolver.BoneChannel head0w = walkPoses.get(0).channels.stream()
+            .filter(c -> c.bone.equals("head")).findFirst().orElse(null);
+        PoseSolver.BoneChannel head1w = walkPoses.get(1).channels.stream()
+            .filter(c -> c.bone.equals("head")).findFirst().orElse(null);
+        PoseSolver.BoneChannel wear0w = walkPoses.get(0).channels.stream()
+            .filter(c -> c.bone.equals("headwear")).findFirst().orElse(null);
+
+        check(head0w != null && Math.abs(head0w.y - (float) Math.toRadians(1.5)) < 0.0001F,
+            "walk floor gives the head a gait micro-sway");
+        check(head1w != null && Math.abs(head1w.y + (float) Math.toRadians(1.5)) < 0.0001F,
+            "head micro-sway alternates sign per stride");
+        check(wear0w != null && Math.abs(wear0w.y - (float) Math.toRadians(0.8)) < 0.0001F,
+            "headwear follows the gait micro-sway");
+
+        /* v2 @姿势拍合并已动画骨骼：技能姿势只含几根骨骼，其余关节不得
+         * 垂回绑定姿势（BBS 的 Pose 插值把缺失骨骼当 REST） */
+        mchorse.bbs_mod.utils.pose.Pose bodyOnly = new mchorse.bbs_mod.utils.pose.Pose();
+
+        bodyOnly.getOrCreate("body").rotate.set(0.2F, 0F, 0F);
+
+        AnimationPlan v2skill;
+
+        try
+        {
+            v2skill = AnimationPlan.parse("""
+                {
+                  "version": 2, "fps": 20, "total_ticks": 10,
+                  "beats": [
+                    { "index": 0, "tick": 0, "phase": "hold",
+                      "pose": { "left_arm": {"r": [20, 0, 0]} } },
+                    { "index": 1, "tick": 10, "phase": "hold", "pose": "@抬手", "spacing": 10 }
+                  ]
+                }
+                """);
+        }
+        catch (AiException e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        List<PoseSolver.KeyPose> mergePoses = PoseSolver.solve(v2skill, bones,
+            1F, java.util.Map.of("抬手", bodyOnly));
+        PoseSolver.BoneChannel mergedArm = mergePoses.get(1).channels.stream()
+            .filter(c -> c.bone.equals("left_arm")).findFirst().orElse(null);
+
+        check(mergePoses.get(1).channels.stream().anyMatch(c -> c.bone.equals("body")),
+            "@pose beat carries the authored bones");
+        check(mergedArm != null && Math.abs(mergedArm.x - (float) Math.toRadians(20)) < 0.0001F,
+            "@pose beat keeps animated joints (no REST droop on the whole-pose track)");
 
         /* v2 曲线强制：LLM 给 linear 也升为 S 曲线 */
         equal("ease_in_out", walkPoses.get(0).intent, "v2 linear intent upgraded to S curve");

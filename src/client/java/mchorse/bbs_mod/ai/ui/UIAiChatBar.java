@@ -340,7 +340,7 @@ public class UIAiChatBar extends UIElement
 
             if (bound > 0)
             {
-                system += "\n\n本模型主要骨骼（pose 的键名，每拍全部给出，共 " + bound + " 根）：" + boneList;
+                system += "\n\n本模型主要骨骼（pose 的键名，每拍只写有变化的骨骼，未写的自动沿用，共 " + bound + " 根可驱动）：" + boneList;
             }
 
             /* 深度适配：其余可直接驱动的实际骨骼（跳过泛骨骼层，直呼其名）；

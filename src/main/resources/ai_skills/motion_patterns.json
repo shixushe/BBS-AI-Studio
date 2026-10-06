@@ -1,4 +1,41 @@
 {
+ "mc_walk_baseline": {
+  "note": "MC 原版风格步态基准——步行拍优先按这组幅度写，不要低于下限（系统保底也按此校准）；垂头丧气/潜行等情绪步态可降到约 60%，但不低于 ±16°",
+  "leg_swing_deg": [
+   30,
+   40
+  ],
+  "arm_counter_deg": [
+   24,
+   32
+  ],
+  "knee_bend_deg": [
+   8,
+   20
+  ],
+  "elbow_bend_deg": [
+   10,
+   15
+  ],
+  "pelvis_twist_deg": [
+   5,
+   8
+  ],
+  "torso_counter_twist_deg": [
+   3,
+   5
+  ],
+  "body_lean_deg": [
+   2,
+   3
+  ],
+  "step_interval_ticks": [
+   4,
+   5
+  ],
+  "speed_blocks_per_tick": 0.216,
+  "stride_blocks": 0.9
+ },
  "gaits": {
   "sad_walk": {
    "source": "1走2（垂头丧气）",

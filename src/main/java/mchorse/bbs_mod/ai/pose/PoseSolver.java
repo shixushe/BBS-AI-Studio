@@ -232,6 +232,45 @@ public class PoseSolver
 
         boolean hasMove = firstMoveTick != Integer.MAX_VALUE;
 
+        /* MC 幅度校准：LLM 自写的腿部幅度决定步行保底档位。写得含蓄
+         * （作者风格 ±16° 级）用 subdued 档——仍明显高于作者值，读得出
+         * MC 原版那种干净的摆腿；模型已经写大（≥18°）则用标准档，只兜
+         * 更低的底，不覆盖作者意图 */
+        float authoredLegSwing = 0F;
+
+        for (AnimationPlan.Beat b : plan.beats)
+        {
+            if (b.poseObject == null)
+            {
+                continue;
+            }
+
+            for (String generic : new String[] {"left_leg", "right_leg"})
+            {
+                BoneNameResolver.Resolution res = bones.resolved.get(generic);
+
+                for (String key : new String[] {generic, res == null ? null : res.actual})
+                {
+                    if (key == null || !b.poseObject.has(key))
+                    {
+                        continue;
+                    }
+
+                    float[] r = readVec3(b.poseObject.getMap(key), "r", 0F);
+
+                    authoredLegSwing = Math.max(authoredLegSwing, Math.abs(r[0]));
+                }
+            }
+        }
+
+        boolean subdued = authoredLegSwing < 18F;
+        float legFloor = subdued ? 24F : 32F;
+        float armFloor = subdued ? 18F : 24F;
+
+        /* 步幅能量表（v1 姿势名路径在循环后整体缩放；v2 直写路径在步行
+         * 保底层内逐拍作用于摆动轴）——相邻步 ±6% 的能量差打破机械感 */
+        float[] strideEnergy = {1.0F, 0.94F, 1.06F, 0.97F};
+
         /* 步态展开：相邻走路拍之间插入 walk_pass 过渡帧（passing 位），
          * 并把走路的线性插值升级为 S 曲线——只有左右两个极端姿势来回
          * 跳 + 直线插值，是步态生硬的直接根源 */
@@ -333,6 +372,42 @@ public class PoseSolver
                             });
                         }
 
+                        /* @姿势只摆造型、不重置全身：BBS 的 Pose 插值把键里
+                         * 没写的骨骼当绑定姿势（REST），技能姿势往往只有几根
+                         * 骨骼——其余已动画关节会在段间垂回零。把 carried 里
+                         * 未被技能覆盖（含镜像对应侧）的骨骼并入本拍键 */
+                        for (java.util.Map.Entry<String, float[]> entry : carried.entrySet())
+                        {
+                            String bone = entry.getKey();
+                            String mirrorBone = mirroredBone(bone);
+                            boolean covered = false;
+
+                            for (BoneChannel existing : v2.channels)
+                            {
+                                if (existing.bone.equals(bone) || existing.bone.equals(mirrorBone))
+                                {
+                                    covered = true;
+
+                                    break;
+                                }
+                            }
+
+                            if (covered)
+                            {
+                                continue;
+                            }
+
+                            float[] v = entry.getValue();
+                            BoneChannel channel = new BoneChannel();
+
+                            channel.bone = bone;
+                            channel.x = (float) Math.toRadians(v[0]);
+                            channel.y = (float) Math.toRadians(v[1]);
+                            channel.z = (float) Math.toRadians(v[2]);
+                            channel.values = new float[] {channel.x, channel.y, channel.z, v[3], v[4], v[5], v[6], v[7], v[8]};
+                            v2.channels.add(channel);
+                        }
+
                         poses.add(v2);
 
                         continue;
@@ -397,26 +472,26 @@ public class PoseSolver
 
                         switch (genericKey)
                         {
-                            case "left_leg" -> { targetAxis = 15F * g; axis = 0; }
-                            case "right_leg" -> { targetAxis = -15F * g; axis = 0; }
+                            case "left_leg" -> { targetAxis = legFloor * g; axis = 0; }
+                            case "right_leg" -> { targetAxis = -legFloor * g; axis = 0; }
                             case "left_knee", "right_knee" -> { targetAxis = 12F; axis = 0; }
-                            case "left_arm" -> { targetAxis = -18F * g; axis = 0; }
-                            case "right_arm" -> { targetAxis = 18F * g; axis = 0; }
-                            case "left_elbow", "right_elbow" -> { targetAxis = -10F; axis = 0; }
-                            case "torso_lower" -> { targetAxis = 6F * g; axis = 1; }
-                            case "torso" -> { targetAxis = -4F * g; axis = 1; }
+                            case "left_arm" -> { targetAxis = -armFloor * g; axis = 0; }
+                            case "right_arm" -> { targetAxis = armFloor * g; axis = 0; }
+                            case "left_elbow", "right_elbow" -> { targetAxis = -12F; axis = 0; }
+                            case "torso_lower" -> { targetAxis = 7F * g; axis = 1; }
+                            case "torso" -> { targetAxis = -4.5F * g; axis = 1; }
                             case "body" -> { targetAxis = -2.5F; axis = 0; }
                             default -> { continue; }
                         }
 
                         float threshold = switch (genericKey)
                         {
-                            case "left_leg", "right_leg" -> 8F;
+                            case "left_leg", "right_leg" -> legFloor;
                             case "left_knee", "right_knee" -> 6F;
-                            case "left_arm", "right_arm" -> 10F;
-                            case "left_elbow", "right_elbow" -> 4F;
-                            case "torso_lower" -> 3F;
-                            case "torso" -> 2.5F;
+                            case "left_arm", "right_arm" -> armFloor;
+                            case "left_elbow", "right_elbow" -> 8F;
+                            case "torso_lower" -> 4F;
+                            case "torso" -> 3F;
                             case "body" -> 1.5F;
                             default -> 0F;
                         };
@@ -488,11 +563,65 @@ public class PoseSolver
                         }
                         else if (Math.abs(leg[0]) >= 8F)
                         {
-                            /* 摆动：膝盖不足则屈到 15° */
+                            /* 摆动：膝盖不足则屈到 18° */
                             if (knee[0] < 12F)
                             {
-                                knee[0] = 15F;
+                                knee[0] = 18F;
                             }
+                        }
+                    }
+
+                    /* 头部/头饰随步微摆（治"走路脖子以上不动"的面具感）：
+                     * 缺值时按步相位给 ±1.5°/±0.8° 的摇曳，floor 造出的微值
+                     * 逐拍反号形成左右摆；LLM 写的明显头部动作（>1.6°）不动 */
+                    for (String micro : new String[] {"head", "headwear"})
+                    {
+                        BoneNameResolver.Resolution res = bones.resolved.get(micro);
+
+                        if (res == null)
+                        {
+                            continue;
+                        }
+
+                        float[] v = beatVals.get(res.actual);
+
+                        if (v == null)
+                        {
+                            v = new float[] {0F, 0F, 0F, 1F, 1F, 1F, 0F, 0F, 0F};
+                            beatVals.put(res.actual, v);
+                        }
+
+                        float amp = "head".equals(micro) ? 1.5F : 0.8F;
+
+                        if (Math.abs(v[1]) < 0.1F)
+                        {
+                            v[1] = amp * g;
+                        }
+                        else if (Math.abs(v[1]) <= amp + 0.1F)
+                        {
+                            v[1] = -v[1];
+                        }
+                    }
+
+                    /* 步幅能量：v2 直写域的 ±6% 步差——只作用于摆动轴（腿/
+                     * 膝/臂/肘的 X），头/躯干微动与缩放平移不参与 */
+                    float energy = strideEnergy[spanIndex % strideEnergy.length];
+
+                    for (String swing : new String[] {"left_leg", "right_leg", "left_knee",
+                        "right_knee", "left_arm", "right_arm", "left_elbow", "right_elbow"})
+                    {
+                        BoneNameResolver.Resolution res = bones.resolved.get(swing);
+
+                        if (res == null)
+                        {
+                            continue;
+                        }
+
+                        float[] v = beatVals.get(res.actual);
+
+                        if (v != null)
+                        {
+                            v[0] *= energy;
                         }
                     }
 
@@ -582,6 +711,52 @@ public class PoseSolver
                             entry.getValue().translate.z * jx
                         };
                         pose.channels.add(channel);
+
+                        /* 进载体（转回度数）：v2 计划里 @姿势之后的直写拍从
+                         * 该造型自然延续——此前 @字符串姿势从不更新载体，
+                         * "从该造型延续"只是提示词的一厢情愿 */
+                        carried.put(channel.bone, new float[] {
+                            (float) Math.toDegrees(channel.x), (float) Math.toDegrees(channel.y),
+                            (float) Math.toDegrees(channel.z),
+                            channel.values[3], channel.values[4], channel.values[5],
+                            channel.values[6], channel.values[7], channel.values[8]
+                        });
+                    }
+
+                    /* @姿势只摆造型、不重置全身：BBS 的 Pose 插值把键里没写
+                     * 的骨骼当绑定姿势（REST），技能姿势往往只有几根骨骼——
+                     * 其余已动画关节会在段间垂回零。把 carried 里未被技能
+                     * 覆盖（含镜像对应侧）的骨骼并入本拍键 */
+                    for (java.util.Map.Entry<String, float[]> entry : carried.entrySet())
+                    {
+                        String bone = entry.getKey();
+                        String mirrorBone = mirroredBone(bone);
+                        boolean covered = false;
+
+                        for (BoneChannel existing : pose.channels)
+                        {
+                            if (existing.bone.equals(bone) || existing.bone.equals(mirrorBone))
+                            {
+                                covered = true;
+
+                                break;
+                            }
+                        }
+
+                        if (covered)
+                        {
+                            continue;
+                        }
+
+                        float[] v = entry.getValue();
+                        BoneChannel channel = new BoneChannel();
+
+                        channel.bone = bone;
+                        channel.x = (float) Math.toRadians(v[0]);
+                        channel.y = (float) Math.toRadians(v[1]);
+                        channel.z = (float) Math.toRadians(v[2]);
+                        channel.values = new float[] {channel.x, channel.y, channel.z, v[3], v[4], v[5], v[6], v[7], v[8]};
+                        pose.channels.add(channel);
                     }
 
                     poses.add(pose);
@@ -636,9 +811,9 @@ public class PoseSolver
             poses.add(pose);
         }
 
-        /* 步幅变化：交替给每一步 ±6% 的能量差（作者步态本身左右不对称），
-         * 打破"每步一模一样"的机械感——只缩放旋转，不碰缩放/平移分量 */
-        float[] strideEnergy = {1.0F, 0.94F, 1.06F, 0.97F};
+        /* 步幅变化（v1 姿势名路径）：交替给每一步 ±6% 的能量差（作者步态
+         * 本身左右不对称），打破"每步一模一样"的机械感——只缩放旋转，
+         * 不碰缩放/平移分量 */
         int stride = 0;
 
         for (KeyPose pose : poses)

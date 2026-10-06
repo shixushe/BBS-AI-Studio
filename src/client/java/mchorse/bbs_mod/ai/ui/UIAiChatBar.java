@@ -242,6 +242,7 @@ public class UIAiChatBar extends UIElement
 
     public void executeGenerate(String script, int amplitudeIndex, boolean groundDetect, boolean groundSnap)
     {
+        this.lastScript = script;
         this.lastAmplitude = amplitudeIndex;
         this.groundDetect = groundDetect;
         this.lastSnap = groundSnap;
@@ -426,6 +427,20 @@ public class UIAiChatBar extends UIElement
         catch (Exception ignored)
         {}
 
+        /* 作者动作模板：命中请求的作者动画节拍注入——第一步套用，第二步修改 */
+        try
+        {
+            String templates = mchorse.bbs_mod.ai.AiMotionTemplates.promptBlock(
+                mchorse.bbs_mod.ai.AiSkillLibrary.modelFile(modelForm.model.get(), "model.bbs.json"), script);
+
+            if (!templates.isEmpty())
+            {
+                system += templates;
+            }
+        }
+        catch (Exception ignored)
+        {}
+
         if (!caps.particles.isEmpty())
         {
             system += "\n\n可用粒子效果（fx.id 用这些名字）: " + String.join(", ", caps.particles)
@@ -598,7 +613,39 @@ public class UIAiChatBar extends UIElement
 
             if (!bones.isComplete())
             {
-                /* The assistant never guesses bone names - it asks */
+                /* 默认直接识别：未解析的泛骨骼先用解析器的最佳猜测自动绑定
+                 * 并持久化（同一模型以后不再打扰），全部命中的话一次确认
+                 * 弹窗都不弹；只有连猜测都凑不齐时才问用户 */
+                java.util.List<String> autoBound = new ArrayList<>();
+
+                for (String generic : new ArrayList<>(bones.unresolved))
+                {
+                    String guess = mchorse.bbs_mod.ai.pose.BoneNameResolver.suggest(generic, inventory);
+
+                    if (guess != null)
+                    {
+                        bones.resolved.put(generic, mchorse.bbs_mod.ai.pose.BoneNameResolver.confirmed(generic, guess));
+                        bones.unresolved.remove(generic);
+
+                        Map<String, String> map = new java.util.LinkedHashMap<>(mchorse.bbs_mod.ai.pose.AiBoneBindings.get(modelForm.model.get()));
+
+                        map.put(generic, guess);
+                        mchorse.bbs_mod.ai.pose.AiBoneBindings.set(modelForm.model.get(), map);
+                        autoBound.add(generic + "→" + guess);
+                    }
+                }
+
+                if (!autoBound.isEmpty())
+                {
+                    thinking.addProcess("骨骼自动识别：" + String.join("、", autoBound)
+                        + "（已保存绑定，模型编辑器→AI 绑定可复核）");
+                    this.history.refresh();
+                }
+            }
+
+            if (!bones.isComplete())
+            {
+                /* 自动识别仍有缺口才问用户 */
                 thinking.setText(L10n.lang("bbs.ui.ai.ask.open").get());
                 this.history.refresh();
 
@@ -1158,6 +1205,122 @@ public class UIAiChatBar extends UIElement
         thinking.setText(L10n.lang("bbs.ui.ai.chat.generated").format(generated.beats.size(), lastTick).get());
         this.history.refresh();
         this.refreshPreviewRow();
+        this.scheduleVisionVerify(generated);
+    }
+
+    /** 本次生成的脚本（视觉校验的质检上下文） */
+    private String lastScript = "";
+
+    /** 视觉校验的逐帧采集状态：待 seek 的 tick 队列 + 已抓帧 */
+    private final java.util.Deque<Integer> visionTicks = new java.util.ArrayDeque<>();
+    private final java.util.List<mchorse.bbs_mod.utils.resources.Pixels> visionFrames = new ArrayList<>();
+    private boolean visionPendingGrab;
+    private int visionCooldown;
+
+    /**
+     * 视觉校验排程：后端开了 supports_vision 时，取首/中/尾三个关键
+     * tick 逐帧采集（render() 里逐帧消化，seek 后等 3 帧再抓），全部
+     * 抓完发给视觉模型质检，结论回聊天流。没开视觉就整个跳过。
+     */
+    private void scheduleVisionVerify(AnimationPlan generated)
+    {
+        if (!mchorse.bbs_mod.ai.AiVision.available() || generated.beats.isEmpty())
+        {
+            return;
+        }
+
+        this.visionTicks.clear();
+        this.visionFrames.clear();
+        this.visionPendingGrab = false;
+
+        java.util.LinkedHashSet<Integer> picks = new java.util.LinkedHashSet<>();
+        int count = generated.beats.size();
+
+        picks.add(Math.max(0, generated.beats.get(0).tick));
+        picks.add(Math.max(0, generated.beats.get(count / 2).tick));
+        picks.add(Math.max(0, generated.beats.get(count - 1).tick));
+
+        this.visionTicks.addAll(picks);
+
+        this.history.log(AiChatMessage.Role.SYSTEM, "视觉校验：已排队 " + picks.size()
+            + " 帧采集（首/中/尾关键拍），完成后报告质检结论");
+        this.history.refresh();
+    }
+
+    /** 渲染线程逐帧消化采集队列（UIAiChatBar.render 每帧调用） */
+    private void updateVisionCapture()
+    {
+        if (this.visionTicks.isEmpty() && !this.visionPendingGrab)
+        {
+            return;
+        }
+
+        if (this.visionCooldown > 0)
+        {
+            this.visionCooldown--;
+
+            return;
+        }
+
+        if (this.visionPendingGrab)
+        {
+            this.visionPendingGrab = false;
+
+            try
+            {
+                var window = net.minecraft.client.MinecraftClient.getInstance().getWindow();
+
+                this.visionFrames.add(mchorse.bbs_mod.ai.capture.FrameGrabber.grabScreen(
+                    window.getFramebufferWidth(), window.getFramebufferHeight()));
+            }
+            catch (Exception e)
+            {
+                this.history.log(AiChatMessage.Role.SYSTEM, "视觉校验：抓帧失败 " + e.getMessage());
+            }
+        }
+
+        Integer tick = this.visionTicks.poll();
+
+        if (tick == null)
+        {
+            java.util.List<mchorse.bbs_mod.utils.resources.Pixels> frames = new ArrayList<>(this.visionFrames);
+
+            this.visionFrames.clear();
+
+            String script = this.lastScript;
+
+            mchorse.bbs_mod.ai.AiVision.verify(script, frames, (verdict, error) ->
+            {
+                if (error != null)
+                {
+                    this.history.log(AiChatMessage.Role.SYSTEM, "视觉校验失败：" + error);
+                }
+                else if ("PASS".equalsIgnoreCase(verdict))
+                {
+                    this.history.log(AiChatMessage.Role.SYSTEM, "视觉校验：PASS（视觉模型未发现可见问题）");
+                }
+                else
+                {
+                    this.history.log(AiChatMessage.Role.SYSTEM, "视觉校验结论：\n" + verdict);
+                }
+
+                this.history.refresh();
+            });
+
+            return;
+        }
+
+        try
+        {
+            this.panel.getRunner().setCursor(tick);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+        this.visionPendingGrab = true;
+        this.visionCooldown = 3;
     }
 
     /** Polish: local intent parsing -> L3 on every numeric channel of the open replay -> preview. */
@@ -1768,6 +1931,8 @@ public class UIAiChatBar extends UIElement
     @Override
     public void render(UIContext context)
     {
+        this.updateVisionCapture();
+
         /* Chrome surface: the bar is editor chrome, not workspace (spec 5.0.1 I) */
         this.area.render(context.batcher, BBSSettings.chromeSurface());
         context.batcher.box(this.area.x, this.area.y, this.area.ex(), this.area.y + 2, Colors.opaque(BBSSettings.primaryColor.get()));

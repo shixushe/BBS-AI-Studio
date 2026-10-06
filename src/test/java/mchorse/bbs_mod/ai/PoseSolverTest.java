@@ -42,6 +42,7 @@ public class PoseSolverTest
         libraryCoversContract();
         starAdaptation();
         starBuiltins();
+        motionTemplates();
 
         System.out.println("\n" + (failures == 0 ? "ALL PASS" : failures + " FAILURES") + " (" + checks + " checks)");
 
@@ -620,6 +621,108 @@ public class PoseSolverTest
             check(hasEyes == defaults.containsKey("left_eyebrow"), variant + ": defaults carry brows iff eyes variant");
             check(defaults.containsKey("left_elbow") && defaults.containsKey("right_knee") && defaults.containsKey("headwear"),
                 variant + ": defaults carry elbows/knees/headwear");
+        }
+    }
+
+    /**
+     * 作者动作模板：内置模型的 animations 转成的模板节拍必须过 v2 契约，
+     * 步行请求命中、无关请求不注入；passing 过渡帧不被保底抬成触地帧。
+     */
+    private static void motionTemplates()
+    {
+        String json = readBuiltinModelJson("slim_eyes");
+
+        check(json != null, "builtin model json readable for template extraction");
+
+        String hit = json == null ? "" : mchorse.bbs_mod.ai.AiMotionTemplates.fromModelJson(json, "角色向前走路然后停下");
+        String miss = json == null ? "" : mchorse.bbs_mod.ai.AiMotionTemplates.fromModelJson(json, "画一栋房子");
+
+        check(hit != null && hit.contains("动作模板") && hit.contains("beats="), "walk script hits the author walk template");
+        check(miss == null || miss.isEmpty(), "non-motion script injects no template");
+
+        if (hit != null && hit.contains("beats="))
+        {
+            int start = hit.indexOf("beats=") + "beats=".length();
+            int end = hit.indexOf('\n', start);
+            String beats = hit.substring(start, end == -1 ? hit.length() : end);
+
+            try
+            {
+                AnimationPlan plan = AnimationPlan.parse("{\"version\":2,\"fps\":20,\"total_ticks\":80,\"beats\":" + beats + "}");
+
+                check(plan.beats.size() >= 3, "author template parses into " + plan.beats.size() + " beats");
+                check(plan.beats.get(0).move != null, "gait template beats carry move");
+                check(plan.beats.stream().anyMatch(b -> b.poseObject != null && !b.poseObject.keys().isEmpty()),
+                    "template beats carry per-bone values");
+            }
+            catch (Exception e)
+            {
+                fail("author template beats violate the v2 contract: " + e.getMessage());
+            }
+        }
+
+        /* passing 让路：过渡帧的双腿保持接近并拢（保底层不得抬成触地帧） */
+        AnimationPlan passingPlan;
+
+        try
+        {
+            passingPlan = AnimationPlan.parse("""
+                {
+                  "version": 2, "fps": 20, "total_ticks": 12,
+                  "beats": [
+                    { "index": 0, "tick": 0, "phase": "contact", "move": [0, 0, 0],
+                      "pose": { "left_leg": {"r": [-34, 0, 0]}, "right_leg": {"r": [30, 0, 0]} } },
+                    { "index": 1, "tick": 2, "phase": "passing", "move": [0.45, 0, 0],
+                      "pose": { "left_leg": {"r": [-4, 0, 0]}, "right_leg": {"r": [2, 0, 0]}, "left_knee": {"r": [18, 0, 0]} } },
+                    { "index": 2, "tick": 4, "phase": "contact", "move": [0.9, 0, 0],
+                      "pose": { "left_leg": {"r": [30, 0, 0]}, "right_leg": {"r": [-34, 0, 0]} } }
+                  ]
+                }
+                """);
+        }
+        catch (AiException e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        List<PoseSolver.KeyPose> passingPoses = PoseSolver.solve(passingPlan, BoneNameResolver.resolve(STAR_BONES));
+
+        PoseSolver.BoneChannel passLeg = passingPoses.get(1).channels.stream()
+            .filter(c -> c.bone.equals("left_leg")).findFirst().orElse(null);
+
+        check(passLeg != null && Math.abs(passLeg.x - (float) Math.toRadians(-4)) < 0.0001F,
+            "passing beat keeps its near-straight legs (floor yields to transition frames)");
+
+        PoseSolver.BoneChannel contactLeg = passingPoses.get(2).channels.stream()
+            .filter(c -> c.bone.equals("left_leg")).findFirst().orElse(null);
+
+        check(contactLeg != null
+            && Math.abs(Math.abs(contactLeg.x) - (float) Math.toRadians(32) * 0.94F) < 0.01F,
+            "contact beats still get the MC-scale floor + stride energy");
+    }
+
+    /** Raw JSON of a shipped builtin model (for template extraction tests). */
+    private static String readBuiltinModelJson(String variant)
+    {
+        try
+        {
+            java.io.InputStream stream = PoseSolverTest.class.getResourceAsStream(
+                "/ai_models/star36/" + variant + "/model.bbs.json");
+
+            if (stream == null)
+            {
+                return null;
+            }
+
+            String raw = new String(stream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+
+            stream.close();
+
+            return raw;
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
         }
     }
 

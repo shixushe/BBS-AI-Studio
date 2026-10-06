@@ -155,6 +155,121 @@ public class OpenAiCompatibleBackend implements AiTextBackend
         return this.parse(response.body(), model);
     }
 
+    /**
+     * 多模态请求（视觉校验用）：同一 /chat/completions 端点，user 消息的
+     * content 换成 文本 + image_url(base64 data URL) 分片。供应商开启
+     * supports_vision（如 GLM-4V 系列）时可用；其余协议后端不走这里。
+     */
+    public AiChatResponse chatWithImages(AiChatRequest request, List<String> base64Png) throws AiException
+    {
+        String baseUrl = AiSettings.baseUrl.get().trim();
+        String apiKey = AiSettings.apiKey.get().trim();
+        String model = AiSettings.model.get().trim().toLowerCase();
+
+        if (baseUrl.isEmpty() || model.isEmpty() || apiKey.isEmpty())
+        {
+            throw new AiException(Type.NOT_CONFIGURED, "AI 尚未配置：B 键打开设置 → AI → 供应商选 GLM/DeepSeek 等，填入 API 密钥后重试");
+        }
+
+        if (baseUrl.endsWith("/"))
+        {
+            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        }
+
+        MapType body = new MapType();
+
+        body.putString("model", model);
+        body.put("messages", this.imageMessages(request, base64Png));
+        body.putFloat("temperature", Math.min(request.temperature, 1F));
+
+        if (request.maxTokens > 0)
+        {
+            body.putInt("max_tokens", request.maxTokens);
+        }
+
+        HttpRequest httpRequest;
+
+        try
+        {
+            httpRequest = HttpRequest.newBuilder()
+                .uri(URI.create(baseUrl + "/chat/completions"))
+                .timeout(Duration.ofMillis(AiSettings.timeoutMs.get()))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + apiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(
+                    DataToString.toString(body, true)
+                        .replace("\r\n", "\n")
+                        .replace("\r", "\n")))
+                .build();
+        }
+        catch (Exception e)
+        {
+            throw new AiException(Type.NOT_CONFIGURED, "Invalid base URL: " + e.getMessage());
+        }
+
+        HttpResponse<String> response;
+
+        try
+        {
+            response = this.http.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+
+            throw new AiException(Type.CANCELLED, "Request cancelled");
+        }
+        catch (Exception e)
+        {
+            throw new AiException(Type.NETWORK, "网络错误（视觉校验）：" + e.getClass().getSimpleName());
+        }
+
+        if (response.statusCode() != 200)
+        {
+            throw AiException.fromHttp(response.statusCode(), response.headers().firstValue("Retry-After").orElse(null), response.body());
+        }
+
+        return this.parse(response.body(), model);
+    }
+
+    /** user 消息 = 文本 + 每帧一个 base64 图片分片（OpenAI 视觉内容格式） */
+    private ListType imageMessages(AiChatRequest request, List<String> base64Png)
+    {
+        ListType messages = new ListType();
+        MapType system = new MapType();
+
+        system.putString("role", "system");
+        system.putString("content", request.system == null ? "" : request.system);
+        messages.add(system);
+
+        MapType user = new MapType();
+
+        user.putString("role", "user");
+
+        ListType content = new ListType();
+        MapType text = new MapType();
+
+        text.putString("type", "text");
+        text.putString("text", request.user == null ? "" : request.user);
+        content.add(text);
+
+        for (String png : base64Png)
+        {
+            MapType part = new MapType();
+            MapType url = new MapType();
+
+            part.putString("type", "image_url");
+            url.putString("url", "data:image/png;base64," + png);
+            part.put("image_url", url);
+            content.add(part);
+        }
+
+        user.put("content", content);
+        messages.add(user);
+
+        return messages;
+    }
+
     private ListType messages(AiChatRequest request)
     {
         ListType messages = new ListType();

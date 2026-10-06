@@ -457,8 +457,11 @@ public class PoseSolver
 
                 /* 生物力学保底层：位移跨度内的拍保证步行关节最低幅度——
                  * LLM 写得含蓄（骨盆 1°、漏骨盆）也不会再是"一块铁板"；
-                 * 模型写了更大值时完全尊重 */
-                if (hasMove && beat.tick >= firstMoveTick && beat.tick <= lastMoveTick)
+                 * 模型写了更大值时完全尊重。
+                 * passing 拍让路：过渡帧的双腿本就该接近并拢（模板/作者
+                 * 数据的中间位），保底会把它抬成另一个触地帧 → 铁板步。 */
+                if (hasMove && beat.tick >= firstMoveTick && beat.tick <= lastMoveTick
+                    && !"passing".equals(beat.phase))
                 {
                     float g = (spanIndex % 2 == 0) ? 1F : -1F;
 

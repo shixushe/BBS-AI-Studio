@@ -237,6 +237,9 @@ public class ModelFormRenderer extends FormRenderer<ModelForm> implements ITicka
             this.applyPose(pose, newPose.get());
         }
 
+        /* AI 绑定试动：绑定页签的校验姿势最后叠加——不落盘、不进撤销 */
+        mchorse.bbs_mod.ai.AiBindingTestPose.apply(pose);
+
         return pose;
     }
 

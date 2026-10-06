@@ -673,6 +673,22 @@ public class UIModelConfigEditor extends UIElement
         hint.color(Colors.LIGHTER_GRAY, false);
         page.add(hint);
 
+        /* 试动校验：清掉上一轮的测试姿势，加复位入口 */
+        mchorse.bbs_mod.ai.AiBindingTestPose.clear();
+
+        UIButton resetTest = new UIButton(L10n.lang("bbs.ui.model_editor.ai_bindings_test_reset"), (b) ->
+        {
+            mchorse.bbs_mod.ai.AiBindingTestPose.clear();
+        });
+
+        resetTest.h(UIConstants.CONTROL_HEIGHT);
+        page.add(resetTest);
+
+        UILabel testHint = UI.label(L10n.lang("bbs.ui.model_editor.ai_bindings_test_hint"), UIConstants.CONTROL_HEIGHT * 3);
+
+        testHint.color(Colors.LIGHTER_GRAY, false);
+        page.add(testHint);
+
         /* 绑定按「模型 id」持久化（与聊天生成流同一把钥匙）——表单实例 id 每次随机，用它会丢失用户绑定 */
         String modelKey = this.modelPanel.getForm() == null ? null : this.modelPanel.getForm().model.get();
 
@@ -745,6 +761,16 @@ public class UIModelConfigEditor extends UIElement
             });
 
             UIElement row = UI.labelRow(L10n.lang("bbs.ui.ai.ask.bone").format(generic), pick);
+
+            /* 试动：让模型当场摆出该骨骼的校验姿势——动的部位对，绑定就对 */
+            UIIcon test = new UIIcon(Icons.POSE, (b) ->
+            {
+                mchorse.bbs_mod.ai.AiBindingTestPose.toggle(generic, current);
+            });
+
+            test.h(UIConstants.CONTROL_HEIGHT);
+            test.tooltip(L10n.lang("bbs.ui.model_editor.ai_bindings_test").format(generic));
+            row = UI.row(2, row, test);
 
             /* 用户自定义的通用骨骼可删除；内置/可选的选「未绑定」即等于删除 */
             if (!mchorse.bbs_mod.ai.pose.PoseLibrary.GENERIC_BONES.contains(generic)

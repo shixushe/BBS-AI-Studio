@@ -1182,17 +1182,30 @@ public class PoseSolver
              * 也不再指望 LLM 在每拍里写呼吸 */
             bakeBreathing(write.keys, poses);
 
-            /* 到达意图落前一个键（与逐骨骼路径同一语义） */
+            /* 到达意图落前一个键（与逐骨骼路径同一语义）——但 hold/linear
+             * 在姿势真正变化时是灾难：CONST = 保持旧姿势到最后一刻再瞬移
+             * （动作衔接顿挫的直接来源），LINEAR = 折角。姿势变了就强制
+             * auto_clamped（切线连续，无逐段减速脉冲） */
             List<EditPatch.KeyWrite> keys = write.keys;
 
             for (int j = 1; j < keys.size(); j++)
             {
                 String arrival = keys.get(j).intent;
 
-                if (arrival != null)
+                if (arrival == null)
                 {
-                    keys.get(j - 1).interpolation = interpFor(arrival).getKey();
+                    continue;
                 }
+
+                String interp = interpFor(arrival).getKey();
+
+                if (("hold".equals(arrival) || "linear".equals(arrival))
+                    && posesDiffer(keys.get(j - 1).fullValue, keys.get(j).fullValue))
+                {
+                    interp = "auto_clamped";
+                }
+
+                keys.get(j - 1).interpolation = interp;
             }
 
             /* 冗余键抽稀：连续三键值全等（carry-forward 的 hold 拍）删中间 */
@@ -1210,7 +1223,8 @@ public class PoseSolver
              * 斜率自动生成，极限处自动压平不过冲，无缝衔接用户手动微调 */
             for (EditPatch.KeyWrite key : keys)
             {
-                if ("cubic_inout".equals(key.interpolation) || "cubic_out".equals(key.interpolation))
+                if ("cubic_inout".equals(key.interpolation) || "cubic_out".equals(key.interpolation)
+                    || "sine_inout".equals(key.interpolation))
                 {
                     key.interpolation = "auto_clamped";
                 }
@@ -1275,6 +1289,34 @@ public class PoseSolver
         }
 
         return true;
+    }
+
+    /** 两键姿势是否有可感知差异（≥2° 任意轴）——hold 到达语义的守卫用 */
+    private static boolean posesDiffer(Object a, Object b)
+    {
+        if (!(a instanceof mchorse.bbs_mod.utils.pose.Pose pa)
+            || !(b instanceof mchorse.bbs_mod.utils.pose.Pose pb))
+        {
+            return true;
+        }
+
+        java.util.Set<String> union = new java.util.LinkedHashSet<>(pa.transforms.keySet());
+        union.addAll(pb.transforms.keySet());
+
+        for (String bone : union)
+        {
+            PoseTransform ta = pa.transforms.get(bone) == null ? new PoseTransform() : pa.transforms.get(bone);
+            PoseTransform tb = pb.transforms.get(bone) == null ? new PoseTransform() : pb.transforms.get(bone);
+
+            if (Math.abs(ta.rotate.x - tb.rotate.x) > 0.035F
+                || Math.abs(ta.rotate.y - tb.rotate.y) > 0.035F
+                || Math.abs(ta.rotate.z - tb.rotate.z) > 0.035F)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** 抽稀容差：旋转 1.5°（MC 风格动画的可感知下限）、缩放/平移 0.005 */

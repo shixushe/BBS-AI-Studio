@@ -404,15 +404,15 @@ public class AiMotionTemplates
              * 前倾（否则上半身僵直，"没有作者动作的前倾"） */
             if (gait && !pose.has("body"))
             {
-                float lean = -3F;
+                float lean = -5F;
 
                 if (normalize(clipName).contains("垂头丧气"))
                 {
-                    lean = -6F;
+                    lean = -7F;
                 }
                 else if ("run".equals(familyOf(clipName)))
                 {
-                    lean = -8F;
+                    lean = -10F;
                 }
 
                 MapType bodyData = new MapType();

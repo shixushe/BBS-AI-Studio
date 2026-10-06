@@ -40,11 +40,18 @@ public class UIKeyframeSheetFilterOverlayPanel extends UIOverlayPanel
             disabled.addAll(keys);
         }
 
-        UIButton toggleAll = new UIButton(this.toggleAllLabel(disabled, keys), (b) ->
-        {
-            boolean enableAll = disabled.containsAll(keys);
+        /* The toggles must cover the UNION of visible and disabled keys: a disabled row is gone
+         * from the dope sheet, so keys alone would never list it again and a mass "disable all"
+         * click (2026-10-02 incident) became permanently unrecoverable from this panel. */
+        Set<String> universe = new java.util.LinkedHashSet<>(keys);
 
-            for (String key : keys)
+        universe.addAll(disabled);
+
+        UIButton toggleAll = new UIButton(this.toggleAllLabel(disabled, universe), (b) ->
+        {
+            boolean enableAll = disabled.containsAll(universe);
+
+            for (String key : universe)
             {
                 if (enableAll)
                 {
@@ -61,7 +68,7 @@ public class UIKeyframeSheetFilterOverlayPanel extends UIOverlayPanel
                 toggle.setValue(enableAll);
             }
 
-            b.label = this.toggleAllLabel(disabled, keys);
+            b.label = this.toggleAllLabel(disabled, universe);
         });
 
         UIScrollView scrollView = UI.scrollView(4, 6);
@@ -73,7 +80,7 @@ public class UIKeyframeSheetFilterOverlayPanel extends UIOverlayPanel
         scrollView.relative(this.content).x(0).y(top).w(1F).hTo(this.content.area, 1F);
         this.content.add(toggleAll, scrollView);
 
-        for (String key : keys)
+        for (String key : universe)
         {
             int color = keyToColor != null && keyToColor.containsKey(key)
                 ? keyToColor.get(key)

@@ -1264,3 +1264,60 @@ PoseTransform.rotate 期望弧度（0.283 rad）。差 57 倍——所有姿势�
 24°+步幅能量、头部微摆创建/反号、头饰跟随、@姿势拍合并防 REST 垂零）；
 全套构建绿（aiCopilot 92 / frameCommit 29 / anchor 330 / migration /
 apiCheck 49）。jar 已部署实例 mods（游戏未运行，md5 校验一致）。
+
+## 六十二、第五十二轮（2026-10-06，作者动作模板 + 绑定试动校验 + 默认自动识别 + 视觉校验 + 关键帧轴缺失破案）
+
+用户需求：套动作模板且模板=作者动作，在模板上改；默认直接识别骨骼；
+绑定页签加"动通用骨骼→模型跟随"的校验；修 BBS 原生关键帧轴缺条目；
+开视觉就做视觉校验；先不做 token 优化，主攻表现。
+
+**① 作者动作模板（AiMotionTemplates，main 纯逻辑可测）**：运行时读
+model.bbs.json 顶层 animations（作者真人动画，[秒,插值,x°,y°,z°] 关键帧），
+按关键帧时间并集转成 v2 直写节拍模板注入生成提示词——LLM 第一步原样套用、
+第二步按用户要求改。步行/跑步族时间×0.5 压到步频规格（4~5 tick/步）并预填
+move 累计位移（每步 0.9 格）；族关键词匹配（走/跑/呼吸/idle/摆动作），
+单次最多注入 2 个模板；骨骼名=模型真实名（深度适配天然兼容）。紧凑序列化
+用 DataStringifier（jsonLike+零缩进——DataToString.toString(base,true) 是
+四空格 pretty，会毁掉单行契约）。提示词全面改版（zh+en）：思考流程加
+"第 0 步 选模板"，修正"手臂与同侧腿反相（=对侧同向）"的生物力学方向
+（旧文案写反了），模板/示例骨骼名全部用泛骨骼名（thigh_left 类自创名会被
+管线静默丢弃），拍上限 12→24、ticks 180→420，fx 字段写全（缺 id 静默丢弃）。
+**求解器 passing 让路**：passing 拍豁免步行保底/步幅能量/IK 接地——过渡帧
+的并拢腿不再被抬成触地帧。
+
+**② 默认自动识别骨骼**：UIAiChatBar 生成流里，未解析泛骨骼先走
+BoneNameResolver.suggest 最佳猜测 → 自动写入解析结果 + AiBoneBindings 持久化
+（同一模型不再打扰），全部命中就不弹确认框；仍有缺口才弹旧对话框。
+过程区记录"骨骼自动识别：generic→actual"。
+
+**③ 绑定试动校验**：模型编辑器 AI 绑定页签每行加试动按钮（头=转头、臂=抬、
+膝=弯、眼眉=闭眼缩放），点按后经 AiBindingTestPose（静态覆盖表）在
+ModelFormRenderer.getPose() 末尾叠加——预览模型当场摆出该骨骼的校验姿势，
+动的部位对=绑定对。不落盘、不进撤销；页签重建/全部复位按钮清空。
+
+**④ 视觉校验（AiVision）**：设置开启 supports_vision 且后端为 OpenAI 兼容
+协议时，生成预览完成后自动抓首/中/尾三个关键拍帧（UIAiChatBar.render 逐帧
+消化采集队列：seek 后等 3 帧再 FrameGrabber.grabScreen），发给视觉模型质检
+（可见性/穿模/关节反折/帧间变化/姿势符合度），结论回聊天流。后端新增
+chatWithImages（OpenAI 视觉 content 分片，data URL base64）。已知限制：
+游戏窗口被最小化时抓到黑帧（与 /screenshot 同病），结论如实报"无法评估"。
+
+**⑤ 关键帧轴缺失破案（BBS 原生 bug 链）**：实机 /uistate 取证——dope sheet
+只剩 6 行（pose/transform/follow_offset/smear_frames/motion_lines/
+pose.bones.anchor），x/y/z 回放通道与 41 骨骼行全部缺失。根因两层：
+(a) bbs.json 的 appearance/disabled_sheets 残留 103 个被隐藏的轨道键
+（第 16 轮"全部隐藏"误触写入，当时误判为用户原有而保留）——已清空；
+(b) **原生设计缺陷**：筛选面板 UIKeyframeSheetFilterOverlayPanel 只列
+"当前可见"的键——行一旦被禁用就从 dope sheet 消失，也就从筛选面板消失，
+"全部启用"永远够不着它们，误触=不可恢复。修复：面板改列「可见 ∪ 已禁用」
+并集（禁用行以关闭状态的开关出现在面板里，可逐一或一键恢复）。
+
+**实机验证（MCP 全程驱动）**：影片 122 打开 ✓；/debug generate "角色向前走路"
+端到端 ✓（aiReport：pose 13 键 + x/z 位移各 22 键(共 36) + y 贴地 22 键 +
+灯光 2 键，skipped=[]）；视觉校验排队 3 帧 + 回执进入聊天流 ✓（结论"三帧
+黑屏无法评估"=窗口最小化伪影，非链路故障）。**待用户目视**：①绑定页签
+试动按钮（模型编辑器→AI 绑定→行右侧按钮，模型应摆出对应部位）；②重启后
+关键帧轴应恢复全部行（x/y/z/骨骼/物品栏…，此轮 disabled_sheets 已清零）。
+
+测试：poseSolverTest 220 项全绿（新增模板 v2 契约解析/命中/不注入断言 +
+passing 让路断言）；全套构建绿。提交 c492ea7b8 + filter 修复提交。

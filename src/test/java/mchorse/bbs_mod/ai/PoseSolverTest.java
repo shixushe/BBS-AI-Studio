@@ -44,6 +44,7 @@ public class PoseSolverTest
         starBuiltins();
         motionTemplates();
         openSourcePolish();
+        keySimplification();
 
         System.out.println("\n" + (failures == 0 ? "ALL PASS" : failures + " FAILURES") + " (" + checks + " checks)");
 
@@ -771,10 +772,10 @@ public class PoseSolverTest
         {
             breathePlan = AnimationPlan.parse("""
                 {
-                  "version": 2, "fps": 20, "total_ticks": 16,
+                  "version": 2, "fps": 20, "total_ticks": 10,
                   "beats": [
                     { "index": 0, "tick": 0, "phase": "hold", "pose": { "torso_lower": {"r": [0, 0, 0]}, "head": {"r": [0, 0, 0]} } },
-                    { "index": 1, "tick": 16, "phase": "hold", "pose": { "torso_lower": {"r": [0, 0, 0]}, "head": {"r": [0, 0, 0]} } }
+                    { "index": 1, "tick": 10, "phase": "hold", "pose": { "torso_lower": {"r": [0, 0, 0]}, "head": {"r": [0, 0, 0]} } }
                   ]
                 }
                 """);
@@ -811,6 +812,92 @@ public class PoseSolverTest
         }
 
         check(sways, "the breathing midpoint actually sways the head");
+    }
+
+    /**
+     * 关键帧抽稀（抖动修复）：密集小噪声键（逐 tick ±1° 抖动）被压成
+     * 稀疏曲线——键数大幅下降、首末键原样保留、大偏差键（打击）保留。
+     */
+    private static void keySimplification()
+    {
+        StringBuilder beats = new StringBuilder();
+        float[] noisy = {0F, 1F, -0.8F, 0.9F, -1F, 0.7F, -0.9F, 0.8F};
+
+        for (int i = 0; i < noisy.length; i++)
+        {
+            if (i > 0)
+            {
+                beats.append(',');
+            }
+
+            beats.append("{\"index\":").append(i)
+                .append(",\"tick\":").append(i * 2)
+                .append(",\"phase\":\"hold\",\"intents\":[\"ease_in_out\"],")
+                .append("\"pose\":{\"left_arm\":{\"r\":[").append(noisy[i]).append(",0,0]}}}");
+        }
+
+        AnimationPlan jitter;
+
+        try
+        {
+            jitter = AnimationPlan.parse("{\"version\":2,\"fps\":20,\"total_ticks\":14,\"beats\":[" + beats + "]}");
+        }
+        catch (AiException e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        List<PoseSolver.KeyPose> solved = PoseSolver.solve(jitter, BoneNameResolver.resolve(STAR_BONES));
+        FormProperties props = new FormProperties("simplify");
+        List<FrameCommitter.ChannelWrite> writes =
+            PoseSolver.toPoseTrackWrites(solved, java.util.Map.of(), props, null);
+
+        check(!writes.isEmpty(), "simplification: pose track produced");
+        int keys = writes.get(0).keys.size();
+
+        check(keys < noisy.length, "simplification: " + noisy.length + " jitter keys reduced to " + keys);
+
+        EditPatch.KeyWrite first = writes.get(0).keys.get(0);
+        EditPatch.KeyWrite last = writes.get(0).keys.get(writes.get(0).keys.size() - 1);
+
+        check(first.tick == 0F && last.tick == (noisy.length - 1) * 2F,
+            "simplification: endpoints preserved");
+
+        /* 大偏差键（40° 打击）必须活下来 */
+        StringBuilder punch = new StringBuilder();
+
+        for (int i = 0; i < noisy.length; i++)
+        {
+            if (i > 0)
+            {
+                punch.append(',');
+            }
+
+            float angle = i == 4 ? 40F : noisy[i];
+
+            punch.append("{\"index\":").append(i)
+                .append(",\"tick\":").append(i * 2)
+                .append(",\"phase\":\"hold\",\"intents\":[")
+                .append(i == 4 ? "\"snap\"" : "\"ease_in_out\"")
+                .append("],\"pose\":{\"left_arm\":{\"r\":[").append(angle).append(",0,0]}}}");
+        }
+
+        try
+        {
+            AnimationPlan plan2 = AnimationPlan.parse("{\"version\":2,\"fps\":20,\"total_ticks\":14,\"beats\":[" + punch + "]}");
+            List<PoseSolver.KeyPose> solved2 = PoseSolver.solve(plan2, BoneNameResolver.resolve(STAR_BONES));
+            FormProperties props2 = new FormProperties("simplify2");
+            List<FrameCommitter.ChannelWrite> writes2 =
+                PoseSolver.toPoseTrackWrites(solved2, java.util.Map.of(), props2, null);
+
+            boolean kept = writes2.get(0).keys.stream().anyMatch(k -> k.tick == 8F);
+
+            check(kept, "simplification: the 40-deg snap key survives");
+        }
+        catch (AiException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     /** Raw JSON of a shipped builtin model (for template extraction tests). */

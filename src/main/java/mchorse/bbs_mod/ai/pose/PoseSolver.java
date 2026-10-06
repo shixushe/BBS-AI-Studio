@@ -938,7 +938,9 @@ public class PoseSolver
             boolean directPair = poses != null && i - 1 < poses.size() && i < poses.size()
                 && poses.get(i - 1).direct && poses.get(i).direct;
 
-            if (!directPair && a != null && b != null && next.tick > prev.tick)
+            /* 短段（<3 tick）不插中点：模板步态本身 2~3 tick 一拍，
+             * 再对半插就逼近逐 tick 键——抖动的直接来源 */
+            if (!directPair && a != null && b != null && next.tick - prev.tick >= 3F)
             {
                 float d = next.tick - prev.tick;
                 mchorse.bbs_mod.utils.pose.Pose mid = new mchorse.bbs_mod.utils.pose.Pose();
@@ -1051,8 +1053,10 @@ public class PoseSolver
                         (ta.translate.z + tb.translate.z) * 0.5F);
                 }
 
+                /* ±3.5°：MC 视角下肉眼可见的呼吸，且大部分相位点能在
+                 * 1.5° 抽稀容差下存活（过零点附近被删是正常简化） */
                 float phase = (prev.tick + next.tick) * 0.5F;
-                float sway = (float) Math.sin(phase * 0.4D) * (float) Math.toRadians(2D);
+                float sway = (float) Math.sin(phase * 0.4D) * (float) Math.toRadians(3.5F);
 
                 for (Map.Entry<String, Float> target : Map.of(
                     "torso", sway,
@@ -1201,6 +1205,13 @@ public class PoseSolver
             /* 冗余键抽稀：连续三键值全等（carry-forward 的 hold 拍）删中间 */
             dedupeKeys(keys);
 
+            /* 关键帧抽稀（Blender Decimate 思路）：模板节拍 2~3 tick 一个键
+             * + 错帧中点 + 呼吸键叠加后，实际键距会压到 1 tick 上下——
+             * auto_clamped 在密集噪声数据上切线振荡，动作抽搐。误差容差内
+             * 贪心删键（旋转 1.5°/缩放平移 0.005 可感知阈值），打击拍豁免；
+             * 删完剩下的稀疏键 + auto_clamped = 干净的平滑曲线 */
+            simplifyPoseKeys(keys);
+
             /* 自动平滑：固定 cubic 段升级为原生 auto_clamped（曲线插件
              * “自动钳制”的 Blender 自动柄移植）——每根骨骼的切线由邻段
              * 斜率自动生成，极限处自动压平不过冲，无缝衔接用户手动微调 */
@@ -1220,8 +1231,7 @@ public class PoseSolver
 
     /** 三连等值键去重：中间键与两侧的整只 Pose 逐骨骼全等（±容差）时删除 */
     private static void dedupeKeys(List<EditPatch.KeyWrite> keys)
-    {
-        for (int i = 1; i < keys.size() - 1; )
+    {        for (int i = 1; i < keys.size() - 1; )
         {
             if (samePose(keys.get(i - 1).fullValue, keys.get(i).fullValue)
                 && samePose(keys.get(i).fullValue, keys.get(i + 1).fullValue))
@@ -1272,6 +1282,167 @@ public class PoseSolver
         }
 
         return true;
+    }
+
+    /** 抽稀容差：旋转 1.5°（MC 风格动画的可感知下限）、缩放/平移 0.005 */
+    private static final float SIMPLIFY_ROT_TOL = 1.5F;
+    private static final float SIMPLIFY_LIN_TOL = 0.005F;
+
+    /**
+     * 关键帧抽稀：贪心删除——对每个中间键，评估"删掉它后用前后键平滑
+     * 插值"与"原值"的最大逐骨骼偏差，低于可感知阈值就删。snap/impact
+     * 打击拍永不删（发力瞬间是动作的灵魂）；循环到一轮无删除为止。
+     * 首尾键恒保留。
+     */
+    private static void simplifyPoseKeys(List<EditPatch.KeyWrite> keys)
+    {
+        if (keys.size() <= 2)
+        {
+            return;
+        }
+
+        boolean removed = true;
+
+        while (removed)
+        {
+            removed = false;
+
+            for (int i = 1; i < keys.size() - 1; )
+            {
+                EditPatch.KeyWrite cur = keys.get(i);
+
+                /* 打击拍是节奏骨架，抽稀绝不碰 */
+                if ("snap".equals(cur.intent) || "impact".equals(cur.intent))
+                {
+                    i++;
+
+                    continue;
+                }
+
+                EditPatch.KeyWrite prev = keys.get(i - 1);
+                EditPatch.KeyWrite next = keys.get(i + 1);
+
+                if (removalError(prev, cur, next) <= SIMPLIFY_ROT_TOL)
+                {
+                    keys.remove(i);
+                    removed = true;
+
+                    continue;
+                }
+
+                i++;
+            }
+        }
+    }
+
+    /**
+     * 删除 cur 的运动偏差（度）：原曲线是 prev→cur→next 两段平滑插值，
+     * 删后变成 prev→next 一段——逐采样点比较两条曲线的姿态差，取最大
+     * 逐骨骼旋转差（度）与缩放越界。平滑插值用 smoothstep 近似（与
+     * cubic_inout/auto_clamped 的中段行为一致）。
+     */
+    private static float removalError(EditPatch.KeyWrite prev, EditPatch.KeyWrite cur, EditPatch.KeyWrite next)
+    {
+        if (!(prev.fullValue instanceof mchorse.bbs_mod.utils.pose.Pose pa)
+            || !(cur.fullValue instanceof mchorse.bbs_mod.utils.pose.Pose cb)
+            || !(next.fullValue instanceof mchorse.bbs_mod.utils.pose.Pose pb)
+            || cur.tick <= prev.tick || next.tick <= cur.tick)
+        {
+            return Float.MAX_VALUE;
+        }
+
+        float span = next.tick - prev.tick;
+        float cu = (cur.tick - prev.tick) / span;
+        float maxError = 0F;
+
+        for (int s = 1; s <= 4; s++)
+        {
+            float u = s / 5F;
+
+            /* 前段：绝对 tick = prev + (cur-prev)*u，原值走 prev→cur，
+             * 简化值走 prev→next 的同一绝对 tick（=全跨度的 u*cu 处） */
+            mchorse.bbs_mod.utils.pose.Pose orig = lerpPose(pa, cb, smoothstep(u));
+            mchorse.bbs_mod.utils.pose.Pose simp = lerpPose(pa, pb, smoothstep(u * cu));
+
+            maxError = Math.max(maxError, poseDiff(orig, simp));
+
+            /* 后段：绝对 tick = cur + (next-cur)*u */
+            orig = lerpPose(cb, pb, smoothstep(u));
+            simp = lerpPose(pa, pb, smoothstep(cu + (1F - cu) * u));
+
+            maxError = Math.max(maxError, poseDiff(orig, simp));
+        }
+
+        return maxError;
+    }
+
+    private static mchorse.bbs_mod.utils.pose.Pose lerpPose(
+        mchorse.bbs_mod.utils.pose.Pose a, mchorse.bbs_mod.utils.pose.Pose b, float u)
+    {
+        mchorse.bbs_mod.utils.pose.Pose out = new mchorse.bbs_mod.utils.pose.Pose();
+
+        for (Map.Entry<String, PoseTransform> entry : a.transforms.entrySet())
+        {
+            PoseTransform tb = b.transforms.get(entry.getKey());
+            PoseTransform ta = entry.getValue();
+            PoseTransform t = out.getOrCreate(entry.getKey());
+
+            if (tb == null)
+            {
+                t.copy(ta);
+
+                continue;
+            }
+
+            t.rotate.set(
+                ta.rotate.x + (tb.rotate.x - ta.rotate.x) * u,
+                ta.rotate.y + (tb.rotate.y - ta.rotate.y) * u,
+                ta.rotate.z + (tb.rotate.z - ta.rotate.z) * u);
+            t.scale.set(
+                ta.scale.x + (tb.scale.x - ta.scale.x) * u,
+                ta.scale.y + (tb.scale.y - ta.scale.y) * u,
+                ta.scale.z + (tb.scale.z - ta.scale.z) * u);
+            t.translate.set(
+                ta.translate.x + (tb.translate.x - ta.translate.x) * u,
+                ta.translate.y + (tb.translate.y - ta.translate.y) * u,
+                ta.translate.z + (tb.translate.z - ta.translate.z) * u);
+        }
+
+        return out;
+    }
+
+    /** 两姿势最大逐骨骼旋转差（度）；缩放/平移越界直接判超差 */
+    private static float poseDiff(mchorse.bbs_mod.utils.pose.Pose a, mchorse.bbs_mod.utils.pose.Pose b)
+    {
+        float maxDeg = 0F;
+
+        for (Map.Entry<String, PoseTransform> entry : a.transforms.entrySet())
+        {
+            PoseTransform ta = entry.getValue();
+            PoseTransform tb = b.transforms.get(entry.getKey());
+
+            if (tb == null)
+            {
+                tb = new PoseTransform();
+            }
+
+            float dx = ta.rotate.x - tb.rotate.x;
+            float dy = ta.rotate.y - tb.rotate.y;
+            float dz = ta.rotate.z - tb.rotate.z;
+
+            maxDeg = Math.max(maxDeg, (float) Math.toDegrees(Math.sqrt(dx * dx + dy * dy + dz * dz)));
+
+            if (Math.abs(ta.scale.x - tb.scale.x) > SIMPLIFY_LIN_TOL
+                || Math.abs(ta.scale.y - tb.scale.y) > SIMPLIFY_LIN_TOL
+                || Math.abs(ta.translate.x - tb.translate.x) > SIMPLIFY_LIN_TOL
+                || Math.abs(ta.translate.y - tb.translate.y) > SIMPLIFY_LIN_TOL
+                || Math.abs(ta.translate.z - tb.translate.z) > SIMPLIFY_LIN_TOL)
+            {
+                maxDeg = Math.max(maxDeg, SIMPLIFY_ROT_TOL + 1F);
+            }
+        }
+
+        return maxDeg;
     }
 
     /**

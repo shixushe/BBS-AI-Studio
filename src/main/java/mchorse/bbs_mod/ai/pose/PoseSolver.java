@@ -1137,6 +1137,7 @@ public class PoseSolver
             FrameCommitter.ChannelWrite write = new FrameCommitter.ChannelWrite(trackId.toKey(), channel, 0F);
 
             write.poseChannel = true;
+            write.replace = true;
 
             for (KeyPose pose : poses)
             {

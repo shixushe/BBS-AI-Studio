@@ -811,6 +811,98 @@ public class UIAiChatBar extends UIElement
             /* 整只 Pose 写进 pose 属性轨道——用户看得见、可编辑的那条 */
             writes = mchorse.bbs_mod.ai.pose.PoseSolver.toPoseTrackWrites(poses, boneEnds, replay.properties, replay.form.get());
 
+            /* 手臂 IK 解放：模型的臂链由控制器解算时（Star 骨架双臂挂在
+             * controller 链下），FK 姿态键会被 IK 覆盖——手臂定在绑定方向
+             * 呈 T-pose（2026-10-06 "手臂是反的"真凶）。动作首拍写 ik
+             * 控制键禁用手臂链，末拍恢复原状态 */
+            try
+            {
+                mchorse.bbs_mod.forms.forms.ModelForm mf = replay.form.get() instanceof mchorse.bbs_mod.forms.forms.ModelForm m ? m : null;
+                var instance = mf == null ? null : mchorse.bbs_mod.forms.renderers.ModelFormRenderer.getModel(mf);
+
+                if (mf != null && instance != null)
+                {
+                    java.util.Map<String, java.util.List<String>> ikChains =
+                        mchorse.bbs_mod.cubic.ik.ModelIKRuntime.getChains(instance.model, mf);
+                    java.util.List<String> armTips = new ArrayList<>();
+
+                    for (java.util.Map.Entry<String, java.util.List<String>> chain : ikChains.entrySet())
+                    {
+                        boolean armChain = false;
+
+                        for (String bone : chain.getValue())
+                        {
+                            String b = bone == null ? "" : bone.toLowerCase();
+
+                            if (b.contains("arm") || b.contains("胳膊") || b.contains("臂"))
+                            {
+                                armChain = true;
+
+                                break;
+                            }
+                        }
+
+                        if (armChain && chain.getKey() != null && !chain.getKey().isEmpty())
+                        {
+                            armTips.add(chain.getKey());
+                        }
+                    }
+
+                    if (!armTips.isEmpty())
+                    {
+                        mchorse.bbs_mod.film.replays.tracks.TrackId ikId =
+                            mchorse.bbs_mod.film.replays.tracks.TrackId.ikControls("");
+                        KeyframeChannel<?> ikChannel = replay.properties.getOrCreate(replay.form.get(), ikId);
+                        FrameCommitter.ChannelWrite ikWrite = new FrameCommitter.ChannelWrite(ikId.toKey(), ikChannel, 0F);
+
+                        ikWrite.rawValue = true;
+                        ikWrite.replace = true;
+
+                        mchorse.bbs_mod.cubic.ik.IKControls off =
+                            mchorse.bbs_mod.film.replays.tracks.TrackCatalog.ikControls(mf);
+                        mchorse.bbs_mod.cubic.ik.IKControls on =
+                            mchorse.bbs_mod.film.replays.tracks.TrackCatalog.ikControls(mf);
+
+                        for (String tip : armTips)
+                        {
+                            off.get(tip).enabled = false;
+                            off.get(tip).weight = 0F;
+                        }
+
+                        float firstTick = poses.isEmpty() ? 0F : poses.get(0).tick;
+                        float lastTick = firstTick;
+
+                        for (mchorse.bbs_mod.ai.pose.PoseSolver.KeyPose pose : poses)
+                        {
+                            lastTick = Math.max(lastTick, pose.tick);
+                        }
+
+                        EditPatch.KeyWrite offKey = new EditPatch.KeyWrite();
+
+                        offKey.tick = firstTick;
+                        offKey.fullValue = off;
+                        offKey.interpolation = "hold";
+                        ikWrite.keys.add(offKey);
+
+                        EditPatch.KeyWrite onKey = new EditPatch.KeyWrite();
+
+                        onKey.tick = lastTick + 1F;
+                        onKey.fullValue = on;
+                        onKey.interpolation = "hold";
+                        ikWrite.keys.add(onKey);
+
+                        writes.add(ikWrite);
+                        thinking.addProcess("手臂 IK 已临时禁用（链: " + String.join("、", armTips)
+                            + "，首拍生效末拍恢复）——FK 姿态键直接驱动手臂");
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                thinking.addProcess("手臂 IK 解放跳过：" + e.getMessage());
+            }
+
+
             /* 地面识别 + 行走位移：
              * 蹲/压缩/落地拍在 y 通道插重心下沉键（幅度来自 ROOT_Y），保证脚贴地；
              * 走路家族（walk_step/walk_step_b）改成步态节奏——触地拍低位、两拍中点
@@ -993,6 +1085,7 @@ public class UIAiChatBar extends UIElement
                         {
                             FrameCommitter.ChannelWrite v2Y = new FrameCommitter.ChannelWrite("y", yChannel, 0F);
 
+                            v2Y.replace = true;
                             writes.add(v2Y);
 
                             for (float[] pt : path)
@@ -1190,6 +1283,8 @@ public class UIAiChatBar extends UIElement
                 KeyframeChannel<?> lighting = replay.properties.getOrCreate(replay.form.get(), lightingId);
                 FrameCommitter.ChannelWrite lw = new FrameCommitter.ChannelWrite(lightingId.toKey(), lighting, 0F);
 
+                lw.replace = true;
+
                 EditPatch.KeyWrite hit = new EditPatch.KeyWrite();
 
                 hit.tick = fx.tick;
@@ -1275,6 +1370,10 @@ public class UIAiChatBar extends UIElement
     public static String lastSystemStatic = "";
     public static AnimationPlan lastPlan;
 
+    /** 采集期间的临时全亮（用户原 gamma 采完恢复）——洞穴/夜晚场景
+     * 的世界光照会让质检帧全黑 */
+    private Double savedGamma;
+
     /** 视觉校验的逐帧采集状态：待 seek 的 tick 队列 + 已抓帧 */
     private mchorse.bbs_mod.camera.data.Position savedVisionCamera;
     private final java.util.Deque<Integer> visionTicks = new java.util.ArrayDeque<>();
@@ -1297,6 +1396,16 @@ public class UIAiChatBar extends UIElement
         this.visionTicks.clear();
         this.visionFrames.clear();
         this.visionPendingGrab = false;
+
+        try
+        {
+            var gamma = net.minecraft.client.MinecraftClient.getInstance().options.getGamma();
+
+            this.savedGamma = gamma.getValue();
+            gamma.setValue(10D);
+        }
+        catch (Exception ignored)
+        {}
 
         java.util.LinkedHashSet<Integer> picks = new java.util.LinkedHashSet<>();
         int count = generated.beats.size();
@@ -1451,7 +1560,7 @@ public class UIAiChatBar extends UIElement
         }
     }
 
-    /** 复位特写机位（交还用户自己的编辑器视角） */
+    /** 复位特写机位（交还用户自己的编辑器视角）+ 恢复原 gamma */
     private void restoreVisionCamera()
     {
         try
@@ -1460,6 +1569,18 @@ public class UIAiChatBar extends UIElement
         }
         catch (Exception ignored)
         {}
+
+        if (this.savedGamma != null)
+        {
+            try
+            {
+                net.minecraft.client.MinecraftClient.getInstance().options.getGamma().setValue(this.savedGamma);
+            }
+            catch (Exception ignored)
+            {}
+
+            this.savedGamma = null;
+        }
     }
 
     /** Polish: local intent parsing -> L3 on every numeric channel of the open replay -> preview. */
@@ -1973,6 +2094,11 @@ public class UIAiChatBar extends UIElement
     private void writeLinearMove(List<FrameCommitter.ChannelWrite> writes, KeyframeChannel<Double> channel,
         String trackId, int fromTick, int toTick, double a, double b)
     {        FrameCommitter.ChannelWrite write = null;
+
+        for (FrameCommitter.ChannelWrite existing : writes)
+        {
+            existing.replace = true;
+        }
 
         for (FrameCommitter.ChannelWrite existing : writes)
         {

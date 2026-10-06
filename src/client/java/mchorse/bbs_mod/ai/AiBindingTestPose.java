@@ -19,6 +19,10 @@ public class AiBindingTestPose
 {
     private static final Map<String, PoseTransform> TEST_POSES = new LinkedHashMap<>();
 
+    /** 绑定页签是否处于打开状态——探针姿势只允许在页签里影响预览，
+     * 否则会泄漏到影片演员上（2026-10-06："手臂反了/上举"的真凶） */
+    private static boolean editorActive;
+
     /** 每个泛骨骼的校验姿势（度）：方向固定，绑对了动的部位一目了然 */
     public static float testAngleFor(String generic)
     {
@@ -77,16 +81,28 @@ public class AiBindingTestPose
         return true;
     }
 
+    /** 页签打开/关闭时调用——关闭即清姿势并停用叠加 */
+    public static void setEditorActive(boolean active)
+    {
+        editorActive = active;
+
+        if (!active)
+        {
+            TEST_POSES.clear();
+        }
+    }
+
     /** 清空全部试动姿势（页签重建/复位按钮） */
     public static void clear()
     {
         TEST_POSES.clear();
     }
 
-    /** 叠加到最终姿势上（ModelFormRenderer.getPose 末尾调用） */
+    /** 叠加到最终姿势上（ModelFormRenderer.getPose 末尾调用）——
+     * 仅当模型编辑器的 AI 绑定页签打开时 */
     public static void apply(Pose pose)
     {
-        if (TEST_POSES.isEmpty())
+        if (TEST_POSES.isEmpty() || !editorActive)
         {
             return;
         }

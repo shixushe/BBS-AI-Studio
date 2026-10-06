@@ -313,7 +313,15 @@ public class UIModelConfigEditor extends UIElement
     private void openTab(Tab tab)
     {
         if (tab == Tab.PROCEDURAL && this.data != null) this.fillProcedural();
-        if (tab == Tab.AI_BINDINGS) this.fillAiBindings();
+        if (tab == Tab.AI_BINDINGS)
+        {
+            mchorse.bbs_mod.ai.AiBindingTestPose.setEditorActive(true);
+            this.fillAiBindings();
+        }
+        else
+        {
+            mchorse.bbs_mod.ai.AiBindingTestPose.setEditorActive(false);
+        }
         this.showPage(tab);
         this.modelPanel.refreshPreview();
     }

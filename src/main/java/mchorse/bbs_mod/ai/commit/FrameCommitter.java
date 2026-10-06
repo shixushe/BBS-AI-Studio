@@ -201,7 +201,7 @@ public class FrameCommitter
 
             IKeyframeFactory factory = write.channel.getFactory();
 
-            if (!isNumericFactory(factory) && !write.poseChannel)
+            if (!isNumericFactory(factory) && !write.poseChannel && !write.rawValue)
             {
                 diff.skippedTracks.add(write.trackId);
 
@@ -209,6 +209,35 @@ public class FrameCommitter
             }
 
             MapType oldState = mchorse.bbs_mod.ai.commit.ChannelStateUndo.capture(write.channel);
+
+            /* 替换语义：清旧键在快照之后——丢弃/撤销仍能完整还原
+             * 生成前的状态 */
+            if (write.replace && !write.rawValue)
+            {
+                boolean ranged = write.trackId.equals("x")
+                    || write.trackId.equals("y")
+                    || write.trackId.equals("z");
+                float min = Float.MAX_VALUE;
+                float max = -Float.MAX_VALUE;
+
+                for (EditPatch.KeyWrite key : write.keys)
+                {
+                    min = Math.min(min, key.tick);
+                    max = Math.max(max, key.tick);
+                }
+
+                List<?> existing = write.channel.getKeyframes();
+
+                for (int i = existing.size() - 1; i >= 0; i--)
+                {
+                    float tick = ((Keyframe<?>) existing.get(i)).getTick();
+
+                    if (!ranged || (tick >= min - 1F && tick <= max + 1F))
+                    {
+                        write.channel.remove(i);
+                    }
+                }
+            }
 
             if (applyWrites(write.channel, factory, write, diff) > 0)
             {
@@ -238,6 +267,14 @@ public class FrameCommitter
 
         /** POSE-typed channel (bone rotations) - keys carry {@link EditPatch.KeyWrite#poseValue}. */
         public boolean poseChannel;
+
+        /** 替换语义：预览应用前先清掉通道旧键（生成不叠加在旧动作上）。
+         * 位移通道（x/y/z）按写入区间清，保留用户在区间外摆的演员位置；
+         * 其它（pose/lighting）整条清空。 */
+        public boolean replace;
+
+        /** 非数值非 POSE 的自定义值通道（如 ik 控制轨道）——放行 applyPreview 的工厂门槛 */
+        public boolean rawValue;
 
         public final List<EditPatch.KeyWrite> keys = new ArrayList<>();
 
